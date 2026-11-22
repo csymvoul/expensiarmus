@@ -54,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.csymvoul.expenses.domain.CategoryTotal
 import com.csymvoul.expenses.domain.FoodSummary
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.domain.MonthlySummary
@@ -101,6 +102,7 @@ fun MonthScreen(
     onOpen: (String) -> Unit,
     onCategory: (Category, FoodType?) -> Unit,
     onSearch: () -> Unit,
+    onAnnals: () -> Unit,
     onGoals: () -> Unit,
     reminderOn: Boolean,
     onToggleReminder: () -> Unit,
@@ -122,6 +124,10 @@ fun MonthScreen(
                             Icon(Icons.Default.MoreVert, contentDescription = "More")
                         }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("📊 Annals · year & all-time totals") },
+                                onClick = { menuOpen = false; onAnnals() },
+                            )
                             DropdownMenuItem(
                                 text = { Text("🛡 Protego · monthly goals") },
                                 onClick = { menuOpen = false; onGoals() },
@@ -161,7 +167,7 @@ fun MonthScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { MonthSwitcher(summary, onPreviousMonth, onNextMonth) }
-            item { TotalCard(summary, onGoals) }
+            item { TotalCard(summary, onGoals, onAnnals) }
             item {
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     MonthView.entries.forEachIndexed { i, v ->
@@ -175,7 +181,7 @@ fun MonthScreen(
             }
             when (view) {
                 MonthView.OVERVIEW -> {
-                    item { BreakdownCard(summary, onCategory) }
+                    item { BreakdownCard(summary.categories, summary.totalCents, summary.month, onCategory) }
                     if (summary.food.totalCents > 0) {
                         item { FoodCard(summary.food) { onCategory(Category.ENTERTAINMENT, it) } }
                     }
@@ -258,7 +264,7 @@ private fun MonthSwitcher(summary: MonthlySummary, onPrevious: () -> Unit, onNex
 }
 
 @Composable
-private fun TotalCard(summary: MonthlySummary, onGoals: () -> Unit) {
+private fun TotalCard(summary: MonthlySummary, onGoals: () -> Unit, onAnnals: () -> Unit) {
     ParchmentCard(spacing = Arrangement.spacedBy(4.dp)) {
         Text("Gold spent this month", style = MaterialTheme.typography.titleSmall)
         Text(
@@ -284,30 +290,38 @@ private fun TotalCard(summary: MonthlySummary, onGoals: () -> Unit) {
                 Text("🛡 Cast Protego: set a monthly goal")
             }
         }
+        TextButton(onClick = onAnnals, contentPadding = PaddingValues(0.dp)) {
+            Text("📊 See the whole year in the Annals")
+        }
     }
 }
 
 
 @Composable
-private fun BreakdownCard(summary: MonthlySummary, onCategory: (Category, FoodType?) -> Unit) {
-    var highlighted by remember(summary.month) { mutableStateOf<Category?>(null) }
+internal fun BreakdownCard(
+    categories: List<CategoryTotal>,
+    totalCents: Long,
+    resetKey: Any,
+    onCategory: (Category, FoodType?) -> Unit,
+) {
+    var highlighted by remember(resetKey) { mutableStateOf<Category?>(null) }
     val glow = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
     ParchmentCard(spacing = Arrangement.spacedBy(10.dp)) {
         Text("Where the gold went", style = MaterialTheme.typography.titleMedium)
-        if (summary.totalCents > 0) {
+        if (totalCents > 0) {
             DonutChart(
-                slices = summary.categories.map { it.category.color to it.spentCents.toFloat() },
+                slices = categories.map { it.category.color to it.spentCents.toFloat() },
                 modifier = Modifier.size(200.dp).align(Alignment.CenterHorizontally),
-                selected = highlighted?.let { h -> summary.categories.indexOfFirst { it.category == h } },
+                selected = highlighted?.let { h -> categories.indexOfFirst { it.category == h } },
                 // Tapping the highlighted slice again, or the hole, shows the total again.
-                onSliceTap = { i -> highlighted = i?.let { summary.categories[it].category }?.takeIf { it != highlighted } },
+                onSliceTap = { i -> highlighted = i?.let { categories[it].category }?.takeIf { it != highlighted } },
             ) {
-                val pick = summary.categories.firstOrNull { it.category == highlighted }
+                val pick = categories.firstOrNull { it.category == highlighted }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     if (pick == null) {
                         Text("✦ Total ✦", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                         Text(
-                            Money.format(summary.totalCents),
+                            Money.format(totalCents),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
@@ -324,7 +338,7 @@ private fun BreakdownCard(summary: MonthlySummary, onCategory: (Category, FoodTy
                 }
             }
         }
-        summary.categories.forEach { c ->
+        categories.forEach { c ->
             val empty = c.spentCents == 0L && c.goal == null
             Column(
                 Modifier
@@ -347,13 +361,14 @@ private fun BreakdownCard(summary: MonthlySummary, onCategory: (Category, FoodTy
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Text(Money.format(c.spentCents), fontWeight = FontWeight.SemiBold)
-                    Text(
-                        "${Math.round(c.shareOfMonth * 100)}%",
-                        modifier = Modifier.width(44.dp),
-                        textAlign = TextAlign.End,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(Money.format(c.spentCents), fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "${Math.round(c.shareOfMonth * 100)}%",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     Icon(
                         Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = "Show ${c.category.label} expenses",
@@ -381,7 +396,7 @@ private fun BreakdownCard(summary: MonthlySummary, onCategory: (Category, FoodTy
 }
 
 @Composable
-private fun FoodCard(food: FoodSummary, onFoodType: (FoodType) -> Unit) {
+internal fun FoodCard(food: FoodSummary, onFoodType: (FoodType) -> Unit) {
     ParchmentCard(spacing = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Feasts & Food", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
@@ -421,13 +436,14 @@ private fun FoodCard(food: FoodSummary, onFoodType: (FoodType) -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Text(Money.format(t.spentCents), fontWeight = FontWeight.SemiBold)
-                Text(
-                    "${Math.round(t.shareOfFood * 100)}%",
-                    modifier = Modifier.width(44.dp),
-                    textAlign = TextAlign.End,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(Money.format(t.spentCents), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "${Math.round(t.shareOfFood * 100)}%",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Icon(
                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Show ${t.type.label} expenses",

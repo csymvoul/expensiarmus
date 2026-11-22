@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.0 (Android) and web app 1.1.0 – 2026-11-22
+
+### Added
+- **⛽ Fuel** category for petrol (gas), diesel and LPG, nicknamed *Floo Powder*. It sits between Shopping and Other everywhere: chips, chart, goals, search, CSV. Bills stays for household water, electricity and heating gas.
+- **📊 Annals** screen with totals over longer periods. Open it from ⋮ or from "See the whole year in the Annals" under the monthly total.
+  - **By year:** total, your share vs full bills, monthly average, change against the same months of last year (the whole previous year for past years), the number of expenses and the biggest one. A month-by-month bar chart: tap a bar for its total and **Open month ›**. The category pie chart (tap to highlight) and the food breakdown for the year.
+  - **All time:** the same over everything, with a year-by-year bar chart where **Open year ›** jumps to that year.
+  - The monthly average counts from January, or the first month you recorded anything, up to the current month (December for past years).
+- Tests: 16 new Android tests (year and all-time summaries, bar hit-testing, Fuel), 101 in total. 5 new web tests, 25 in total. All passing.
+
+### Changed
+- In the category and food lists, the percentage now sits under the amount, so long names like "Entertainment" fit on narrow phones.
+
 ## Web app 1.0 – 2026-11-22
 
 ### Added

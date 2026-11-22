@@ -6,6 +6,7 @@ export const CATEGORIES = [
   { id: 'ENTERTAINMENT', label: 'Entertainment', hint: 'Food, cinema, theatre, etc.', emoji: '🍽️', nickname: 'Revelry & Feasts', color: '#C8962E' },
   { id: 'BILLS', label: 'Bills', hint: 'Water, electricity, gas, etc.', emoji: '⚡', nickname: 'Lumos, Aguamenti, Incendio', color: '#3A63A8' },
   { id: 'SHOPPING', label: 'Shopping', hint: 'Shoes, clothes, jewellery, etc.', emoji: '🛍️', nickname: 'Diagon Alley', color: '#B5487A' },
+  { id: 'FUEL', label: 'Fuel', hint: 'Petrol (gas), diesel, LPG', emoji: '⛽', nickname: 'Floo Powder', color: '#2E8B8B' },
   { id: 'OTHER', label: 'Other', hint: 'Presents and anything else', emoji: '🎁', nickname: 'Curiosities', color: '#7E5AA6' },
 ];
 

@@ -23,6 +23,7 @@
   --track: #E6D3AA;
   --error: #A31515;
   --warn: #E08A00;
+  --good: #2E5A43;
   --sparkle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 0L6 4 10 5 6 6 5 10 4 6 0 5 4 4Z' fill='%23A87A1E'/%3E%3C/svg%3E");
   --cut: 14px;
   color-scheme: light;
@@ -44,6 +45,7 @@
     --line: rgba(217, 164, 65, 0.3);
     --track: #3A2E22;
     --error: #FF8A80;
+    --good: #8FC9A6;
     --sparkle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 0L6 4 10 5 6 6 5 10 4 6 0 5 4 4Z' fill='%23D9A441'/%3E%3C/svg%3E");
     color-scheme: dark;
   }
@@ -188,7 +190,7 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
 .legend.dim { opacity: 0.55; }
 .legend-row { display: flex; align-items: center; gap: 10px; }
 .legend-goal { display: block; padding: 4px 24px 0 40px; }
-.pct { width: 40px; text-align: right; color: var(--ink-soft); font-size: 14px; }
+.legend .h-small { font-size: 13px; }
 .chev { color: var(--ink-soft); display: grid; }
 .chev svg { width: 18px; height: 18px; }
 .split-head { display: flex; align-items: center; justify-content: space-between; }
@@ -304,3 +306,14 @@ input[type='range'] { width: 100%; accent-color: var(--primary); }
   font-size: 14px; animation: toast 2.6s ease forwards;
 }
 @keyframes toast { 0% { opacity: 0; } 10%, 85% { opacity: 1; } 100% { opacity: 0; } }
+
+/* Annals bar chart */
+.bars svg { width: 100%; height: 150px; display: block; stroke: none; }
+.bars .bar { fill: var(--primary); cursor: pointer; transition: opacity 0.2s; }
+.bars .bar.on { stroke: var(--gold); stroke-width: 1.5; }
+.bars .baseline { stroke: var(--gold); stroke-width: 1.5; }
+.bar-labels { display: flex; margin-top: 4px; }
+.bar-labels span { flex: 1; text-align: center; font-size: 11px; color: var(--ink-soft); }
+.bar-labels span.on { color: var(--primary); font-weight: 700; }
+.up { color: var(--error); }
+.down { color: var(--good); }

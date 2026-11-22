@@ -129,6 +129,7 @@ val Category.color: Color
         Category.ENTERTAINMENT -> Color(0xFFC8962E) // gold
         Category.BILLS -> Color(0xFF3A63A8) // sapphire
         Category.SHOPPING -> Color(0xFFB5487A) // rose quartz
+        Category.FUEL -> Color(0xFF2E8B8B) // aquamarine
         Category.OTHER -> Color(0xFF7E5AA6) // amethyst
     }
 
@@ -140,6 +141,7 @@ val Category.emoji: String
         Category.ENTERTAINMENT -> "🍽️"
         Category.BILLS -> "⚡"
         Category.SHOPPING -> "🛍️"
+        Category.FUEL -> "⛽"
         Category.OTHER -> "🎁"
     }
 
@@ -151,6 +153,7 @@ val Category.nickname: String
         Category.ENTERTAINMENT -> "Revelry & Feasts"
         Category.BILLS -> "Lumos, Aguamenti, Incendio"
         Category.SHOPPING -> "Diagon Alley"
+        Category.FUEL -> "Floo Powder"
         Category.OTHER -> "Curiosities"
     }
 

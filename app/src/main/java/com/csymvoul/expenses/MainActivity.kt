@@ -25,10 +25,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.csymvoul.expenses.domain.ExpenseQueries
 import com.csymvoul.expenses.domain.MonthlySummary
+import com.csymvoul.expenses.domain.PeriodSummary
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.reminder.ReminderScheduler
 import com.csymvoul.expenses.ui.ExpenseViewModel
+import com.csymvoul.expenses.ui.screens.AnnalsScreen
+import com.csymvoul.expenses.ui.screens.AnnalsView
 import com.csymvoul.expenses.ui.screens.CategoryScreen
 import com.csymvoul.expenses.ui.screens.DayDetails
 import com.csymvoul.expenses.ui.screens.EditExpenseScreen
@@ -64,6 +67,7 @@ class MainActivity : ComponentActivity() {
 private const val MONTH = "month"
 private const val GOALS = "goals"
 private const val SEARCH = "search"
+private const val ANNALS = "annals"
 private const val EDIT = "edit:" // + expense id, empty for a new expense
 private const val CATEGORY = "category:" // + category name, optionally + ":" + food type name
 
@@ -74,6 +78,8 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
     var month by rememberSaveable { mutableStateOf(YearMonth.now()) }
     var view by rememberSaveable { mutableStateOf(MonthView.OVERVIEW) }
     var selectedDay by rememberSaveable { mutableStateOf<LocalDate?>(LocalDate.now()) }
+    var annalsView by rememberSaveable { mutableStateOf(AnnalsView.YEAR) }
+    var annalsYear by rememberSaveable { mutableStateOf(LocalDate.now().year) }
     val route = stack.substringAfterLast('|')
 
     fun push(r: String) { stack = "$stack|$r" }
@@ -113,6 +119,32 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                 onSave = { vm.setGoals(it); pop() },
                 onBack = ::pop,
             )
+            route == ANNALS -> {
+                val today = LocalDate.now()
+                val period = remember(data, annalsView, annalsYear) {
+                    if (annalsView == AnnalsView.YEAR) PeriodSummary.year(data, annalsYear, today) else PeriodSummary.allTime(data, today)
+                }
+                AnnalsScreen(
+                    summary = period,
+                    view = annalsView,
+                    year = annalsYear,
+                    today = today,
+                    onViewChange = { annalsView = it },
+                    onPreviousYear = { annalsYear-- },
+                    onNextYear = { annalsYear++ },
+                    onOpenMonth = {
+                        month = it
+                        view = MonthView.OVERVIEW
+                        stack = MONTH
+                    },
+                    onOpenYear = {
+                        annalsYear = it
+                        annalsView = AnnalsView.YEAR
+                    },
+                    onCategory = { c, t -> push(CATEGORY + c.name + (t?.let { ":" + it.name } ?: "")) },
+                    onBack = ::pop,
+                )
+            }
             route == SEARCH -> SearchScreen(
                 expenses = data.expenses,
                 onOpen = { push(EDIT + it) },
@@ -174,6 +206,11 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                     onOpen = { push(EDIT + it) },
                     onCategory = { c, t -> push(CATEGORY + c.name + (t?.let { ":" + it.name } ?: "")) },
                     onSearch = { push(SEARCH) },
+                    onAnnals = {
+                        annalsYear = month.year
+                        annalsView = AnnalsView.YEAR
+                        push(ANNALS)
+                    },
                     onGoals = { push(GOALS) },
                     reminderOn = reminderOn,
                     onToggleReminder = {

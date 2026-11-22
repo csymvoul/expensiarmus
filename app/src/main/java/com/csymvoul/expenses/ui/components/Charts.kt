@@ -1,6 +1,12 @@
 package com.csymvoul.expenses.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -81,6 +87,65 @@ fun DonutChart(
             }
         }
         center()
+    }
+}
+
+/**
+ * Vertical bars with a label under each. Tapping a bar reports its index; the [selected] bar
+ * stays bright and the others fade.
+ */
+@Composable
+fun BarChart(
+    values: List<Long>,
+    labels: List<String>,
+    selected: Int?,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    height: Dp = 150.dp,
+) {
+    val ink = MaterialTheme.colorScheme.primary
+    val gold = MaterialTheme.colorScheme.secondary
+    val max = values.maxOrNull()?.takeIf { it > 0 } ?: 1L
+    Column(modifier.fillMaxWidth()) {
+        Canvas(
+            Modifier
+                .fillMaxWidth()
+                .height(height)
+                .pointerInput(values.size) {
+                    detectTapGestures { tap ->
+                        BarMath.barAt(tap.x, size.width.toFloat(), values.size).takeIf { it >= 0 }?.let(onSelect)
+                    }
+                },
+        ) {
+            val n = values.size
+            if (n == 0) return@Canvas
+            val slot = size.width / n
+            val barWidth = slot * 0.62f
+            val top = 4.dp.toPx()
+            values.forEachIndexed { i, v ->
+                if (v <= 0) return@forEachIndexed
+                val h = v.toFloat() / max * (size.height - top)
+                val topLeft = Offset(i * slot + (slot - barWidth) / 2, size.height - h)
+                val color = if (selected == null || selected == i) ink else ink.copy(alpha = 0.3f)
+                drawRoundRect(color, topLeft, Size(barWidth, h), CornerRadius(3.dp.toPx()))
+                if (selected == i) {
+                    drawRoundRect(gold, topLeft, Size(barWidth, h), CornerRadius(3.dp.toPx()), style = Stroke(1.5.dp.toPx()))
+                }
+            }
+            drawLine(gold, Offset(0f, size.height), Offset(size.width, size.height), 1.5.dp.toPx())
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+            labels.forEachIndexed { i, label ->
+                Text(
+                    label,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (i == selected) ink else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+        }
     }
 }
 

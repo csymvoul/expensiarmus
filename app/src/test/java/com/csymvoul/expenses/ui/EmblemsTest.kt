@@ -27,5 +27,10 @@ class EmblemsTest {
         assertEquals("🛍️", Category.SHOPPING.emoji)
     }
 
+    @Test fun `fuel is floo powder at the pump`() {
+        assertEquals("⛽", Category.FUEL.emoji)
+        assertEquals("Floo Powder", Category.FUEL.nickname)
+    }
+
     @Test fun `entertainment shows food`() = assertEquals("🍽️", Category.ENTERTAINMENT.emoji)
 }

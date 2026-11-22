@@ -4,10 +4,11 @@ A personal, wizard-themed app for tracking monthly spending in euros, for Androi
 
 ## What it does
 
-- **Record expenses** with a date, title, amount (€) and one of six categories: Rent, Super market, Entertainment, Bills, Shopping (shoes, clothes, jewellery…), Other.
+- **Record expenses** with a date, title, amount (€) and one of seven categories: Rent, Super market, Entertainment, Bills, Shopping (shoes, clothes, jewellery…), Fuel (petrol, diesel, LPG), Other.
 - **Food subgroups.** An Entertainment expense can be marked as food: *Delivery*, *Dine out* or *Day-to-day* (e.g. a coffee at work).
 - **Split expenses.** Mark an expense as shared and set your percentage (50-50 by default). Only your share counts toward totals, charts and goals; the full amount is still shown.
 - **Monthly overview.** Total spent, a donut chart and table per category (tap a slice to highlight that category), a food breakdown and the month's ledger. Browse month by month.
+- **Annals.** Totals per year and for all time: a month-by-month or year-by-year bar chart, monthly average, comparison with the previous year, biggest expense, and the category and food breakdowns for the period.
 - **Calendar.** A month grid showing what you spent each day, with busier days in deeper ink. Tap a day to see its expenses.
 - **Category pages.** Tap a category, or a food subgroup, to see all its expenses, grouped by month with monthly totals.
 - **Search.** Find expenses by part of the title, by category or food-type name, and/or by picking categories. Case and Greek accents are ignored.
@@ -28,10 +29,10 @@ The same app also runs as a web app at **https://csymvoul.github.io/expenses-app
 - The reminder is an inexact `AlarmManager` alarm (no exact-alarm permission needed), re-armed after it fires, after a reboot and after clock/time-zone changes.
 - Code layout (`app/src/main/java/com/csymvoul/expenses/`):
   - `model/`: `Expense`, `Category`, `FoodType`, `Goals`, `AppData`
-  - `domain/`: `Money`, `MonthlySummary` / `FoodSummary`, `ExpenseQueries` (calendar, category, search), `Reminder` (timing and text), `CsvExporter`
+  - `domain/`: `Money`, `MonthlySummary` / `FoodSummary`, `PeriodSummary` (year and all time), `ExpenseQueries` (calendar, category, search), `Reminder` (timing and text), `CsvExporter`
   - `data/`: `ExpenseStore` (JSON file)
   - `reminder/`: alarm scheduling and the notification receiver
-  - `ui/`: view model, screens (month, calendar, category, search, add/edit, goals), theme and components
+  - `ui/`: view model, screens (month, calendar, annals, category, search, add/edit, goals), theme and components
 - Unit tests for all of `model/`, `domain/` and `data/` are in `app/src/test/`.
 - The web app (`web/`) is plain HTML, CSS and JavaScript modules with no build step. Its logic (`web/js/model.js`, `money.js`, `summary.js`, `queries.js`, `csv.js`, `store.js`) mirrors the Kotlin code and uses the same data format; `app.js` draws the screens. It stores data in `localStorage` and works offline through a service worker (`web/sw.js`). Its tests run with Node's built-in test runner (`web/test/`).
 - The Cinzel font is licensed under the SIL Open Font License; see [licenses/Cinzel-OFL.txt](licenses/Cinzel-OFL.txt).

@@ -47,3 +47,18 @@ class DonutMathTest {
         assertEquals(1, tap(values, 190f, 100f))
     }
 }
+
+class BarMathTest {
+    @Test fun `taps map to equal slots`() {
+        assertEquals(0, com.csymvoul.expenses.ui.components.BarMath.barAt(0f, 120f, 12))
+        assertEquals(0, com.csymvoul.expenses.ui.components.BarMath.barAt(9.9f, 120f, 12))
+        assertEquals(1, com.csymvoul.expenses.ui.components.BarMath.barAt(10f, 120f, 12))
+        assertEquals(11, com.csymvoul.expenses.ui.components.BarMath.barAt(119f, 120f, 12))
+    }
+
+    @Test fun `taps outside are clamped and empty charts give -1`() {
+        assertEquals(11, com.csymvoul.expenses.ui.components.BarMath.barAt(500f, 120f, 12))
+        assertEquals(0, com.csymvoul.expenses.ui.components.BarMath.barAt(-5f, 120f, 12))
+        assertEquals(-1, com.csymvoul.expenses.ui.components.BarMath.barAt(5f, 120f, 0))
+    }
+}

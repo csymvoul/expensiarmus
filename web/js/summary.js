@@ -64,3 +64,78 @@ export function monthlySummary(data, month) {
     food: foodSummary(inMonth),
   };
 }
+
+const MONTH_LETTERS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+const ym = (date) => date.slice(0, 7);
+const year = (date) => Number(date.slice(0, 4));
+/** Months from start to end inclusive ("2025-03" .. "2026-11" is 21); 0 when end is before start. */
+export function monthsBetween(start, end) {
+  const [sy, sm] = start.split('-').map(Number);
+  const [ey, em] = end.split('-').map(Number);
+  const n = (ey - sy) * 12 + (em - sm) + 1;
+  return n > 0 ? n : 0;
+}
+const maxStr = (...xs) => xs.filter(Boolean).sort().at(-1);
+const minStr = (...xs) => xs.filter(Boolean).sort()[0];
+
+function periodBuild(expenses, monthsCounted, bars, previousTotalCents) {
+  const total = expenses.reduce((s, e) => s + myShareCents(e), 0);
+  let biggest = null;
+  for (const e of expenses) {
+    if (!biggest || myShareCents(e) > myShareCents(biggest) || (myShareCents(e) === myShareCents(biggest) && e.date > biggest.date)) biggest = e;
+  }
+  return {
+    totalCents: total,
+    paidTotalCents: expenses.reduce((s, e) => s + e.amountCents, 0),
+    expenseCount: expenses.length,
+    monthsCounted,
+    averagePerMonthCents: monthsCounted > 0 ? Math.floor((total + Math.floor(monthsCounted / 2)) / monthsCounted) : 0,
+    bars,
+    categories: CATEGORIES.map((c) => {
+      const spent = expenses.filter((e) => e.category === c.id).reduce((s, e) => s + myShareCents(e), 0);
+      return { category: c.id, spentCents: spent, shareOfMonth: total > 0 ? spent / total : 0, goal: null };
+    }),
+    food: foodSummary(expenses),
+    biggest,
+    previousTotalCents,
+    changePercent: previousTotalCents > 0 ? Math.round(((total - previousTotalCents) * 100) / previousTotalCents) : null,
+  };
+}
+
+/**
+ * One calendar year. The average counts the months from January (or the first recorded month)
+ * up to the current month (December for past years). The current year is compared with the same
+ * months of the previous year. `today` is "YYYY-MM-DD".
+ */
+export function yearSummary(data, y, today) {
+  const inYear = data.expenses.filter((e) => year(e.date) === y);
+  const first = data.expenses.length ? minStr(...data.expenses.map((e) => ym(e.date))) : null;
+  const lastInYear = inYear.length ? maxStr(...inYear.map((e) => ym(e.date))) : null;
+  const start = maxStr(`${y}-01`, first);
+  const end = maxStr(minStr(`${y}-12`, ym(today)), lastInYear);
+  const through = y === year(today) ? Number(today.slice(5, 7)) : 12;
+  const hasPrevious = data.expenses.some((e) => year(e.date) === y - 1);
+  const previous = data.expenses
+    .filter((e) => year(e.date) === y - 1 && Number(e.date.slice(5, 7)) <= through)
+    .reduce((s, e) => s + myShareCents(e), 0);
+  const bars = MONTH_LETTERS.map((label, i) => {
+    const month = `${y}-${String(i + 1).padStart(2, '0')}`;
+    return { label, month, cents: inYear.filter((e) => ym(e.date) === month).reduce((s, e) => s + myShareCents(e), 0) };
+  });
+  return periodBuild(inYear, first ? monthsBetween(start, end) : 0, bars, hasPrevious ? previous : null);
+}
+
+/** Everything recorded, with one bar per year from the first year to this year. */
+export function allTimeSummary(data, today) {
+  if (!data.expenses.length) return periodBuild([], 0, [], null);
+  const first = minStr(...data.expenses.map((e) => ym(e.date)));
+  const last = maxStr(...data.expenses.map((e) => ym(e.date)));
+  const years = [];
+  for (let y = year(first); y <= Math.max(year(today), year(last)); y++) years.push(y);
+  const bars = years.map((y) => ({
+    label: years.length > 5 ? `'${String(y % 100).padStart(2, '0')}` : String(y),
+    year: y,
+    cents: data.expenses.filter((e) => year(e.date) === y).reduce((s, e) => s + myShareCents(e), 0),
+  }));
+  return periodBuild(data.expenses, monthsBetween(first, maxStr(ym(today), last)), bars, null);
+}

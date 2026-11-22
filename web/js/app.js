@@ -1,7 +1,7 @@
 // Expensiarmus web app: screens, navigation and event handling. Logic lives in the other modules.
 import { CATEGORIES, FOOD_TYPES, category, foodType, makeExpense, myShareCents, isSplit, upsert, remove, find, monthOf } from './model.js';
 import { parseToCents, format, forInput, compact } from './money.js';
-import { monthlySummary, describeGoal } from './summary.js';
+import { monthlySummary, describeGoal, yearSummary, allTimeSummary } from './summary.js';
 import { dailyTotals, onDay, calendarCells, byCategory, search, shiftMonth } from './queries.js';
 import { toCsv } from './csv.js';
 import { load, save } from './store.js';
@@ -31,6 +31,7 @@ const ui = {
   highlighted: null,
   menu: false,
   modal: false,
+  annals: { view: 'year', year: Number(today().slice(0, 4)), bar: null },
 };
 let draft = null; // the expense being added or edited
 const finder = { q: '', cats: [] };
@@ -123,13 +124,13 @@ function donut(summary) {
     const style = `stroke="${category(c.category).color}" stroke-width="${sel ? thick * 1.4 : thick}" opacity="${ui.highlighted && !sel ? 0.3 : 1}"`;
     let shape;
     if (visible.length === 1) {
-      shape = `<circle cx="${cx}" cy="${cx}" r="${r}" fill="none" ${style} data-action="slice" data-index="${i}"/>`;
+      shape = `<circle cx="${cx}" cy="${cx}" r="${r}" fill="none" ${style} data-action="slice" data-cat="${c.category}"/>`;
     } else {
       const a0 = start + gap / 2;
       const a1 = start + Math.max(sweep - gap / 2, gap / 2 + 0.5);
       const [x0, y0] = pt(a0);
       const [x1, y1] = pt(a1);
-      shape = `<path d="M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}" fill="none" ${style} data-action="slice" data-index="${i}"/>`;
+      shape = `<path d="M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}" fill="none" ${style} data-action="slice" data-cat="${c.category}"/>`;
     }
     start += sweep;
     return shape;
@@ -155,7 +156,8 @@ function totalCard(s) {
     <h3 class="h-small">Gold spent this month</h3>
     <p class="total">${format(s.totalCents)}</p>
     ${s.paidTotalCents !== s.totalCents ? `<p class="small soft">Your share. Full bills came to ${format(s.paidTotalCents)}.</p>` : ''}
-    ${goal}`);
+    ${goal}
+    <button class="link" data-action="annals">📊 See the whole year in the Annals</button>`);
 }
 
 function breakdownCard(s) {
@@ -166,7 +168,7 @@ function breakdownCard(s) {
       <span class="legend-row">
         ${emblem(cat.emoji, cat.color)}
         <span class="row-main"><span class="h-small">${esc(cat.label)}</span><span class="row-sub italic">${esc(cat.nickname)}</span></span>
-        <b>${format(c.spentCents)}</b><span class="pct">${Math.round(c.shareOfMonth * 100)}%</span><span class="chev">${ICON.right}</span>
+        <span class="row-amount"><b>${format(c.spentCents)}</b><small>${Math.round(c.shareOfMonth * 100)}%</small></span><span class="chev">${ICON.right}</span>
       </span>
       ${c.goal ? `<span class="legend-goal">${goalBar(c.goal, true)}<span class="small soft">${esc(describeGoal(c.goal))}</span></span>` : ''}
     </button>`;
@@ -186,7 +188,7 @@ function foodCard(food) {
     return `<button class="legend" data-action="category" data-cat="ENTERTAINMENT" data-food="${f.id}"><span class="legend-row">
       ${emblem(f.emoji, f.color)}
       <span class="row-main"><span class="h-small">${f.label}</span><span class="row-sub">${f.nickname} · ${t.count === 1 ? '1 time' : `${t.count} times`}</span></span>
-      <b>${format(t.spentCents)}</b><span class="pct">${Math.round(t.shareOfFood * 100)}%</span><span class="chev">${ICON.right}</span>
+      <span class="row-amount"><b>${format(t.spentCents)}</b><small>${Math.round(t.shareOfFood * 100)}%</small></span><span class="chev">${ICON.right}</span>
     </span></button>`;
   });
   return card(`
@@ -228,6 +230,7 @@ function monthScreen() {
   const s = monthlySummary(data, ui.month);
   const menu = ui.menu
     ? `<div class="menu">
+        <button data-action="annals">📊 Annals · year &amp; all-time totals</button>
         <button data-action="go" data-to="#/goals">🛡 Protego · monthly goals</button>
         <button data-action="go" data-to="#/owl">🦉 Owl reminder at 21:30</button>
         <button data-action="export">📜 Geminio · export CSV</button>
@@ -482,6 +485,72 @@ function owlScreen() {
   </main>`;
 }
 
+// ---------- annals ----------
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** Vertical bars; tapping one selects it. */
+function barChart(bars, selected) {
+  const w = 300;
+  const h = 150;
+  const slot = w / bars.length;
+  const bw = slot * 0.62;
+  const max = Math.max(1, ...bars.map((b) => b.cents));
+  const rects = bars.map((b, i) => {
+    const bh = b.cents > 0 ? Math.max(2, (b.cents / max) * (h - 4)) : 0;
+    const dim = selected != null && selected !== i;
+    return `<rect x="${i * slot}" y="0" width="${slot}" height="${h}" fill="transparent" stroke="none" data-action="bar" data-index="${i}"/>
+      ${bh ? `<rect class="bar ${selected === i ? 'on' : ''}" x="${(i * slot + (slot - bw) / 2).toFixed(1)}" y="${(h - bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" opacity="${dim ? 0.3 : 1}" data-action="bar" data-index="${i}"/>` : ''}`;
+  });
+  return `<div class="bars">
+    <svg viewBox="0 0 ${w} ${h + 2}" preserveAspectRatio="none">${rects.join('')}<line x1="0" y1="${h + 1}" x2="${w}" y2="${h + 1}" class="baseline"/></svg>
+    <div class="bar-labels">${bars.map((b, i) => `<span class="${selected === i ? 'on' : ''}">${esc(b.label)}</span>`).join('')}</div>
+  </div>`;
+}
+
+function annalsScreen() {
+  const a = ui.annals;
+  const t = today();
+  const s = a.view === 'year' ? yearSummary(data, a.year, t) : allTimeSummary(data, t);
+  const bar = a.bar != null ? s.bars[a.bar] : null;
+  const barInfo = bar
+    ? `<div class="split-head"><span class="h-small">${bar.month ? monthTitle(bar.month) : bar.year}: ${format(bar.cents)}</span>
+        <button class="link" data-action="${bar.month ? 'open-month' : 'open-year'}" data-month="${bar.month ?? ''}" data-year="${bar.year ?? ''}">${bar.month ? 'Open month ›' : 'Open year ›'}</button></div>`
+    : '<p class="small soft">Tap a bar to see its total.</p>';
+  let change = '';
+  if (s.changePercent != null) {
+    const span = a.year === Number(t.slice(0, 4)) ? `Jan–${MONTH_NAMES[Number(t.slice(5, 7)) - 1]} ${a.year - 1}` : String(a.year - 1);
+    change = s.changePercent > 0
+      ? `<p class="up">▲ ${s.changePercent}% more than ${span}</p>`
+      : s.changePercent < 0 ? `<p class="down">▼ ${-s.changePercent}% less than ${span}</p>` : `<p>Same as ${span}</p>`;
+  }
+  const facts = [s.expenseCount === 1 ? '1 expense' : `${s.expenseCount} expenses`,
+    s.biggest ? `biggest: ${s.biggest.title}, ${format(myShareCents(s.biggest))}` : ''].filter(Boolean).join(' · ');
+  return `${header('📊 Annals', { backBtn: true })}
+  <main>
+    <div class="segmented">
+      <button class="${a.view === 'year' ? 'on' : ''}" data-action="annals-view" data-view="year">📅 By year</button>
+      <button class="${a.view === 'all' ? 'on' : ''}" data-action="annals-view" data-view="all">✦ All time</button>
+    </div>
+    ${a.view === 'year' ? `<div class="month-switch">
+      <button class="icon-btn gold" data-action="prev-year" aria-label="Previous year">${ICON.left}</button>
+      <h2 class="h-large">${a.year}</h2>
+      <button class="icon-btn gold" data-action="next-year" aria-label="Next year">${ICON.right}</button>
+    </div>` : ''}
+    ${card(`
+      <h3 class="h-small">${a.view === 'year' ? `Gold spent in ${a.year}` : 'Gold spent, all time'}</h3>
+      <p class="total">${format(s.totalCents)}</p>
+      ${s.paidTotalCents !== s.totalCents ? `<p class="small soft">Your share. Full bills came to ${format(s.paidTotalCents)}.</p>` : ''}
+      ${s.monthsCounted > 0 ? `<p>Monthly average: ${format(s.averagePerMonthCents)} over ${s.monthsCounted === 1 ? '1 month' : `${s.monthsCounted} months`}</p>` : ''}
+      ${change}
+      <p class="small soft">${esc(facts)}</p>`)}
+    ${card(`<h3 class="h-medium">${a.view === 'year' ? 'Month by month' : 'Year by year'}</h3>
+      ${s.bars.length ? barChart(s.bars, a.bar) + barInfo : '<p class="soft">Nothing recorded yet.</p>'}`)}
+    ${breakdownCard(s)}
+    ${s.food.totalCents > 0 ? foodCard(s.food) : ''}
+  </main>`;
+}
+
 // ---------- CSV export ----------
 
 async function exportCsv() {
@@ -517,12 +586,15 @@ function render() {
     ui.modal = false;
   }
   if (r.name !== 'month') ui.menu = false;
+  if (r.name !== ui.lastScreen && (r.name === 'month' || r.name === 'annals')) ui.highlighted = null;
+  ui.lastScreen = r.name;
   switch (r.name) {
     case 'edit': app.innerHTML = editScreen(r.a); break;
     case 'category': app.innerHTML = categoryScreen(r.a, r.b); break;
     case 'search': app.innerHTML = searchScreen(); break;
     case 'goals': app.innerHTML = goalsScreen(); break;
     case 'owl': app.innerHTML = owlScreen(); break;
+    case 'annals': app.innerHTML = annalsScreen(); break;
     default: app.innerHTML = monthScreen();
   }
   if (r.name === 'goals') checkGoals();
@@ -536,11 +608,23 @@ const actions = {
   'next-month': () => { ui.month = shiftMonth(ui.month, 1); ui.highlighted = null; render(); },
   view: (el) => { ui.view = el.dataset.view; render(); },
   slice: (el) => {
-    const c = monthlySummary(data, ui.month).categories[Number(el.dataset.index)].category;
+    const c = el.dataset.cat;
     ui.highlighted = ui.highlighted === c ? null : c;
     render();
   },
   'slice-clear': () => { ui.highlighted = null; render(); },
+  annals: () => {
+    ui.menu = false;
+    ui.annals = { view: 'year', year: Number(ui.month.slice(0, 4)), bar: null };
+    ui.highlighted = null;
+    go('#/annals');
+  },
+  'annals-view': (el) => { ui.annals = { ...ui.annals, view: el.dataset.view, bar: null }; ui.highlighted = null; render(); },
+  'prev-year': () => { ui.annals = { ...ui.annals, year: ui.annals.year - 1, bar: null }; ui.highlighted = null; render(); },
+  'next-year': () => { ui.annals = { ...ui.annals, year: ui.annals.year + 1, bar: null }; ui.highlighted = null; render(); },
+  bar: (el) => { const i = Number(el.dataset.index); ui.annals = { ...ui.annals, bar: ui.annals.bar === i ? null : i }; render(); },
+  'open-month': (el) => { ui.month = el.dataset.month; ui.view = 'overview'; ui.highlighted = null; navDepth = 0; location.hash = '#/'; },
+  'open-year': (el) => { ui.annals = { view: 'year', year: Number(el.dataset.year), bar: null }; ui.highlighted = null; render(); },
   day: (el) => { ui.day = el.dataset.day; render(); },
   category: (el) => go(`#/category/${el.dataset.cat}${el.dataset.food ? `/${el.dataset.food}` : ''}`),
   'cat-food': (el) => location.replace(`#/category/${route().a}${el.dataset.food ? `/${el.dataset.food}` : ''}`),

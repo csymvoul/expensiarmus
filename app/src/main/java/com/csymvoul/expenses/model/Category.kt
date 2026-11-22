@@ -6,6 +6,7 @@ enum class Category(val label: String, val hint: String) {
     ENTERTAINMENT("Entertainment", "Food, cinema, theatre, etc."),
     BILLS("Bills", "Water, electricity, gas, etc."),
     SHOPPING("Shopping", "Shoes, clothes, jewellery, etc."),
+    FUEL("Fuel", "Petrol (gas), diesel, LPG"),
     OTHER("Other", "Presents and anything else"),
 }
 

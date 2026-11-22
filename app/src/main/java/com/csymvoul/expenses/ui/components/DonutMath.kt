@@ -28,3 +28,10 @@ object DonutMath {
         return values.indexOfLast { it > 0f }
     }
 }
+
+/** Geometry for [BarChart]. */
+object BarMath {
+    /** Index of the bar under a tap at [x] on a chart [width] wide with [count] equal slots. */
+    fun barAt(x: Float, width: Float, count: Int): Int =
+        if (count <= 0 || width <= 0f) -1 else (x / (width / count)).toInt().coerceIn(0, count - 1)
+}

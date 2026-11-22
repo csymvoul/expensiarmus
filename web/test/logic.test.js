@@ -31,7 +31,7 @@ test('invalid expenses are rejected', () => {
 });
 
 test('categories and food types match the Android app', () => {
-  assert.deepEqual(CATEGORIES.map((c) => c.id), ['RENT', 'SUPERMARKET', 'ENTERTAINMENT', 'BILLS', 'SHOPPING', 'OTHER']);
+  assert.deepEqual(CATEGORIES.map((c) => c.id), ['RENT', 'SUPERMARKET', 'ENTERTAINMENT', 'BILLS', 'SHOPPING', 'FUEL', 'OTHER']);
   assert.deepEqual(FOOD_TYPES.map((f) => f.id), ['DELIVERY', 'DINE_OUT', 'DAY_TO_DAY']);
   assert.equal(new Set(CATEGORIES.map((c) => c.emoji)).size, CATEGORIES.length);
   assert.equal(CATEGORIES.find((c) => c.id === 'SHOPPING').emoji, '🛍️');
@@ -217,4 +217,81 @@ test('Android export JSON shape loads (foodType missing)', () => {
   const d = load(s);
   assert.equal(d.expenses[0].foodType, null);
   assert.equal(d.goals.perCategoryCents.RENT, 1);
+});
+
+// --- fuel and annals ---
+
+import { yearSummary, allTimeSummary, monthsBetween } from '../js/summary.js';
+
+test('fuel category sits between shopping and other', () => {
+  const ids = CATEGORIES.map((c) => c.id);
+  assert.deepEqual(ids.slice(-3), ['SHOPPING', 'FUEL', 'OTHER']);
+  assert.equal(CATEGORIES.find((c) => c.id === 'FUEL').emoji, '⛽');
+  assert.throws(() => makeExpense({ id: 'f', date: '2026-11-01', title: 'Diesel', amountCents: 6000, category: 'FUEL', foodType: 'DELIVERY' }));
+});
+
+const today = '2026-11-22';
+const annals = {
+  expenses: [
+    e('2025-03-10', 10000, 'RENT'),
+    e('2025-12-01', 50000, 'RENT'),
+    e('2026-01-05', 60000, 'RENT'),
+    e('2026-01-20', 4000, 'FUEL'),
+    e('2026-03-02', 6000, 'FUEL', 50),
+    e('2026-11-21', 2000, 'ENTERTAINMENT', 100, 'DINE_OUT'),
+  ],
+  goals: {},
+};
+
+test('months between', () => {
+  assert.equal(monthsBetween('2025-03', '2026-11'), 21);
+  assert.equal(monthsBetween('2026-01', '2026-01'), 1);
+  assert.equal(monthsBetween('2026-05', '2026-01'), 0);
+});
+
+test('year summary matches the Android app', () => {
+  const y = yearSummary(annals, 2026, today);
+  assert.equal(y.totalCents, 69000);
+  assert.equal(y.paidTotalCents, 72000);
+  assert.equal(y.expenseCount, 4);
+  assert.equal(y.bars.length, 12);
+  assert.deepEqual(y.bars.map((b) => b.label).join(''), 'JFMAMJJASOND');
+  assert.equal(y.bars[0].cents, 64000);
+  assert.equal(y.bars[2].cents, 3000);
+  assert.equal(y.bars.reduce((s, b) => s + b.cents, 0), y.totalCents);
+  assert.equal(y.monthsCounted, 11);
+  assert.equal(y.averagePerMonthCents, Math.floor((69000 + 5) / 11));
+  assert.equal(y.previousTotalCents, 10000);
+  assert.equal(y.changePercent, 590);
+  assert.equal(y.biggest.amountCents, 60000);
+  assert.equal(y.categories.find((c) => c.category === 'FUEL').spentCents, 7000);
+  assert.equal(y.food.totalCents, 2000);
+});
+
+test('first, past, future and empty years', () => {
+  assert.equal(yearSummary(annals, 2025, today).monthsCounted, 10);
+  assert.equal(yearSummary(annals, 2025, today).changePercent, null);
+  const withOld = { ...annals, expenses: [...annals.expenses, e('2024-12-31', 30000, 'OTHER')] };
+  assert.equal(yearSummary(withOld, 2025, today).previousTotalCents, 30000);
+  assert.equal(yearSummary(withOld, 2025, today).changePercent, 100);
+  const future = yearSummary(annals, 2027, today);
+  assert.equal(future.totalCents, 0);
+  assert.equal(future.monthsCounted, 0);
+  assert.equal(future.biggest, null);
+  assert.equal(yearSummary({ expenses: [], goals: {} }, 2026, today).monthsCounted, 0);
+});
+
+test('all-time summary', () => {
+  const all = allTimeSummary(annals, today);
+  assert.deepEqual(all.bars.map((b) => b.label), ['2025', '2026']);
+  assert.deepEqual(all.bars.map((b) => b.cents), [60000, 69000]);
+  assert.equal(all.totalCents, 129000);
+  assert.equal(all.monthsCounted, 21);
+  assert.equal(all.changePercent, null);
+  const old = { ...annals, expenses: [...annals.expenses, e('2019-06-01', 100, 'OTHER')] };
+  assert.equal(allTimeSummary(old, today).bars[0].label, "'19");
+  assert.equal(allTimeSummary(old, today).bars.length, 8);
+  const empty = allTimeSummary({ expenses: [], goals: {} }, today);
+  assert.deepEqual(empty.bars, []);
+  assert.equal(empty.totalCents, 0);
 });
