@@ -1,5 +1,22 @@
 # Changelog
 
+## Web app 1.0 – 2026-11-22
+
+### Added
+- Expensiarmus as a web app for iPhone (and any browser), published with GitHub Pages at https://csymvoul.github.io/expenses-app/ and installable with Safari's **Add to Home Screen**.
+- Same features as Android 1.2.2: expenses with splits and food subgroups, monthly overview with a tappable donut chart, calendar, category pages, Accio search, Protego goals, CSV export (through the iPhone share sheet), the wizard look in light and dark mode, and the same icon.
+- Works offline through a service worker. Data stays on the phone in the same format as the Android app.
+- 🦉 Owl reminder screen explaining how to set a daily 21:30 reminder in the iPhone Reminders app, plus an in-app owl banner after 21:00 when nothing has been recorded that day.
+- GitHub Actions workflow that runs the web tests and deploys `web/` to GitHub Pages on every push to `main`.
+- 20 JavaScript unit tests ported from the Kotlin tests (money, splits, summaries, goals, food, calendar, category pages, search, CSV, storage), all passing.
+- Checked in a browser at iPhone size, light and dark: all screens, tapping a slice, recording, searching, goals and deleting.
+
+### Known issues / not yet done
+- No real scheduled notification on iPhone. Web apps can't schedule local notifications, hence the Reminders workaround.
+- Nothing syncs between phones, and there is no import yet: an Android CSV can't be loaded into the web app.
+- The offline worker couldn't be run in the test browser (it doesn't support service workers). It was checked for syntax and its cached file list, but offline use is still to be confirmed on the iPhone.
+- Two codebases: features added to the Android app need adding to `web/` as well.
+
 ## 1.2.2 – 2026-11-22
 
 ### Changed

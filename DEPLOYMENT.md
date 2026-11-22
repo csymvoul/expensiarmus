@@ -45,3 +45,34 @@ For a new version, increase `versionCode` (and `versionName`) in `app/build.grad
 ## Updating
 
 Build with a higher `versionCode` and the same key, then install the new APK the same way. Your data is kept.
+
+## Web app (iPhone)
+
+The web app in `web/` is published to GitHub Pages at https://csymvoul.github.io/expenses-app/ by the workflow `.github/workflows/pages.yml`. Every push to `main` that changes `web/` runs the tests and then deploys. It can also be started by hand from the repository's **Actions** tab ("Deploy web app to GitHub Pages" → Run workflow).
+
+One-time setup (already done): in the repository's **Settings → Pages**, the source is **GitHub Actions**.
+
+### Run it locally
+
+```bash
+cd web && npm test
+```
+
+```bash
+python3 -m http.server 8642 --directory web
+```
+
+Then open http://127.0.0.1:8642/.
+
+### Releasing a change
+
+When you change any file in `web/`, also bump `VERSION` in `web/sw.js` (for example `expensiarmus-web-1.0.1`). Phones then drop the old offline copy. Installed apps pick up a new version the second time they are opened after the deploy: the first launch downloads it in the background.
+
+### Install on an iPhone
+
+1. Open https://csymvoul.github.io/expenses-app/ in **Safari**. Other browsers can't add web apps to the home screen on all iOS versions.
+2. Tap **Share** → **Add to Home Screen** → **Add**.
+3. Open Expensiarmus from the home screen.
+4. For the 21:30 reminder, follow the app's ⋮ → 🦉 Owl reminder screen. It sets up a daily reminder in the iPhone Reminders app.
+
+Data is stored on the phone only. Use ⋮ → 📜 Geminio · export CSV from time to time as a backup.
