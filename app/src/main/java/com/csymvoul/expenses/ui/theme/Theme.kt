@@ -81,34 +81,42 @@ private val Night = darkColorScheme(
     onError = Color(0xFF5C0000),
 )
 
-private fun TextStyle.heading() = copy(fontFamily = Cinzel, fontWeight = FontWeight.SemiBold)
 private fun TextStyle.body() = copy(fontFamily = FontFamily.Serif)
 
 private val base = Typography()
-private val WizardTypography = Typography(
-    displayLarge = base.displayLarge.heading(),
-    displayMedium = base.displayMedium.heading(),
-    displaySmall = base.displaySmall.heading(),
-    headlineLarge = base.headlineLarge.heading().copy(fontWeight = FontWeight.Bold),
-    headlineMedium = base.headlineMedium.heading(),
-    headlineSmall = base.headlineSmall.heading(),
-    titleLarge = base.titleLarge.heading().copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-    titleMedium = base.titleMedium.heading(),
-    titleSmall = base.titleSmall.heading(),
-    bodyLarge = base.bodyLarge.body(),
-    bodyMedium = base.bodyMedium.body(),
-    bodySmall = base.bodySmall.body(),
-    labelLarge = base.labelLarge.body(),
-    labelMedium = base.labelMedium.body(),
-    labelSmall = base.labelSmall.body(),
-)
+
+/**
+ * Cinzel headings in [heading] colour (gold at night, burgundy on parchment) so titles stand
+ * out from body text; body and labels stay serif in the surrounding content colour.
+ */
+internal fun wizardTypography(heading: Color): Typography {
+    fun TextStyle.heading() = copy(fontFamily = Cinzel, fontWeight = FontWeight.SemiBold, color = heading)
+    return Typography(
+        displayLarge = base.displayLarge.heading(),
+        displayMedium = base.displayMedium.heading(),
+        displaySmall = base.displaySmall.heading(),
+        headlineLarge = base.headlineLarge.heading().copy(fontWeight = FontWeight.Bold),
+        headlineMedium = base.headlineMedium.heading(),
+        headlineSmall = base.headlineSmall.heading(),
+        titleLarge = base.titleLarge.heading().copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+        titleMedium = base.titleMedium.heading(),
+        titleSmall = base.titleSmall.heading(),
+        bodyLarge = base.bodyLarge.body(),
+        bodyMedium = base.bodyMedium.body(),
+        bodySmall = base.bodySmall.body(),
+        labelLarge = base.labelLarge.body(),
+        labelMedium = base.labelMedium.body(),
+        labelSmall = base.labelSmall.body(),
+    )
+}
 
 /** Parchment by day, castle by night: follows the phone's light/dark setting. */
 @Composable
 fun ExpensesTheme(content: @Composable () -> Unit) {
+    val scheme = if (isSystemInDarkTheme()) Night else Parchment
     MaterialTheme(
-        colorScheme = if (isSystemInDarkTheme()) Night else Parchment,
-        typography = WizardTypography,
+        colorScheme = scheme,
+        typography = wizardTypography(heading = scheme.primary),
         content = content,
     )
 }

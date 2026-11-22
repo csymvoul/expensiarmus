@@ -108,6 +108,7 @@ fun MonthScreen(
     var menuOpen by remember { mutableStateOf(false) }
     Scaffold(
         containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground, // a transparent scaffold would otherwise default to black text
         topBar = {
             WizardTopBar(
                 title = "Expensiarmus",
@@ -233,7 +234,11 @@ private fun Hint(text: String) {
 private fun MonthSwitcher(summary: MonthlySummary, onPrevious: () -> Unit, onNext: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onPrevious) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous month")
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = "Previous month",
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
         Text(
             summary.month.format(monthFormat),
@@ -242,7 +247,11 @@ private fun MonthSwitcher(summary: MonthlySummary, onPrevious: () -> Unit, onNex
             textAlign = TextAlign.Center,
         )
         IconButton(onClick = onNext) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month")
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "Next month",
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }
@@ -250,7 +259,7 @@ private fun MonthSwitcher(summary: MonthlySummary, onPrevious: () -> Unit, onNex
 @Composable
 private fun TotalCard(summary: MonthlySummary, onGoals: () -> Unit) {
     ParchmentCard(spacing = Arrangement.spacedBy(4.dp)) {
-        Text("Gold spent this month", style = MaterialTheme.typography.labelLarge)
+        Text("Gold spent this month", style = MaterialTheme.typography.titleSmall)
         Text(
             Money.format(summary.totalCents),
             style = MaterialTheme.typography.headlineLarge,
@@ -288,7 +297,7 @@ private fun BreakdownCard(summary: MonthlySummary, onCategory: (Category, FoodTy
                 modifier = Modifier.size(180.dp).align(Alignment.CenterHorizontally),
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("✦ Total ✦", style = MaterialTheme.typography.labelMedium)
+                    Text("✦ Total ✦", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     Text(
                         Money.format(summary.totalCents),
                         style = MaterialTheme.typography.titleMedium,
@@ -311,7 +320,7 @@ private fun BreakdownCard(summary: MonthlySummary, onCategory: (Category, FoodTy
                     EmblemBadge(c.category.emoji, c.category.color, size = 30.dp)
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(c.category.label)
+                        Text(c.category.label, style = MaterialTheme.typography.titleSmall)
                         Text(
                             c.category.nickname,
                             style = MaterialTheme.typography.bodySmall,
@@ -386,7 +395,7 @@ private fun FoodCard(food: FoodSummary, onFoodType: (FoodType) -> Unit) {
                 EmblemBadge(t.type.emoji, t.type.color, size = 30.dp)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(t.type.label)
+                    Text(t.type.label, style = MaterialTheme.typography.titleSmall)
                     Text(
                         t.type.nickname + " · " + if (t.count == 1) "1 time" else "${t.count} times",
                         style = MaterialTheme.typography.bodySmall,

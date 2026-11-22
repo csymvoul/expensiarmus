@@ -54,6 +54,7 @@ fun GoalsScreen(goals: Goals, onSave: (Goals) -> Unit, onBack: () -> Unit) {
 
     Scaffold(
         containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground, // a transparent scaffold would otherwise default to black text
         topBar = {
             WizardTopBar(
                 title = "Protego · Goals",

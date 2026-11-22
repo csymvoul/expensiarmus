@@ -59,6 +59,7 @@ fun CategoryScreen(
 ) {
     Scaffold(
         containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground, // a transparent scaffold would otherwise default to black text
         topBar = {
             WizardTopBar(
                 title = "${category.emoji} ${category.label}",

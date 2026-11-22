@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.1 – 2026-11-22
+
+### Fixed
+- Dark theme: the month name, the < > arrows, the chart total, card titles and category names showed in black and were hard to read. The transparent screen backgrounds added in 1.2 made the default text colour fall back to black. Text now uses the theme's colours again.
+
+### Changed
+- Headings, the month arrows, the chart total and category and food names are gold in dark mode and burgundy in light mode.
+- 2 new unit tests check that headings carry the heading colour and body text doesn't. 77 in total, all passing.
+
 ## 1.2 – 2026-11-22
 
 ### Changed

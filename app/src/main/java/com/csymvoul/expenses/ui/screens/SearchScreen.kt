@@ -58,6 +58,7 @@ fun SearchScreen(expenses: List<Expense>, onOpen: (String) -> Unit, onBack: () -
 
     Scaffold(
         containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground, // a transparent scaffold would otherwise default to black text
         topBar = {
             WizardTopBar(
                 title = "Accio",
