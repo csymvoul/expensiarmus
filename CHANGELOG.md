@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.1 (Android), web app 1.3.1 and iPhone app 1.1.1 – unreleased (2026-11-22)
+
+### Removed
+- The ‹ › arrows and the swipe on the calendar card, added in 1.4.0. The month switcher at the top of the screen already moves the calendar through months.
+
 ## 1.4.0 (Android), web app 1.3.0 and iPhone app 1.1.0 – unreleased (2026-11-22)
 
 ### Changed

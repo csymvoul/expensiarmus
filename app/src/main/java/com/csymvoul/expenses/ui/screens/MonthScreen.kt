@@ -3,8 +3,6 @@ package com.csymvoul.expenses.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -85,9 +83,6 @@ private val monthFormat = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLIS
 private val longDayFormat = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ENGLISH)
 
 enum class MonthView { OVERVIEW, CALENDAR }
-
-/** How far a horizontal swipe on the calendar must travel to change month. */
-private const val SWIPE_PX = 120f
 
 /** What the calendar shows below the grid. */
 data class DayDetails(
@@ -214,43 +209,7 @@ fun MonthScreen(
                 }
                 MonthView.CALENDAR -> {
                     item {
-                        ParchmentCard(
-                            // Swipe left for the next month, right for the previous one.
-                            Modifier.pointerInput(summary.month) {
-                                var dragged = 0f
-                                detectHorizontalDragGestures(
-                                    onDragStart = { dragged = 0f },
-                                    onDragEnd = {
-                                        when {
-                                            dragged < -SWIPE_PX -> onNextMonth()
-                                            dragged > SWIPE_PX -> onPreviousMonth()
-                                        }
-                                    },
-                                ) { _, dx -> dragged += dx }
-                            },
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = onPreviousMonth) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                        contentDescription = "Previous month",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                                Text(
-                                    summary.month.format(monthFormat),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.weight(1f),
-                                    textAlign = TextAlign.Center,
-                                )
-                                IconButton(onClick = onNextMonth) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                        contentDescription = "Next month",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            }
+                        ParchmentCard {
                             CalendarGrid(summary.month, days.totals, days.selected, onSelectDay)
                         }
                     }

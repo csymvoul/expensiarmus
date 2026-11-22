@@ -10,7 +10,7 @@ A personal, wizard-themed app for tracking monthly spending in euros: a native A
 - **Expense view.** Tapping an expense shows it read-only (amounts, date, category, food type, split); Amend opens the edit form.
 - **Monthly overview.** Total spent, a donut chart and table per category (tap a slice to highlight that category), a food breakdown and the month's ledger. Browse month by month.
 - **Annals.** Totals per year and for all time: a month-by-month or year-by-year bar chart, monthly average, comparison with the previous year, biggest expense, and the category and food breakdowns for the period.
-- **Calendar.** A month grid showing what you spent each day, with busier days in deeper ink. Move through months with the arrows or by swiping. Tap a day to see its expenses.
+- **Calendar.** A month grid showing what you spent each day, with busier days in deeper ink. Move through months with the month switcher at the top. Tap a day to see its expenses.
 - **Category pages.** Tap a category, or a food subgroup, to see all its expenses, grouped by month with monthly totals.
 - **Search.** Find expenses by part of the title, by category or food-type name, and/or by picking categories. Case and Greek accents are ignored.
 - **Goals.** An overall monthly goal and an optional Entertainment goal, with progress bars that turn amber at 80% and red when over.

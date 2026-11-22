@@ -225,12 +225,7 @@ function calendarCard() {
     return `<button class="${cls}" style="--heat:${heat.toFixed(2)}" data-action="day" data-day="${d}">
       <span>${Number(d.slice(8))}</span>${spent > 0 ? `<small>${compact(spent)}</small>` : ''}</button>`;
   });
-  return card(`<div class="cal-head">
-      <button class="icon-btn gold" data-action="prev-month" aria-label="Previous month">${ICON.left}</button>
-      <span class="h-medium">${monthTitle(ui.month)}</span>
-      <button class="icon-btn gold" data-action="next-month" aria-label="Next month">${ICON.right}</button>
-    </div>
-    <div class="cal" data-swipe="month">${['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((w) => `<span class="wd">${w}</span>`).join('')}${cells.join('')}</div>`);
+  return card(`<div class="cal">${['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((w) => `<span class="wd">${w}</span>`).join('')}${cells.join('')}</div>`);
 }
 
 function owlBanner() {
@@ -761,19 +756,6 @@ app.addEventListener('change', (ev) => {
   if (ev.target.matches('[data-input="edit-split"], [data-input="edit-date"], [data-input="owl-toggle"]')) onInput(ev);
 });
 window.addEventListener('hashchange', render);
-
-// Swipe left/right on the calendar to change month.
-let swipeX = null;
-app.addEventListener('touchstart', (ev) => { swipeX = ev.target.closest('[data-swipe="month"]') ? ev.touches[0].clientX : null; }, { passive: true });
-app.addEventListener('touchend', (ev) => {
-  if (swipeX == null) return;
-  const dx = ev.changedTouches[0].clientX - swipeX;
-  swipeX = null;
-  if (Math.abs(dx) < 60) return;
-  ui.month = shiftMonth(ui.month, dx < 0 ? 1 : -1);
-  ui.highlighted = null;
-  render();
-});
 
 navigator.storage?.persist?.();
 if (!nativeBridge && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
