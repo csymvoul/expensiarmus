@@ -7,14 +7,14 @@ A personal, wizard-themed Android app for tracking monthly spending in euros. Th
 - **Record expenses** with a date, title, amount (€) and one of six categories: Rent, Super market, Entertainment, Bills, Shopping (shoes, clothes, jewellery…), Other.
 - **Food subgroups.** An Entertainment expense can be marked as food: *Delivery*, *Dine out* or *Day-to-day* (e.g. a coffee at work).
 - **Split expenses.** Mark an expense as shared and set your percentage (50-50 by default). Only your share counts toward totals, charts and goals; the full amount is still shown.
-- **Monthly overview.** Total spent, a donut chart and table per category, a food breakdown and the month's ledger. Browse month by month.
+- **Monthly overview.** Total spent, a donut chart and table per category (tap a slice to highlight that category), a food breakdown and the month's ledger. Browse month by month.
 - **Calendar.** A month grid showing what you spent each day, with busier days in deeper ink. Tap a day to see its expenses.
 - **Category pages.** Tap a category, or a food subgroup, to see all its expenses, grouped by month with monthly totals.
 - **Search.** Find expenses by part of the title, by category or food-type name, and/or by picking categories. Case and Greek accents are ignored.
 - **Goals.** An overall monthly goal and optional per-category goals, with progress bars that turn amber at 80% and red when over.
 - **Evening reminder.** A notification at about 21:30 each day reminds you to record the day's expenses and shows what you've recorded so far. Tap it to go straight to "Record expense". It can be turned off from the ⋮ menu.
 - **CSV export** of all expenses for backup or analysis.
-- **Wizard look:** parchment, burgundy and gold by day; a candle-lit castle theme in dark mode. Cards are framed in gold with corner sparkles, headings use the Cinzel font, and each category has an emblem and a wizarding nickname (💎 Shopping is *Diagon Alley*). The wording is full of spells: Accio to search, Protego for goals, Evanesco to delete.
+- **Wizard look:** parchment, burgundy and gold by day; a candle-lit castle theme in dark mode. Cards are framed in gold with corner sparkles, headings use the Cinzel font, and each category has an emblem and a wizarding nickname (🛍️ Shopping is *Diagon Alley*). The wording is full of spells: Accio to search, Protego for goals, Evanesco to delete.
 
 ## How it works
 

@@ -22,5 +22,10 @@ class EmblemsTest {
         assertEquals(FoodType.entries.size, FoodType.entries.map { it.nickname }.toSet().size)
     }
 
-    @Test fun `shopping is diagon alley`() = assertEquals("Diagon Alley", Category.SHOPPING.nickname)
+    @Test fun `shopping is diagon alley with a shopping bag`() {
+        assertEquals("Diagon Alley", Category.SHOPPING.nickname)
+        assertEquals("🛍️", Category.SHOPPING.emoji)
+    }
+
+    @Test fun `entertainment shows food`() = assertEquals("🍽️", Category.ENTERTAINMENT.emoji)
 }

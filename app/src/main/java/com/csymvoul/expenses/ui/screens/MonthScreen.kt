@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.csymvoul.expenses.domain.FoodSummary
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.domain.MonthlySummary
@@ -289,20 +290,37 @@ private fun TotalCard(summary: MonthlySummary, onGoals: () -> Unit) {
 
 @Composable
 private fun BreakdownCard(summary: MonthlySummary, onCategory: (Category, FoodType?) -> Unit) {
+    var highlighted by remember(summary.month) { mutableStateOf<Category?>(null) }
+    val glow = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
     ParchmentCard(spacing = Arrangement.spacedBy(10.dp)) {
         Text("Where the gold went", style = MaterialTheme.typography.titleMedium)
         if (summary.totalCents > 0) {
             DonutChart(
                 slices = summary.categories.map { it.category.color to it.spentCents.toFloat() },
-                modifier = Modifier.size(180.dp).align(Alignment.CenterHorizontally),
+                modifier = Modifier.size(200.dp).align(Alignment.CenterHorizontally),
+                selected = highlighted?.let { h -> summary.categories.indexOfFirst { it.category == h } },
+                // Tapping the highlighted slice again, or the hole, shows the total again.
+                onSliceTap = { i -> highlighted = i?.let { summary.categories[it].category }?.takeIf { it != highlighted } },
             ) {
+                val pick = summary.categories.firstOrNull { it.category == highlighted }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("✦ Total ✦", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                    Text(
-                        Money.format(summary.totalCents),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    if (pick == null) {
+                        Text("✦ Total ✦", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            Money.format(summary.totalCents),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    } else {
+                        Text(pick.category.emoji, fontSize = 22.sp)
+                        Text(pick.category.label, style = MaterialTheme.typography.titleSmall)
+                        Text(Money.format(pick.spentCents), fontWeight = FontWeight.Bold)
+                        Text(
+                            "${Math.round(pick.shareOfMonth * 100)}%",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }
@@ -311,10 +329,11 @@ private fun BreakdownCard(summary: MonthlySummary, onCategory: (Category, FoodTy
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(if (c.category == highlighted) glow else Color.Transparent)
                     .clickable { onCategory(c.category, null) }
-                    .alpha(if (empty) 0.55f else 1f)
-                    .padding(vertical = 4.dp),
+                    .alpha(if (empty || (highlighted != null && c.category != highlighted)) 0.55f else 1f)
+                    .padding(vertical = 4.dp, horizontal = 4.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     EmblemBadge(c.category.emoji, c.category.color, size = 30.dp)
@@ -354,7 +373,7 @@ private fun BreakdownCard(summary: MonthlySummary, onCategory: (Category, FoodTy
             }
         }
         Text(
-            "Tap a vault to see all its expenses.",
+            "Tap a slice to highlight it, or a vault to see all its expenses.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

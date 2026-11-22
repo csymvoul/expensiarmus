@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.2 – 2026-11-22
+
+### Changed
+- Entertainment's emblem is now food 🍽️ instead of theatre masks 🎭.
+- Shopping's emblem is now a shopping bag 🛍️ instead of a gem 💎.
+
+### Added
+- Tap a slice of the category chart to highlight it. The slice grows, the others fade, the centre shows that category's emblem, name, amount and share, and its row below lights up. Tap it again, or the centre, to show the total.
+- 7 new unit tests for slice hit-testing and the new emblems. 84 in total, all passing.
+
 ## 1.2.1 – 2026-11-22
 
 ### Fixed
@@ -13,7 +23,7 @@
 
 ### Changed
 - Ornate wizard frames: cards are parchment sheets with cut corners, a double gold border, sparkles in the corners and diamonds on the edges. Screens sit on a vignetted parchment backdrop, and top bars are underlined with a gold rule.
-- Category emblems and nicknames: 🏰 Rent (The Castle Keep), 🛒 Super market (Potion Ingredients), 🎭 Entertainment (Revelry & Feasts), ⚡ Bills (Lumos, Aguamenti, Incendio), 💎 Shopping (Diagon Alley), 🎁 Other (Curiosities). Food: 🦉 Delivery (Brought by owl), 🍷 Dine out (Feasting out), ☕ Day-to-day (Daily potions).
+- Category emblems and nicknames: 🏰 Rent (The Castle Keep), 🛒 Super market (Potion Ingredients), 🎭 Entertainment (Revelry & Feasts; emblem changed to 🍽️ in 1.2.2), ⚡ Bills (Lumos, Aguamenti, Incendio), 💎 Shopping (Diagon Alley), 🎁 Other (Curiosities). Food: 🦉 Delivery (Brought by owl), 🍷 Dine out (Feasting out), ☕ Day-to-day (Daily potions).
 - More spells in the wording: Protego (goals), Geminio (CSV export), Accio (search), Revelio (calendar, empty search), Evanesco (delete), "Mischief managed" (save), and owl-post reminders.
 - Goal bars are gold-rimmed; going over a goal now says the Protego ward is broken.
 - Wax-seal style buttons with cut corners.

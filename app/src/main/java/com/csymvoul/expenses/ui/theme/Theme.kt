@@ -137,9 +137,9 @@ val Category.emoji: String
     get() = when (this) {
         Category.RENT -> "🏰"
         Category.SUPERMARKET -> "🛒"
-        Category.ENTERTAINMENT -> "🎭"
+        Category.ENTERTAINMENT -> "🍽️"
         Category.BILLS -> "⚡"
-        Category.SHOPPING -> "💎"
+        Category.SHOPPING -> "🛍️"
         Category.OTHER -> "🎁"
     }
 
