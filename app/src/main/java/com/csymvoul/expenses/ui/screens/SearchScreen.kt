@@ -22,7 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.ImeAction
@@ -40,9 +40,9 @@ import com.csymvoul.expenses.domain.ExpenseQueries
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
-import com.csymvoul.expenses.ui.components.ColorDot
+import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.components.ExpenseRow
-import com.csymvoul.expenses.ui.theme.color
+import com.csymvoul.expenses.ui.theme.emoji
 
 /** Search all expenses by title, category or food type, optionally narrowed to some categories. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -57,9 +57,10 @@ fun SearchScreen(expenses: List<Expense>, onOpen: (String) -> Unit, onBack: () -
     LaunchedEffect(Unit) { focus.requestFocus() }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
-                title = { Text("Search") },
+            WizardTopBar(
+                title = "Accio",
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -107,13 +108,13 @@ fun SearchScreen(expenses: List<Expense>, onOpen: (String) -> Unit, onBack: () -
                                     .joinToString(",") { it.name }
                             },
                             label = { Text(c.label) },
-                            leadingIcon = { ColorDot(c.color, size = 10.dp) },
+                            leadingIcon = { Text(c.emoji) },
                         )
                     }
                 }
             }
             if (query.isBlank() && categories.isEmpty()) {
-                item { SearchHint("Type part of a title, or pick one or more categories.") }
+                item { SearchHint("Say Accio! Type part of a title, or pick one or more vaults.") }
             } else {
                 item {
                     Text(
@@ -125,7 +126,7 @@ fun SearchScreen(expenses: List<Expense>, onOpen: (String) -> Unit, onBack: () -
                     )
                 }
                 if (results.isEmpty()) {
-                    item { SearchHint("Nothing found, not even with Revelio.") }
+                    item { SearchHint("Revelio found nothing. Try another word.") }
                 }
                 items(results, key = { it.id }) { expense ->
                     ExpenseRow(expense, onClick = { onOpen(expense.id) }, showYear = true)

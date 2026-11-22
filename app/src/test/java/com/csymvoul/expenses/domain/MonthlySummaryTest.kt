@@ -87,6 +87,15 @@ class MonthlySummaryTest {
         assertNull(s.overall)
     }
 
+    @Test fun `goal description under and over`() {
+        assertEquals("50% of €1,000.00 · €500.00 left", GoalProgress(100_000, 50_000).describe())
+        assertEquals("100% of €10.00 · €0.00 left", GoalProgress(1_000, 1_000).describe())
+        assertEquals(
+            "150% of €20.00 · €10.00 over. The Protego ward is broken!",
+            GoalProgress(2_000, 3_000).describe(),
+        )
+    }
+
     @Test fun `goal progress maths`() {
         assertEquals(0.5f, GoalProgress(1_000, 500).fraction, 0f)
         assertEquals(34, GoalProgress(300, 101).percent) // 33.67% rounds to 34

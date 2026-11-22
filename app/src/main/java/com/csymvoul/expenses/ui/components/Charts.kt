@@ -2,17 +2,20 @@ package com.csymvoul.expenses.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -64,14 +67,20 @@ fun DonutChart(
     }
 }
 
+/** Progress towards a goal, drawn as a gold-rimmed potion level. */
 @Composable
-fun GoalBar(goal: GoalProgress, modifier: Modifier = Modifier, height: Dp = 10.dp) {
+fun GoalBar(goal: GoalProgress, modifier: Modifier = Modifier, height: Dp = 12.dp) {
+    val shape = RoundedCornerShape(50)
     LinearProgressIndicator(
         progress = { goal.fraction.coerceIn(0f, 1f) },
-        modifier = modifier.fillMaxWidth().height(height),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(height)
+            .clip(shape)
+            .border(1.dp, MaterialTheme.colorScheme.secondary, shape),
         color = goalColor(goal),
         trackColor = MaterialTheme.colorScheme.surfaceVariant,
-        strokeCap = StrokeCap.Round,
+        strokeCap = StrokeCap.Butt,
         gapSize = 0.dp,
         drawStopIndicator = {},
     )

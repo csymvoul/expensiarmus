@@ -1,6 +1,7 @@
 package com.csymvoul.expenses.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,10 +22,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -32,10 +34,13 @@ import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.domain.MonthGroup
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.FoodType
-import com.csymvoul.expenses.ui.components.ColorDot
+import com.csymvoul.expenses.ui.components.EmblemBadge
+import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.components.ExpenseRow
 import com.csymvoul.expenses.ui.components.ParchmentCard
 import com.csymvoul.expenses.ui.theme.color
+import com.csymvoul.expenses.ui.theme.emoji
+import com.csymvoul.expenses.ui.theme.nickname
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -53,9 +58,10 @@ fun CategoryScreen(
     onBack: () -> Unit,
 ) {
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
-                title = { Text(category.label) },
+            WizardTopBar(
+                title = "${category.emoji} ${category.label}",
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -76,9 +82,16 @@ fun CategoryScreen(
             item {
                 ParchmentCard(spacing = Arrangement.spacedBy(4.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ColorDot(category.color)
-                        Spacer(Modifier.width(8.dp))
-                        Text(category.hint, style = MaterialTheme.typography.bodyMedium)
+                        EmblemBadge(category.emoji, category.color, size = 44.dp)
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                category.nickname,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontStyle = FontStyle.Italic,
+                            )
+                            Text(category.hint, style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
                     Text(
                         if (foodType == null) "All time" else "All time · ${foodType.label}",
@@ -107,7 +120,7 @@ fun CategoryScreen(
                                 selected = foodType == t,
                                 onClick = { onFoodType(t) },
                                 label = { Text(t.label) },
-                                leadingIcon = { ColorDot(t.color, size = 10.dp) },
+                                leadingIcon = { Text(t.emoji) },
                             )
                         }
                     }
@@ -116,7 +129,7 @@ fun CategoryScreen(
             if (groups.isEmpty()) {
                 item {
                     Text(
-                        "Nothing recorded here yet.",
+                        "This vault is empty. Nothing recorded here yet.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().padding(16.dp),

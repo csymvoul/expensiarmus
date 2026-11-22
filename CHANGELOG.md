@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2 – 2026-11-22
+
+### Changed
+- Ornate wizard frames: cards are parchment sheets with cut corners, a double gold border, sparkles in the corners and diamonds on the edges. Screens sit on a vignetted parchment backdrop, and top bars are underlined with a gold rule.
+- Category emblems and nicknames: 🏰 Rent (The Castle Keep), 🛒 Super market (Potion Ingredients), 🎭 Entertainment (Revelry & Feasts), ⚡ Bills (Lumos, Aguamenti, Incendio), 💎 Shopping (Diagon Alley), 🎁 Other (Curiosities). Food: 🦉 Delivery (Brought by owl), 🍷 Dine out (Feasting out), ☕ Day-to-day (Daily potions).
+- More spells in the wording: Protego (goals), Geminio (CSV export), Accio (search), Revelio (calendar, empty search), Evanesco (delete), "Mischief managed" (save), and owl-post reminders.
+- Goal bars are gold-rimmed; going over a goal now says the Protego ward is broken.
+- Wax-seal style buttons with cut corners.
+- 4 new unit tests (goal description, emblems/nicknames). 75 in total, all passing.
+
+### Known issues / not yet done
+- The new look has only been checked by compiling and lint, not on a phone. Emoji emblems depend on the phone's emoji font.
+
 ## 1.1 – 2026-11-22
 
 ### Added

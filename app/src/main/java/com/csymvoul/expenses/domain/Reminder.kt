@@ -20,11 +20,11 @@ object Reminder {
     fun message(expenses: List<Expense>, today: LocalDate): Message {
         val todays = expenses.filter { it.date == today }
         if (todays.isEmpty()) {
-            return Message("Did you forget the ledger?", "No expenses recorded today. Tap to record what you spent.")
+            return Message("🦉 Owl post: did you forget the ledger?", "No expenses recorded today. Tap to record what you spent.")
         }
         val count = if (todays.size == 1) "1 expense" else "${todays.size} expenses"
         return Message(
-            "Anything else for the ledger?",
+            "🦉 Owl post: anything else for the ledger?",
             "Today: $count, ${Money.format(todays.sumOf { it.myShareCents })}. Tap to add anything you missed.",
         )
     }

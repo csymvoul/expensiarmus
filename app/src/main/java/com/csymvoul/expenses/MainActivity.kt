@@ -36,6 +36,7 @@ import com.csymvoul.expenses.ui.screens.GoalsScreen
 import com.csymvoul.expenses.ui.screens.MonthScreen
 import com.csymvoul.expenses.ui.screens.MonthView
 import com.csymvoul.expenses.ui.screens.SearchScreen
+import com.csymvoul.expenses.ui.components.WizardBackdrop
 import com.csymvoul.expenses.ui.theme.ExpensesTheme
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -85,7 +86,7 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
         if (uri != null) {
             scope.launch {
                 val ok = vm.exportCsv(context.contentResolver, uri)
-                Toast.makeText(context, if (ok) "Ledger exported" else "Export failed", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, if (ok) "Geminio! Ledger copied to CSV." else "The spell failed: export did not work.", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -105,82 +106,84 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
 
     BackHandler(enabled = route != MONTH) { pop() }
 
-    when {
-        route == GOALS -> GoalsScreen(
-            goals = data.goals,
-            onSave = { vm.setGoals(it); pop() },
-            onBack = ::pop,
-        )
-        route == SEARCH -> SearchScreen(
-            expenses = data.expenses,
-            onOpen = { push(EDIT + it) },
-            onBack = ::pop,
-        )
-        route.startsWith(CATEGORY) -> {
-            val parts = route.removePrefix(CATEGORY).split(':')
-            val category = Category.valueOf(parts[0])
-            val foodType = parts.getOrNull(1)?.let { FoodType.valueOf(it) }
-            val groups = remember(data, category, foodType) {
-                ExpenseQueries.byCategory(data.expenses, category, foodType)
-            }
-            CategoryScreen(
-                category = category,
-                foodType = foodType,
-                groups = groups,
-                onFoodType = { t -> replaceTop(CATEGORY + category.name + (t?.let { ":" + it.name } ?: "")) },
+    WizardBackdrop {
+        when {
+            route == GOALS -> GoalsScreen(
+                goals = data.goals,
+                onSave = { vm.setGoals(it); pop() },
+                onBack = ::pop,
+            )
+            route == SEARCH -> SearchScreen(
+                expenses = data.expenses,
                 onOpen = { push(EDIT + it) },
                 onBack = ::pop,
             )
-        }
-        route.startsWith(EDIT) -> key(route) {
-            val existing = route.removePrefix(EDIT).ifEmpty { null }?.let(data::find)
-            EditExpenseScreen(
-                existing = existing,
-                defaultDate = when {
-                    view == MonthView.CALENDAR && selectedDay?.let { YearMonth.from(it) } == month -> selectedDay!!
-                    month == YearMonth.now() -> LocalDate.now()
-                    else -> month.atDay(1)
-                },
-                onSave = {
-                    vm.upsert(it)
-                    month = YearMonth.from(it.date)
-                    pop()
-                },
-                onDelete = { vm.delete(it); pop() },
-                onBack = ::pop,
-            )
-        }
-        else -> {
-            val summary = remember(data, month) { MonthlySummary.of(data, month) }
-            val day = selectedDay?.takeIf { YearMonth.from(it) == month }
-            val days = remember(data, month, day) {
-                DayDetails(
-                    totals = ExpenseQueries.dailyTotals(data.expenses, month),
-                    selected = day,
-                    expenses = day?.let { ExpenseQueries.onDay(data.expenses, it) }.orEmpty(),
+            route.startsWith(CATEGORY) -> {
+                val parts = route.removePrefix(CATEGORY).split(':')
+                val category = Category.valueOf(parts[0])
+                val foodType = parts.getOrNull(1)?.let { FoodType.valueOf(it) }
+                val groups = remember(data, category, foodType) {
+                    ExpenseQueries.byCategory(data.expenses, category, foodType)
+                }
+                CategoryScreen(
+                    category = category,
+                    foodType = foodType,
+                    groups = groups,
+                    onFoodType = { t -> replaceTop(CATEGORY + category.name + (t?.let { ":" + it.name } ?: "")) },
+                    onOpen = { push(EDIT + it) },
+                    onBack = ::pop,
                 )
             }
-            MonthScreen(
-                summary = summary,
-                view = view,
-                onViewChange = { view = it },
-                days = days,
-                onSelectDay = { selectedDay = it },
-                onPreviousMonth = { month = month.minusMonths(1) },
-                onNextMonth = { month = month.plusMonths(1) },
-                onAdd = { push(EDIT) },
-                onOpen = { push(EDIT + it) },
-                onCategory = { c, t -> push(CATEGORY + c.name + (t?.let { ":" + it.name } ?: "")) },
-                onSearch = { push(SEARCH) },
-                onGoals = { push(GOALS) },
-                reminderOn = reminderOn,
-                onToggleReminder = {
-                    reminderOn = !reminderOn
-                    ReminderScheduler.setEnabled(context, reminderOn)
-                    if (reminderOn) askForNotifications()
-                },
-                onExport = { exportLauncher.launch("expensiarmus-${LocalDate.now()}.csv") },
-            )
+            route.startsWith(EDIT) -> key(route) {
+                val existing = route.removePrefix(EDIT).ifEmpty { null }?.let(data::find)
+                EditExpenseScreen(
+                    existing = existing,
+                    defaultDate = when {
+                        view == MonthView.CALENDAR && selectedDay?.let { YearMonth.from(it) } == month -> selectedDay!!
+                        month == YearMonth.now() -> LocalDate.now()
+                        else -> month.atDay(1)
+                    },
+                    onSave = {
+                        vm.upsert(it)
+                        month = YearMonth.from(it.date)
+                        pop()
+                    },
+                    onDelete = { vm.delete(it); pop() },
+                    onBack = ::pop,
+                )
+            }
+            else -> {
+                val summary = remember(data, month) { MonthlySummary.of(data, month) }
+                val day = selectedDay?.takeIf { YearMonth.from(it) == month }
+                val days = remember(data, month, day) {
+                    DayDetails(
+                        totals = ExpenseQueries.dailyTotals(data.expenses, month),
+                        selected = day,
+                        expenses = day?.let { ExpenseQueries.onDay(data.expenses, it) }.orEmpty(),
+                    )
+                }
+                MonthScreen(
+                    summary = summary,
+                    view = view,
+                    onViewChange = { view = it },
+                    days = days,
+                    onSelectDay = { selectedDay = it },
+                    onPreviousMonth = { month = month.minusMonths(1) },
+                    onNextMonth = { month = month.plusMonths(1) },
+                    onAdd = { push(EDIT) },
+                    onOpen = { push(EDIT + it) },
+                    onCategory = { c, t -> push(CATEGORY + c.name + (t?.let { ":" + it.name } ?: "")) },
+                    onSearch = { push(SEARCH) },
+                    onGoals = { push(GOALS) },
+                    reminderOn = reminderOn,
+                    onToggleReminder = {
+                        reminderOn = !reminderOn
+                        ReminderScheduler.setEnabled(context, reminderOn)
+                        if (reminderOn) askForNotifications()
+                    },
+                    onExport = { exportLauncher.launch("expensiarmus-${LocalDate.now()}.csv") },
+                )
+            }
         }
     }
 }

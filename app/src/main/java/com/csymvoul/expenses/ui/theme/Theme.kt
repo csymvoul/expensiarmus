@@ -124,6 +124,42 @@ val Category.color: Color
         Category.OTHER -> Color(0xFF7E5AA6) // amethyst
     }
 
+/** Emblem shown in badges and chips. */
+val Category.emoji: String
+    get() = when (this) {
+        Category.RENT -> "🏰"
+        Category.SUPERMARKET -> "🛒"
+        Category.ENTERTAINMENT -> "🎭"
+        Category.BILLS -> "⚡"
+        Category.SHOPPING -> "💎"
+        Category.OTHER -> "🎁"
+    }
+
+/** Wizarding nickname shown next to the plain category name. */
+val Category.nickname: String
+    get() = when (this) {
+        Category.RENT -> "The Castle Keep"
+        Category.SUPERMARKET -> "Potion Ingredients"
+        Category.ENTERTAINMENT -> "Revelry & Feasts"
+        Category.BILLS -> "Lumos, Aguamenti, Incendio"
+        Category.SHOPPING -> "Diagon Alley"
+        Category.OTHER -> "Curiosities"
+    }
+
+val FoodType.emoji: String
+    get() = when (this) {
+        FoodType.DELIVERY -> "🦉"
+        FoodType.DINE_OUT -> "🍷"
+        FoodType.DAY_TO_DAY -> "☕"
+    }
+
+val FoodType.nickname: String
+    get() = when (this) {
+        FoodType.DELIVERY -> "Brought by owl"
+        FoodType.DINE_OUT -> "Feasting out"
+        FoodType.DAY_TO_DAY -> "Daily potions"
+    }
+
 /** Shades of the Entertainment gold. */
 val FoodType.color: Color
     get() = when (this) {

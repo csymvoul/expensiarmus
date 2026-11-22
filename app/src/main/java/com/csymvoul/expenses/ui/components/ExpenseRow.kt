@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.ui.theme.color
+import com.csymvoul.expenses.ui.theme.emoji
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -33,7 +34,7 @@ fun ExpenseRow(expense: Expense, onClick: () -> Unit, showYear: Boolean = false)
     ListItem(
         modifier = Modifier.clickable(onClick = onClick),
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        leadingContent = { ColorDot(expense.category.color) },
+        leadingContent = { EmblemBadge(expense.foodType?.emoji ?: expense.category.emoji, expense.category.color) },
         headlineContent = { Text(expense.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         supportingContent = { Text(details) },
         trailingContent = {

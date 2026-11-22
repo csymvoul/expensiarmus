@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -36,7 +37,6 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,6 +47,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -55,8 +56,9 @@ import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.FoodType
-import com.csymvoul.expenses.ui.components.ColorDot
-import com.csymvoul.expenses.ui.theme.color
+import com.csymvoul.expenses.ui.components.WizardTopBar
+import com.csymvoul.expenses.ui.theme.emoji
+import com.csymvoul.expenses.ui.theme.nickname
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -111,9 +113,10 @@ fun EditExpenseScreen(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
-                title = { Text(if (existing == null) "Record expense" else "Amend expense") },
+            WizardTopBar(
+                title = if (existing == null) "Record expense" else "Amend expense",
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -145,6 +148,7 @@ fun EditExpenseScreen(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("Title") },
+                placeholder = { Text("e.g. Butterbeer with friends") },
                 singleLine = true,
                 isError = showErrors && !titleOk,
                 supportingText = if (showErrors && !titleOk) ({ Text("Enter a title") }) else null,
@@ -157,7 +161,7 @@ fun EditExpenseScreen(
             OutlinedTextField(
                 value = amount,
                 onValueChange = { amount = it },
-                label = { Text("Amount spent") },
+                label = { Text("Gold spent") },
                 prefix = { Text("€ ") },
                 singleLine = true,
                 isError = showErrors && !amountOk,
@@ -179,12 +183,12 @@ fun EditExpenseScreen(
                             selected = category == c,
                             onClick = { category = c },
                             label = { Text(c.label) },
-                            leadingIcon = { ColorDot(c.color, size = 10.dp) },
+                            leadingIcon = { Text(c.emoji) },
                         )
                     }
                 }
                 Text(
-                    category.hint,
+                    "${category.nickname}: ${category.hint}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -204,12 +208,12 @@ fun EditExpenseScreen(
                                 selected = foodType == t,
                                 onClick = { foodType = t },
                                 label = { Text(t.label) },
-                                leadingIcon = { ColorDot(t.color, size = 10.dp) },
+                                leadingIcon = { Text(t.emoji) },
                             )
                         }
                     }
                     Text(
-                        foodType?.hint ?: "Cinema, theatre, concerts, etc.",
+                        foodType?.let { "${it.nickname}: ${it.hint}" } ?: "Cinema, theatre, concerts, etc.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -218,7 +222,7 @@ fun EditExpenseScreen(
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Split with someone else", style = MaterialTheme.typography.titleSmall)
+                    Text("Split with a fellow wizard", style = MaterialTheme.typography.titleSmall)
                     Text(
                         "Only your share counts toward totals and goals",
                         style = MaterialTheme.typography.bodySmall,
@@ -255,8 +259,8 @@ fun EditExpenseScreen(
                 }
             }
 
-            Button(onClick = ::save, modifier = Modifier.fillMaxWidth()) {
-                Text("Save to the ledger")
+            Button(onClick = ::save, shape = CutCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                Text("Mischief managed · Save")
             }
         }
     }
@@ -287,9 +291,9 @@ fun EditExpenseScreen(
             title = { Text("Evanesco?") },
             text = { Text("\"${existing.title}\" will vanish from the ledger. This cannot be undone.") },
             confirmButton = {
-                TextButton(onClick = { confirmingDelete = false; onDelete(existing.id) }) { Text("Delete") }
+                TextButton(onClick = { confirmingDelete = false; onDelete(existing.id) }) { Text("Evanesco") }
             },
-            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text("Keep it") } },
         )
     }
 }

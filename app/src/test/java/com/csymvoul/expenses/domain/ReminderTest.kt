@@ -38,13 +38,13 @@ class ReminderTest {
 
     @Test fun `nothing recorded today`() {
         val m = Reminder.message(listOf(e(today.minusDays(1), 500)), today)
-        assertEquals("Did you forget the ledger?", m.title)
+        assertEquals("🦉 Owl post: did you forget the ledger?", m.title)
         assertEquals("No expenses recorded today. Tap to record what you spent.", m.text)
     }
 
     @Test fun `some expenses today uses my share`() {
         val m = Reminder.message(listOf(e(today, 1_000), e(today, 3_000, 50), e(today.minusDays(1), 9_999)), today)
-        assertEquals("Anything else for the ledger?", m.title)
+        assertEquals("🦉 Owl post: anything else for the ledger?", m.title)
         assertEquals("Today: 2 expenses, €25.00. Tap to add anything you missed.", m.text)
     }
 

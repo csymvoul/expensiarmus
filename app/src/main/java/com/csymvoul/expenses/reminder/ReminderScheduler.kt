@@ -49,7 +49,7 @@ object ReminderScheduler {
     }
 
     fun ensureChannel(context: Context) {
-        val channel = NotificationChannel(CHANNEL, "Daily reminder", NotificationManager.IMPORTANCE_DEFAULT).apply {
+        val channel = NotificationChannel(CHANNEL, "Owl reminders", NotificationManager.IMPORTANCE_DEFAULT).apply {
             description = "Evening reminder to record the day's expenses"
         }
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)

@@ -14,7 +14,7 @@ A personal, wizard-themed Android app for tracking monthly spending in euros. Th
 - **Goals.** An overall monthly goal and optional per-category goals, with progress bars that turn amber at 80% and red when over.
 - **Evening reminder.** A notification at about 21:30 each day reminds you to record the day's expenses and shows what you've recorded so far. Tap it to go straight to "Record expense". It can be turned off from the ⋮ menu.
 - **CSV export** of all expenses for backup or analysis.
-- **Wizard look:** parchment, burgundy and gold by day; a candle-lit castle theme in dark mode. Headings use the Cinzel font.
+- **Wizard look:** parchment, burgundy and gold by day; a candle-lit castle theme in dark mode. Cards are framed in gold with corner sparkles, headings use the Cinzel font, and each category has an emblem and a wizarding nickname (💎 Shopping is *Diagon Alley*). The wording is full of spells: Accio to search, Protego for goals, Evanesco to delete.
 
 ## How it works
 
