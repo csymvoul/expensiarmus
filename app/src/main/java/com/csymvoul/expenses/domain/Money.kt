@@ -51,6 +51,17 @@ object Money {
         return "$sign${abs / 100}.${(abs % 100).toString().padStart(2, '0')}"
     }
 
+    /** Short form for calendar cells: "€45", "€1.2k", "<€1". Whole euros are rounded half up. */
+    fun compact(cents: Long): String {
+        if (cents in 1..49) return "<€1"
+        val euros = (cents + 50) / 100
+        return when {
+            euros < 1_000 -> "€$euros"
+            euros < 10_000 -> "€${euros / 1_000}.${(euros % 1_000) / 100}k"
+            else -> "€${euros / 1_000}k"
+        }
+    }
+
     /** Text to pre-fill an amount field: "1234" for whole euros, otherwise "1234.56". */
     fun forInput(cents: Long): String = if (cents % 100 == 0L) (cents / 100).toString() else plain(cents)
 

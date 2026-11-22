@@ -49,6 +49,11 @@ class ExpenseTest {
         Expense("f", LocalDate.of(2026, 11, 1), "Bread", 250, Category.SUPERMARKET, foodType = FoodType.DELIVERY)
     }
 
+    @Test fun `shopping category exists before other`() {
+        assertEquals("Shopping", Category.SHOPPING.label)
+        assertEquals(Category.OTHER.ordinal - 1, Category.SHOPPING.ordinal)
+    }
+
     @Test fun `upsert adds then replaces by id, delete removes`() {
         var data = AppData()
         data = data.upsert(expense(100, id = "x"))

@@ -41,6 +41,15 @@ class MoneyTest {
         assertEquals("12.50", Money.forInput(1_250))
     }
 
+    @Test fun `compact format for calendar cells`() {
+        assertEquals("<€1", Money.compact(49))
+        assertEquals("€1", Money.compact(50))
+        assertEquals("€45", Money.compact(4_520))
+        assertEquals("€999", Money.compact(99_900))
+        assertEquals("€1.2k", Money.compact(123_456))
+        assertEquals("€12k", Money.compact(1_234_500))
+    }
+
     @Test fun `input format parses back to the same value`() {
         listOf(0L, 7L, 1_250L, 120_000L, 123_456L).forEach {
             assertEquals(it, Money.parseToCents(Money.forInput(it)))

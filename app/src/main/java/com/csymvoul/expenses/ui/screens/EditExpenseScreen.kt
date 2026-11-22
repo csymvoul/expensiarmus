@@ -113,7 +113,7 @@ fun EditExpenseScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (existing == null) "Add expense" else "Edit expense") },
+                title = { Text(if (existing == null) "Record expense" else "Amend expense") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -256,7 +256,7 @@ fun EditExpenseScreen(
             }
 
             Button(onClick = ::save, modifier = Modifier.fillMaxWidth()) {
-                Text("Save")
+                Text("Save to the ledger")
             }
         }
     }
@@ -284,8 +284,8 @@ fun EditExpenseScreen(
     if (confirmingDelete && existing != null) {
         AlertDialog(
             onDismissRequest = { confirmingDelete = false },
-            title = { Text("Delete expense?") },
-            text = { Text("\"${existing.title}\" will be removed. This cannot be undone.") },
+            title = { Text("Evanesco?") },
+            text = { Text("\"${existing.title}\" will vanish from the ledger. This cannot be undone.") },
             confirmButton = {
                 TextButton(onClick = { confirmingDelete = false; onDelete(existing.id) }) { Text("Delete") }
             },

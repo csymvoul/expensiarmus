@@ -5,6 +5,7 @@ enum class Category(val label: String, val hint: String) {
     SUPERMARKET("Super market", "Groceries and household items"),
     ENTERTAINMENT("Entertainment", "Food, cinema, theatre, etc."),
     BILLS("Bills", "Water, electricity, gas, etc."),
+    SHOPPING("Shopping", "Shoes, clothes, jewellery, etc."),
     OTHER("Other", "Presents and anything else"),
 }
 

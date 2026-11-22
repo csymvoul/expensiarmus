@@ -1,5 +1,8 @@
 package com.csymvoul.expenses
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -9,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -19,11 +23,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.csymvoul.expenses.domain.ExpenseQueries
 import com.csymvoul.expenses.domain.MonthlySummary
+import com.csymvoul.expenses.model.Category
+import com.csymvoul.expenses.model.FoodType
+import com.csymvoul.expenses.reminder.ReminderScheduler
 import com.csymvoul.expenses.ui.ExpenseViewModel
+import com.csymvoul.expenses.ui.screens.CategoryScreen
+import com.csymvoul.expenses.ui.screens.DayDetails
 import com.csymvoul.expenses.ui.screens.EditExpenseScreen
 import com.csymvoul.expenses.ui.screens.GoalsScreen
 import com.csymvoul.expenses.ui.screens.MonthScreen
+import com.csymvoul.expenses.ui.screens.MonthView
+import com.csymvoul.expenses.ui.screens.SearchScreen
 import com.csymvoul.expenses.ui.theme.ExpensesTheme
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -33,64 +45,141 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        ReminderScheduler.ensureChannel(this)
+        ReminderScheduler.schedule(this)
+        val record = intent.getBooleanExtra(EXTRA_RECORD, false)
         setContent {
-            ExpensesTheme { ExpensesApp() }
+            ExpensesTheme { ExpensesApp(openRecord = record) }
         }
+    }
+
+    companion object {
+        /** Set by the reminder notification: open straight on "Record expense". */
+        const val EXTRA_RECORD = "record_expense"
     }
 }
 
+// Routes. The back stack is kept as routes joined by '|' so it survives rotation.
 private const val MONTH = "month"
 private const val GOALS = "goals"
-private const val EDIT = "edit:" // followed by the expense id, empty for a new expense
+private const val SEARCH = "search"
+private const val EDIT = "edit:" // + expense id, empty for a new expense
+private const val CATEGORY = "category:" // + category name, optionally + ":" + food type name
 
 @Composable
-fun ExpensesApp(vm: ExpenseViewModel = viewModel()) {
+fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel()) {
     val data by vm.state.collectAsStateWithLifecycle()
-    var route by rememberSaveable { mutableStateOf(MONTH) }
+    var stack by rememberSaveable { mutableStateOf(if (openRecord) "$MONTH|$EDIT" else MONTH) }
     var month by rememberSaveable { mutableStateOf(YearMonth.now()) }
+    var view by rememberSaveable { mutableStateOf(MonthView.OVERVIEW) }
+    var selectedDay by rememberSaveable { mutableStateOf<LocalDate?>(LocalDate.now()) }
+    val route = stack.substringAfterLast('|')
+
+    fun push(r: String) { stack = "$stack|$r" }
+    fun replaceTop(r: String) { stack = stack.substringBeforeLast('|', "") .let { if (it.isEmpty()) r else "$it|$r" } }
+    fun pop() { stack = stack.substringBeforeLast('|', MONTH) }
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         if (uri != null) {
             scope.launch {
                 val ok = vm.exportCsv(context.contentResolver, uri)
-                Toast.makeText(context, if (ok) "Expenses exported" else "Export failed", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, if (ok) "Ledger exported" else "Export failed", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    BackHandler(enabled = route != MONTH) { route = MONTH }
+    var reminderOn by remember { mutableStateOf(ReminderScheduler.isEnabled(context)) }
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    fun askForNotifications() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+    LaunchedEffect(Unit) {
+        if (reminderOn && ReminderScheduler.firstPermissionAsk(context)) askForNotifications()
+    }
+
+    BackHandler(enabled = route != MONTH) { pop() }
 
     when {
         route == GOALS -> GoalsScreen(
             goals = data.goals,
-            onSave = { vm.setGoals(it); route = MONTH },
-            onBack = { route = MONTH },
+            onSave = { vm.setGoals(it); pop() },
+            onBack = ::pop,
         )
+        route == SEARCH -> SearchScreen(
+            expenses = data.expenses,
+            onOpen = { push(EDIT + it) },
+            onBack = ::pop,
+        )
+        route.startsWith(CATEGORY) -> {
+            val parts = route.removePrefix(CATEGORY).split(':')
+            val category = Category.valueOf(parts[0])
+            val foodType = parts.getOrNull(1)?.let { FoodType.valueOf(it) }
+            val groups = remember(data, category, foodType) {
+                ExpenseQueries.byCategory(data.expenses, category, foodType)
+            }
+            CategoryScreen(
+                category = category,
+                foodType = foodType,
+                groups = groups,
+                onFoodType = { t -> replaceTop(CATEGORY + category.name + (t?.let { ":" + it.name } ?: "")) },
+                onOpen = { push(EDIT + it) },
+                onBack = ::pop,
+            )
+        }
         route.startsWith(EDIT) -> key(route) {
             val existing = route.removePrefix(EDIT).ifEmpty { null }?.let(data::find)
             EditExpenseScreen(
                 existing = existing,
-                defaultDate = if (month == YearMonth.now()) LocalDate.now() else month.atDay(1),
+                defaultDate = when {
+                    view == MonthView.CALENDAR && selectedDay?.let { YearMonth.from(it) } == month -> selectedDay!!
+                    month == YearMonth.now() -> LocalDate.now()
+                    else -> month.atDay(1)
+                },
                 onSave = {
                     vm.upsert(it)
                     month = YearMonth.from(it.date)
-                    route = MONTH
+                    pop()
                 },
-                onDelete = { vm.delete(it); route = MONTH },
-                onBack = { route = MONTH },
+                onDelete = { vm.delete(it); pop() },
+                onBack = ::pop,
             )
         }
         else -> {
             val summary = remember(data, month) { MonthlySummary.of(data, month) }
+            val day = selectedDay?.takeIf { YearMonth.from(it) == month }
+            val days = remember(data, month, day) {
+                DayDetails(
+                    totals = ExpenseQueries.dailyTotals(data.expenses, month),
+                    selected = day,
+                    expenses = day?.let { ExpenseQueries.onDay(data.expenses, it) }.orEmpty(),
+                )
+            }
             MonthScreen(
                 summary = summary,
+                view = view,
+                onViewChange = { view = it },
+                days = days,
+                onSelectDay = { selectedDay = it },
                 onPreviousMonth = { month = month.minusMonths(1) },
                 onNextMonth = { month = month.plusMonths(1) },
-                onAdd = { route = EDIT },
-                onOpen = { route = EDIT + it },
-                onGoals = { route = GOALS },
-                onExport = { exportLauncher.launch("expenses-${LocalDate.now()}.csv") },
+                onAdd = { push(EDIT) },
+                onOpen = { push(EDIT + it) },
+                onCategory = { c, t -> push(CATEGORY + c.name + (t?.let { ":" + it.name } ?: "")) },
+                onSearch = { push(SEARCH) },
+                onGoals = { push(GOALS) },
+                reminderOn = reminderOn,
+                onToggleReminder = {
+                    reminderOn = !reminderOn
+                    ReminderScheduler.setEnabled(context, reminderOn)
+                    if (reminderOn) askForNotifications()
+                },
+                onExport = { exportLauncher.launch("expensiarmus-${LocalDate.now()}.csv") },
             )
         }
     }

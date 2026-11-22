@@ -50,7 +50,7 @@ class ExpenseViewModel(app: Application) : AndroidViewModel(app) {
     /** Writes all expenses as CSV (UTF-8 with BOM so Excel shows Greek text correctly). */
     suspend fun exportCsv(resolver: ContentResolver, uri: Uri): Boolean = withContext(Dispatchers.IO) {
         runCatching {
-            val bytes = ("﻿" + CsvExporter.toCsv(_state.value.expenses)).toByteArray(Charsets.UTF_8)
+            val bytes = ("\uFEFF" + CsvExporter.toCsv(_state.value.expenses)).toByteArray(Charsets.UTF_8)
             resolver.openOutputStream(uri)?.use { it.write(bytes) } ?: error("cannot open $uri")
         }.isSuccess
     }

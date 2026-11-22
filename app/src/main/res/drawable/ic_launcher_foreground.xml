@@ -1,12 +1,26 @@
+<!-- Expensiarmus: an enchanted expense report. Parchment scroll, quill and a wax seal. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M52,56 L52,30 A26,26 0 1,0 78,56 Z" />
-    <path
-        android:fillColor="#FFC107"
-        android:pathData="M56,52 L56,26 A26,26 0 0,1 82,52 Z" />
+    <!-- sparkles -->
+    <path android:fillColor="#E8C25A" android:pathData="M28,44 L29,47 L32,48 L29,49 L28,52 L27,49 L24,48 L27,47 Z" />
+    <path android:fillColor="#E8C25A" android:pathData="M80,57 L80.7,59.3 L83,60 L80.7,60.7 L80,63 L79.3,60.7 L77,60 L79.3,59.3 Z" />
+    <!-- parchment sheet -->
+    <path android:fillColor="#F1DEB0" android:pathData="M36,32 H68 V76 H36 Z" />
+    <!-- rolled ends -->
+    <path android:fillColor="#D9BF85" android:pathData="M34,28.5 H70 A3.5,3.5 0 0 1 70,35.5 H34 A3.5,3.5 0 0 1 34,28.5 Z" />
+    <path android:fillColor="#D9BF85" android:pathData="M34,72.5 H70 A3.5,3.5 0 0 1 70,79.5 H34 A3.5,3.5 0 0 1 34,72.5 Z" />
+    <path android:fillColor="#B0915A" android:pathData="M30.5,32 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0 Z" />
+    <path android:fillColor="#B0915A" android:pathData="M30.5,76 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0 Z" />
+    <!-- ledger lines -->
+    <path android:strokeColor="#8B5E3C" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M40,41 H62 M40,47 H58 M40,53 H62 M40,59 H50" />
+    <!-- wax seal with a lightning bolt -->
+    <path android:fillColor="#9E1B1B" android:pathData="M54.5,64 a6.5,6.5 0 1,0 13,0 a6.5,6.5 0 1,0 -13,0 Z" />
+    <path android:fillColor="#F2C94C" android:pathData="M62.2,59.5 L58.6,64.6 H61 L59.8,69 L63.8,63.4 H61.4 Z" />
+    <!-- quill -->
+    <path android:fillColor="#FAF6EA" android:pathData="M77,27 C71,28 63,35 57,47 L55,52 C62,46 71,39 77,27 Z" />
+    <path android:strokeColor="#C9B37E" android:strokeWidth="1" android:pathData="M77,27 L55,52" />
+    <path android:strokeColor="#3B2A1A" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M55,52 L52.5,56.5" />
 </vector>

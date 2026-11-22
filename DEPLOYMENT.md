@@ -24,8 +24,8 @@ If `keystore.properties` is missing, the release build falls back to the debug k
 ```bash
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 ./gradlew testReleaseUnitTest      # run unit tests
-./gradlew assembleRelease          # build
-cp app/build/outputs/apk/release/app-release.apk Expenses-<version>.apk
+./gradlew assembleRelease lintRelease   # build and lint
+cp app/build/outputs/apk/release/app-release.apk Expensiarmus-<version>.apk
 ```
 
 For a new version, increase `versionCode` (and `versionName`) in `app/build.gradle.kts` first.
@@ -36,9 +36,11 @@ For a new version, increase `versionCode` (and `versionName`) in `app/build.grad
    - **USB cable:** connect the phone, pick "File transfer" on it, and copy the APK into `Download`. On a Mac this needs Android's file-transfer app, or use `adb install` (below).
    - **Google Drive:** upload the APK, open it in the Drive app on the phone and tap Install.
    - **adb:** turn on USB debugging (Settings → About phone → tap Build number 7 times → Developer options → USB debugging), then run
-     `~/Library/Android/sdk/platform-tools/adb install -r Expenses-1.0.apk`
+     `~/Library/Android/sdk/platform-tools/adb install -r Expensiarmus-1.1.apk`
 2. Open the APK on the phone. The first time, Android asks you to allow installing unknown apps from that source (Files, Drive or Chrome). Allow it, then tap Install.
-3. Play Protect may warn that it doesn't recognise the app. Choose "Install anyway"; this is expected for apps not from the Play Store.
+3. On Android 13+ the app asks once to allow notifications. Allow it to get the 21:30 reminder. If you missed it: Settings → Apps → Expensiarmus → Notifications.
+4. If the reminder never shows, exempt the app from battery optimisation: Settings → Apps → Expensiarmus → Battery → Unrestricted.
+5. Play Protect may warn that it doesn't recognise the app. Choose "Install anyway"; this is expected for apps not from the Play Store.
 
 ## Updating
 
