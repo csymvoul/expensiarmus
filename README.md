@@ -13,7 +13,7 @@ A personal, wizard-themed app for tracking monthly spending in euros: a native A
 - **Category pages.** Tap a category, or a food subgroup, to see all its expenses, grouped by month with monthly totals.
 - **Search.** Find expenses by part of the title, by category or food-type name, and/or by picking categories. Case and Greek accents are ignored.
 - **Goals.** An overall monthly goal and optional per-category goals, with progress bars that turn amber at 80% and red when over.
-- **Evening reminder.** A notification at about 21:30 each day reminds you to record the day's expenses and shows what you've recorded so far. Tap it to go straight to "Record expense". It can be turned off from the ⋮ menu.
+- **Evening reminder.** A notification at about 21:30 each day reminds you to record the day's expenses and shows what you've recorded so far. Tap it to go straight to "Record expense". It can be turned off from the ⋮ menu, ⋮ → Send a test owl now shows it immediately, and a banner warns if notifications are switched off for the app.
 - **CSV export** of all expenses for backup or analysis.
 - **Wizard look:** parchment, burgundy and gold by day; a candle-lit castle theme in dark mode. Cards are framed in gold with corner sparkles, headings use the Cinzel font, and each category has an emblem and a wizarding nickname (🛍️ Shopping is *Diagon Alley*). The wording is full of spells: Accio to search, Protego for goals, Evanesco to delete.
 
@@ -30,7 +30,7 @@ The same app also runs as a web app at **https://csymvoul.github.io/expenses-app
 - Kotlin + Jetpack Compose (Material 3), single activity, minimum Android 8.0 (API 26).
 - Amounts are stored as whole cents so totals never drift; a split share is rounded half up to the cent.
 - All data lives in one JSON file in the app's private storage (`files/expenses.json`). Writes are atomic. An unreadable file is kept as a backup instead of being overwritten.
-- The reminder is an inexact `AlarmManager` alarm (no exact-alarm permission needed), re-armed after it fires, after a reboot and after clock/time-zone changes.
+- The reminder is an exact `AlarmManager` alarm (inexact only if Android doesn't allow exact ones), re-armed after it fires, after a reboot, after clock/time-zone changes and when the exact-alarm permission changes.
 - Code layout (`app/src/main/java/com/csymvoul/expenses/`):
   - `model/`: `Expense`, `Category`, `FoodType`, `Goals`, `AppData`
   - `domain/`: `Money`, `MonthlySummary` / `FoodSummary`, `PeriodSummary` (year and all time), `ExpenseQueries` (calendar, category, search), `Reminder` (timing and text), `CsvExporter`

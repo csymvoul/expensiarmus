@@ -1,9 +1,11 @@
 package com.csymvoul.expenses
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -21,6 +23,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.csymvoul.expenses.domain.ExpenseQueries
@@ -28,6 +31,7 @@ import com.csymvoul.expenses.domain.MonthlySummary
 import com.csymvoul.expenses.domain.PeriodSummary
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.FoodType
+import com.csymvoul.expenses.reminder.OwlNotifier
 import com.csymvoul.expenses.reminder.ReminderScheduler
 import com.csymvoul.expenses.ui.ExpenseViewModel
 import com.csymvoul.expenses.ui.screens.AnnalsScreen
@@ -98,7 +102,15 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
     }
 
     var reminderOn by remember { mutableStateOf(ReminderScheduler.isEnabled(context)) }
-    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    var owlsBlocked by remember { mutableStateOf(!OwlNotifier.canNotify(context)) }
+    // Re-check whenever the app comes back, e.g. from the notification settings.
+    LifecycleResumeEffect(Unit) {
+        owlsBlocked = !OwlNotifier.canNotify(context)
+        onPauseOrDispose {}
+    }
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        owlsBlocked = !OwlNotifier.canNotify(context)
+    }
     fun askForNotifications() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
@@ -213,6 +225,19 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                     },
                     onGoals = { push(GOALS) },
                     reminderOn = reminderOn,
+                    owlsBlocked = owlsBlocked,
+                    onFixOwls = {
+                        context.startActivity(
+                            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName),
+                        )
+                    },
+                    onTestOwl = {
+                        if (!OwlNotifier.show(context)) {
+                            Toast.makeText(context, "Owl reminders are blocked: allow notifications first.", Toast.LENGTH_LONG).show()
+                            askForNotifications()
+                        }
+                    },
                     onToggleReminder = {
                         reminderOn = !reminderOn
                         ReminderScheduler.setEnabled(context, reminderOn)
