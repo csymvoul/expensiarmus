@@ -15,6 +15,12 @@ object Reminder {
         return if (now.isBefore(today)) today else now.toLocalDate().plusDays(1).atTime(time).atZone(now.zone)
     }
 
+    /**
+     * Exact alarms fire at 21:30 even when the phone is idle; inexact ones may arrive hours late.
+     * Before Android 12 every app may use them; from Android 12 only when the system allows it.
+     */
+    fun useExactAlarm(sdk: Int, canScheduleExact: Boolean): Boolean = sdk < 31 || canScheduleExact
+
     data class Message(val title: String, val text: String)
 
     fun message(expenses: List<Expense>, today: LocalDate): Message {

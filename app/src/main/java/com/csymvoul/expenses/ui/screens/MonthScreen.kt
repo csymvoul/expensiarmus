@@ -1,5 +1,6 @@
 package com.csymvoul.expenses.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -106,6 +109,9 @@ fun MonthScreen(
     onGoals: () -> Unit,
     reminderOn: Boolean,
     onToggleReminder: () -> Unit,
+    owlsBlocked: Boolean,
+    onFixOwls: () -> Unit,
+    onTestOwl: () -> Unit,
     onExport: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -138,6 +144,10 @@ fun MonthScreen(
                                 onClick = { menuOpen = false; onToggleReminder() },
                             )
                             DropdownMenuItem(
+                                text = { Text("🦉 Send a test owl now") },
+                                onClick = { menuOpen = false; onTestOwl() },
+                            )
+                            DropdownMenuItem(
                                 text = { Text("📜 Geminio · export CSV") },
                                 onClick = { menuOpen = false; onExport() },
                             )
@@ -166,6 +176,9 @@ fun MonthScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (reminderOn && owlsBlocked) {
+                item { OwlsBlockedBanner(onFixOwls) }
+            }
             item { MonthSwitcher(summary, onPreviousMonth, onNextMonth) }
             item { TotalCard(summary, onGoals, onAnnals) }
             item {
@@ -224,6 +237,23 @@ fun MonthScreen(
                 }
             }
         }
+    }
+}
+
+/** Shown when the 21:30 owl can't appear because notifications are off for the app. */
+@Composable
+private fun OwlsBlockedBanner(onFix: () -> Unit) {
+    Card(
+        onClick = onFix,
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+    ) {
+        Text(
+            "🦉 Owl reminders are blocked: tap to allow notifications",
+            modifier = Modifier.padding(12.dp),
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }
 

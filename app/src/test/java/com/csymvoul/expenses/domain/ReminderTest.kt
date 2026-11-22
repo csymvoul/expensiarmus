@@ -32,6 +32,18 @@ class ReminderTest {
         assertEquals(30, next.minute)
     }
 
+    @Test fun `exact alarm before android 12 always`() {
+        assertEquals(true, Reminder.useExactAlarm(sdk = 26, canScheduleExact = false))
+        assertEquals(true, Reminder.useExactAlarm(sdk = 30, canScheduleExact = false))
+    }
+
+    @Test fun `exact alarm from android 12 only when allowed`() {
+        assertEquals(true, Reminder.useExactAlarm(sdk = 31, canScheduleExact = true))
+        assertEquals(false, Reminder.useExactAlarm(sdk = 31, canScheduleExact = false))
+        assertEquals(true, Reminder.useExactAlarm(sdk = 35, canScheduleExact = true))
+        assertEquals(false, Reminder.useExactAlarm(sdk = 35, canScheduleExact = false))
+    }
+
     private val today = LocalDate.of(2026, 11, 22)
     private fun e(date: LocalDate, cents: Long, percent: Int = 100) =
         Expense(date.toString() + cents, date, "x", cents, Category.OTHER, percent)

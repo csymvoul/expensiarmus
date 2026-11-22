@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.1 (Android) – 2026-11-22
+
+### Fixed
+- **The 21:30 owl could arrive hours late or not that evening.** It was scheduled as an inexact alarm, which Android may delay by up to 75% of the time until it is due (many hours for an alarm set a day ahead). It is now an exact alarm that fires at 21:30 even when the phone is idle (`USE_EXACT_ALARM` on Android 13+, which apps installed outside the Play Store get automatically; `SCHEDULE_EXACT_ALARM` on Android 12). If exact alarms are ever not allowed, it falls back to the old behaviour, and the alarm is re-armed when that permission changes.
+
+### Added
+- A banner on the main screen when notifications are switched off for the app: *"🦉 Owl reminders are blocked: tap to allow notifications"*. It opens the app's notification settings and disappears once they're allowed.
+- ⋮ → **🦉 Send a test owl now** shows the owl immediately, with today's text, to check that notifications get through.
+- 2 new unit tests for choosing exact vs. inexact alarms. 103 in total, all passing.
+
+### Known issues
+- Some phones (Samsung, Xiaomi and others) still stop alarms for apps under battery restrictions. If the owl doesn't come, set Settings → Apps → Expensiarmus → Battery → Unrestricted.
+
 ## 1.3.0 (Android) and web app 1.1.0 – 2026-11-22
 
 ### Added
