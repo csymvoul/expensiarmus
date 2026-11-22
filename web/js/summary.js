@@ -1,4 +1,4 @@
-import { CATEGORIES, FOOD_TYPES, monthOf, myShareCents } from './model.js';
+import { CATEGORIES, CATEGORIES_WITH_GOALS, FOOD_TYPES, monthOf, myShareCents } from './model.js';
 import { format } from './money.js';
 
 const byNewest = (a, b) => (a.date === b.date ? a.title.toLowerCase().localeCompare(b.title.toLowerCase()) : a.date < b.date ? 1 : -1);
@@ -57,7 +57,7 @@ export function monthlySummary(data, month) {
         category: c.id,
         spentCents: spent,
         shareOfMonth: total > 0 ? spent / total : 0,
-        goal: goal > 0 ? goalProgress(goal, spent) : null,
+        goal: goal > 0 && CATEGORIES_WITH_GOALS.includes(c.id) ? goalProgress(goal, spent) : null,
       };
     }),
     overall: goals.monthlyCents > 0 ? goalProgress(goals.monthlyCents, total) : null,

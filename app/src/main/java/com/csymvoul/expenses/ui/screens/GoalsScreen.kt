@@ -47,7 +47,7 @@ private fun goalCents(text: String): Long? = if (text.isBlank()) null else Money
 @Composable
 fun GoalsScreen(goals: Goals, onSave: (Goals) -> Unit, onBack: () -> Unit) {
     var overall by rememberSaveable { mutableStateOf(goals.monthlyCents?.let(Money::forInput) ?: "") }
-    val perCategory: Map<Category, MutableState<String>> = Category.entries.associateWith { c ->
+    val perCategory: Map<Category, MutableState<String>> = Goals.CATEGORIES_WITH_GOALS.associateWith { c ->
         rememberSaveable(c.name) { mutableStateOf(goals.perCategoryCents[c]?.let(Money::forInput) ?: "") }
     }
     val allValid = goalValid(overall) && perCategory.values.all { goalValid(it.value) }
@@ -82,8 +82,8 @@ fun GoalsScreen(goals: Goals, onSave: (Goals) -> Unit, onBack: () -> Unit) {
             )
             GoalField("Total per month", overall) { overall = it }
             HorizontalDivider(Modifier.padding(vertical = 4.dp))
-            Text("Wards per vault", style = MaterialTheme.typography.titleSmall)
-            Category.entries.forEach { c ->
+            Text("A ward for Revelry & Feasts", style = MaterialTheme.typography.titleSmall)
+            Goals.CATEGORIES_WITH_GOALS.forEach { c ->
                 val state = perCategory.getValue(c)
                 GoalField("${c.emoji} ${c.label}", state.value) { state.value = it }
             }
@@ -91,7 +91,7 @@ fun GoalsScreen(goals: Goals, onSave: (Goals) -> Unit, onBack: () -> Unit) {
             val overallCents = goalCents(overall)
             if (allValid && overallCents != null && categorySum > overallCents) {
                 Text(
-                    "Category goals add up to ${Money.format(categorySum)}, more than the monthly total.",
+                    "The Entertainment goal (${Money.format(categorySum)}) is more than the monthly total.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )

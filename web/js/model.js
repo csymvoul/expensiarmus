@@ -17,12 +17,22 @@ export const FOOD_TYPES = [
   { id: 'DAY_TO_DAY', label: 'Day-to-day', hint: 'Coffee at work, snacks, quick bites', emoji: '☕', nickname: 'Daily potions', color: '#E6C878' },
 ];
 
+/** Categories that can have their own goal. Goals saved for others are ignored. */
+export const CATEGORIES_WITH_GOALS = ['ENTERTAINMENT'];
+
 export const category = (id) => CATEGORIES.find((c) => c.id === id);
 export const foodType = (id) => FOOD_TYPES.find((f) => f.id === id);
 
 /** My part of the amount, rounded half up to the nearest cent. */
 export const myShareCents = (e) => Math.floor((e.amountCents * e.myPercent + 50) / 100);
 export const isSplit = (e) => e.myPercent < 100;
+
+/** "Not split · all yours", or "Your share 50% (€18.00) · theirs 50% (€18.00)". */
+export function splitLine(e, fmt) {
+  if (!isSplit(e)) return 'Not split · all yours';
+  const mine = myShareCents(e);
+  return `Your share ${e.myPercent}% (${fmt(mine)}) · theirs ${100 - e.myPercent}% (${fmt(e.amountCents - mine)})`;
+}
 
 /**
  * Checks an expense and returns a clean copy. Throws when it is invalid, like the Android

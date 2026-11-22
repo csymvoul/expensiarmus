@@ -39,6 +39,7 @@ import com.csymvoul.expenses.ui.screens.AnnalsView
 import com.csymvoul.expenses.ui.screens.CategoryScreen
 import com.csymvoul.expenses.ui.screens.DayDetails
 import com.csymvoul.expenses.ui.screens.EditExpenseScreen
+import com.csymvoul.expenses.ui.screens.ExpenseDetailScreen
 import com.csymvoul.expenses.ui.screens.GoalsScreen
 import com.csymvoul.expenses.ui.screens.MonthScreen
 import com.csymvoul.expenses.ui.screens.MonthView
@@ -73,6 +74,7 @@ private const val GOALS = "goals"
 private const val SEARCH = "search"
 private const val ANNALS = "annals"
 private const val EDIT = "edit:" // + expense id, empty for a new expense
+private const val VIEW = "view:" // + expense id: read-only view
 private const val CATEGORY = "category:" // + category name, optionally + ":" + food type name
 
 @Composable
@@ -89,6 +91,12 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
     fun push(r: String) { stack = "$stack|$r" }
     fun replaceTop(r: String) { stack = stack.substringBeforeLast('|', "") .let { if (it.isEmpty()) r else "$it|$r" } }
     fun pop() { stack = stack.substringBeforeLast('|', MONTH) }
+
+    /** After deleting from the edit screen, also leave the deleted expense's read-only view. */
+    fun popAfterDelete(id: String) {
+        pop()
+        if (stack.substringAfterLast('|') == VIEW + id) pop()
+    }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -159,7 +167,7 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
             }
             route == SEARCH -> SearchScreen(
                 expenses = data.expenses,
-                onOpen = { push(EDIT + it) },
+                onOpen = { push(VIEW + it) },
                 onBack = ::pop,
             )
             route.startsWith(CATEGORY) -> {
@@ -174,7 +182,15 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                     foodType = foodType,
                     groups = groups,
                     onFoodType = { t -> replaceTop(CATEGORY + category.name + (t?.let { ":" + it.name } ?: "")) },
-                    onOpen = { push(EDIT + it) },
+                    onOpen = { push(VIEW + it) },
+                    onBack = ::pop,
+                )
+            }
+            route.startsWith(VIEW) -> key(route) {
+                ExpenseDetailScreen(
+                    expense = data.find(route.removePrefix(VIEW)),
+                    onEdit = { push(EDIT + it) },
+                    onDelete = { vm.delete(it); pop() },
                     onBack = ::pop,
                 )
             }
@@ -192,7 +208,7 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                         month = YearMonth.from(it.date)
                         pop()
                     },
-                    onDelete = { vm.delete(it); pop() },
+                    onDelete = { vm.delete(it); popAfterDelete(it) },
                     onBack = ::pop,
                 )
             }
@@ -215,7 +231,7 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                     onPreviousMonth = { month = month.minusMonths(1) },
                     onNextMonth = { month = month.plusMonths(1) },
                     onAdd = { push(EDIT) },
-                    onOpen = { push(EDIT + it) },
+                    onOpen = { push(VIEW + it) },
                     onCategory = { c, t -> push(CATEGORY + c.name + (t?.let { ":" + it.name } ?: "")) },
                     onSearch = { push(SEARCH) },
                     onAnnals = {

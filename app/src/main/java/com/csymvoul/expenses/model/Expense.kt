@@ -43,7 +43,12 @@ data class Expense(
 data class Goals(
     val monthlyCents: Long? = null,
     val perCategoryCents: Map<Category, Long> = emptyMap(),
-)
+) {
+    companion object {
+        /** Categories that can have their own goal. Goals saved for others are ignored. */
+        val CATEGORIES_WITH_GOALS = listOf(Category.ENTERTAINMENT)
+    }
+}
 
 /** Everything the app stores. */
 @Serializable

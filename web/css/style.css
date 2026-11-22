@@ -317,3 +317,14 @@ input[type='range'] { width: 100%; accent-color: var(--primary); }
 .bar-labels span.on { color: var(--primary); font-weight: 700; }
 .up { color: var(--error); }
 .down { color: var(--good); }
+
+/* Calendar month header */
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.cal-head .h-medium { flex: 1; text-align: center; }
+.cal { touch-action: pan-y; }
+
+/* Read-only expense view */
+.detail { display: flex; flex-direction: column; gap: 2px; }
+.gold-rule { border: 0; border-top: 3px double var(--gold-soft); margin: 4px 0; width: 100%; }
+.center-link { display: block; margin: 8px auto; color: var(--error); }
+main > .btn.wide { margin-top: 8px; }

@@ -332,3 +332,20 @@ test('upcoming reminders cross month and year ends', () => {
   const list = upcomingReminders([], new Date(2026, 11, 31, 8, 0), 3);
   assert.deepEqual(list.map((r) => r.date), ['2026-12-31', '2027-01-01', '2027-01-02']);
 });
+
+// --- goals only for entertainment, split wording ---
+
+import { CATEGORIES_WITH_GOALS, splitLine } from '../js/model.js';
+
+test('only entertainment can have a category goal', () => {
+  assert.deepEqual(CATEGORIES_WITH_GOALS, ['ENTERTAINMENT']);
+  const d = { ...data, goals: { monthlyCents: null, perCategoryCents: { ENTERTAINMENT: 2000, RENT: 50000, BILLS: 1000 } } };
+  const withGoals = monthlySummary(d, '2026-11').categories.filter((c) => c.goal).map((c) => c.category);
+  assert.deepEqual(withGoals, ['ENTERTAINMENT']);
+});
+
+test('split wording for the read-only view', () => {
+  assert.equal(splitLine(e('2026-11-22', 3600, 'OTHER'), format), 'Not split · all yours');
+  assert.equal(splitLine(e('2026-11-22', 3600, 'OTHER', 50), format), 'Your share 50% (€18.00) · theirs 50% (€18.00)');
+  assert.equal(splitLine(e('2026-11-22', 1001, 'OTHER', 33), format), 'Your share 33% (€3.30) · theirs 67% (€6.71)');
+});

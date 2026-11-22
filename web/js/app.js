@@ -1,5 +1,5 @@
 // Expensiarmus web app: screens, navigation and event handling. Logic lives in the other modules.
-import { CATEGORIES, FOOD_TYPES, category, foodType, makeExpense, myShareCents, isSplit, upsert, remove, find, monthOf } from './model.js';
+import { CATEGORIES, CATEGORIES_WITH_GOALS, FOOD_TYPES, category, foodType, makeExpense, myShareCents, isSplit, splitLine, upsert, remove, find, monthOf } from './model.js';
 import { parseToCents, format, forInput, compact } from './money.js';
 import { monthlySummary, describeGoal, yearSummary, allTimeSummary } from './summary.js';
 import { dailyTotals, onDay, calendarCells, byCategory, search, shiftMonth } from './queries.js';
@@ -86,6 +86,7 @@ const ICON = {
   more: '<svg viewBox="0 0 24 24" class="filled"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>',
   check: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg>',
+  pen: '<svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4zM14 6l3 3"/></svg>',
 };
 
 function header(title, { backBtn = false, actions = '' } = {}) {
@@ -224,7 +225,12 @@ function calendarCard() {
     return `<button class="${cls}" style="--heat:${heat.toFixed(2)}" data-action="day" data-day="${d}">
       <span>${Number(d.slice(8))}</span>${spent > 0 ? `<small>${compact(spent)}</small>` : ''}</button>`;
   });
-  return card(`<div class="cal">${['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((w) => `<span class="wd">${w}</span>`).join('')}${cells.join('')}</div>`);
+  return card(`<div class="cal-head">
+      <button class="icon-btn gold" data-action="prev-month" aria-label="Previous month">${ICON.left}</button>
+      <span class="h-medium">${monthTitle(ui.month)}</span>
+      <button class="icon-btn gold" data-action="next-month" aria-label="Next month">${ICON.right}</button>
+    </div>
+    <div class="cal" data-swipe="month">${['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((w) => `<span class="wd">${w}</span>`).join('')}${cells.join('')}</div>`);
 }
 
 function owlBanner() {
@@ -388,6 +394,42 @@ function saveDraft() {
   back();
 }
 
+// ---------- read-only view ----------
+
+function viewScreen(id) {
+  const e = find(data, id);
+  if (!e) {
+    setTimeout(back, 0); // deleted from the edit screen: nothing to show
+    return header('📜 Ledger entry', { backBtn: true });
+  }
+  const c = category(e.category);
+  const f = e.foodType ? foodType(e.foodType) : null;
+  const row = (label, value, note = '') => `<div class="detail"><span class="h-small">${label}</span><span>${esc(value)}</span>${note ? `<span class="small soft italic">${esc(note)}</span>` : ''}</div>`;
+  const actions = `<button class="icon-btn" data-action="ask-delete" aria-label="Delete">${ICON.trash}</button>
+    <button class="icon-btn" data-action="amend" data-id="${esc(e.id)}" aria-label="Amend">${ICON.pen}</button>`;
+  const modal = ui.modal
+    ? `<div class="modal-backdrop"><div class="card modal"><div class="paper">
+        <h3 class="h-medium">Evanesco?</h3>
+        <p>"${esc(e.title)}" will vanish from the ledger. This cannot be undone.</p>
+        <div class="modal-actions"><button class="link" data-action="cancel-delete">Keep it</button><button class="btn danger" data-action="confirm-delete" data-id="${esc(e.id)}">Evanesco</button></div>
+      </div></div></div>`
+    : '';
+  return `${header('📜 Ledger entry', { backBtn: true, actions })}
+  <main>
+    ${card(`<div class="legend-row">${emblem(f ? f.emoji : c.emoji, c.color, 52)}
+        <span class="row-main"><span class="h-large">${esc(e.title)}</span>
+          <span class="total">${format(myShareCents(e))}</span>
+          ${isSplit(e) ? `<span class="small soft">of ${format(e.amountCents)} in full</span>` : ''}</span></div>
+      <hr class="gold-rule">
+      ${row('Date', fmt(e.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}
+      ${row('Category', `${c.emoji} ${c.label}`, c.nickname)}
+      ${f ? row('Food', `${f.emoji} ${f.label}`, f.nickname) : ''}
+      ${row('Split', splitLine(e, format))}`)}
+    <button class="btn wide" data-action="amend" data-id="${esc(e.id)}">✏️ Amend expense</button>
+    <button class="link center-link" data-action="ask-delete">Evanesco · delete</button>
+  </main>${modal}`;
+}
+
 // ---------- category ----------
 
 function categoryScreen(catId, foodId) {
@@ -446,8 +488,8 @@ function goalsScreen() {
   <main class="form">
     <p class="soft">Protego! Cast a ward on your spending. Goals apply to every month until you change them; leave a field empty for no goal.</p>
     ${field('overall', 'Total per month', g.monthlyCents)}
-    ${ornament('Wards per vault')}
-    ${CATEGORIES.map((c) => field(c.id, `${c.emoji} ${c.label}`, g.perCategoryCents?.[c.id])).join('')}
+    ${ornament('A ward for Revelry & Feasts')}
+    ${CATEGORIES_WITH_GOALS.map(category).map((c) => field(c.id, `${c.emoji} ${c.label}`, g.perCategoryCents?.[c.id])).join('')}
     <p class="error" id="goal-warning" hidden></p>
     <button class="btn wide" data-action="save-goals">🛡 Cast the wards · Save</button>
   </main>`;
@@ -466,7 +508,7 @@ function checkGoals() {
   const sum = inputs.filter((i) => i.dataset.key !== 'overall').reduce((a, i) => a + (goalCents(i.value) ?? 0), 0);
   const warn = app.querySelector('#goal-warning');
   warn.hidden = !(ok && overall && sum > overall);
-  warn.textContent = `Category goals add up to ${format(sum)}, more than the monthly total.`;
+  warn.textContent = `The Entertainment goal (${format(sum)}) is more than the monthly total.`;
   app.querySelector('[data-action="save-goals"]').disabled = !ok;
   return ok;
 }
@@ -612,15 +654,15 @@ function toast(text) {
 
 function render() {
   const r = route();
-  if (r.name !== 'edit') {
-    draft = null;
-    ui.modal = false;
-  }
+  if (r.name !== 'edit') draft = null;
+  if (r.name !== ui.modalScreen) ui.modal = false;
+  ui.modalScreen = r.name;
   if (r.name !== 'month') ui.menu = false;
   if (r.name !== ui.lastScreen && (r.name === 'month' || r.name === 'annals')) ui.highlighted = null;
   ui.lastScreen = r.name;
   switch (r.name) {
     case 'edit': app.innerHTML = editScreen(r.a); break;
+    case 'view': app.innerHTML = viewScreen(r.a); break;
     case 'category': app.innerHTML = categoryScreen(r.a, r.b); break;
     case 'search': app.innerHTML = searchScreen(); break;
     case 'goals': app.innerHTML = goalsScreen(); break;
@@ -659,7 +701,8 @@ const actions = {
   day: (el) => { ui.day = el.dataset.day; render(); },
   category: (el) => go(`#/category/${el.dataset.cat}${el.dataset.food ? `/${el.dataset.food}` : ''}`),
   'cat-food': (el) => location.replace(`#/category/${route().a}${el.dataset.food ? `/${el.dataset.food}` : ''}`),
-  open: (el) => go(`#/edit/${encodeURIComponent(el.dataset.id)}`),
+  open: (el) => go(`#/view/${encodeURIComponent(el.dataset.id)}`),
+  amend: (el) => go(`#/edit/${encodeURIComponent(el.dataset.id)}`),
   export: () => { ui.menu = false; render(); exportCsv(); },
   'edit-cat': (el) => { draft.category = el.dataset.cat; if (draft.category !== 'ENTERTAINMENT') draft.foodType = null; render(); },
   'edit-food': (el) => { draft.foodType = el.dataset.food || null; render(); },
@@ -667,7 +710,13 @@ const actions = {
   save: saveDraft,
   'ask-delete': () => { ui.modal = true; render(); },
   'cancel-delete': () => { ui.modal = false; render(); },
-  'confirm-delete': () => { commit(remove(data, draft.id)); ui.modal = false; draft = null; back(); },
+  'confirm-delete': (el) => {
+    const id = el.dataset.id || draft?.id;
+    commit(remove(data, id));
+    ui.modal = false;
+    draft = null;
+    back(); // from the edit screen this lands on the deleted expense's view, which steps back again
+  },
   'search-cat': (el) => {
     const c = el.dataset.cat;
     finder.cats = finder.cats.includes(c) ? finder.cats.filter((x) => x !== c) : [...finder.cats, c];
@@ -712,6 +761,19 @@ app.addEventListener('change', (ev) => {
   if (ev.target.matches('[data-input="edit-split"], [data-input="edit-date"], [data-input="owl-toggle"]')) onInput(ev);
 });
 window.addEventListener('hashchange', render);
+
+// Swipe left/right on the calendar to change month.
+let swipeX = null;
+app.addEventListener('touchstart', (ev) => { swipeX = ev.target.closest('[data-swipe="month"]') ? ev.touches[0].clientX : null; }, { passive: true });
+app.addEventListener('touchend', (ev) => {
+  if (swipeX == null) return;
+  const dx = ev.changedTouches[0].clientX - swipeX;
+  swipeX = null;
+  if (Math.abs(dx) < 60) return;
+  ui.month = shiftMonth(ui.month, dx < 0 ? 1 : -1);
+  ui.highlighted = null;
+  render();
+});
 
 navigator.storage?.persist?.();
 if (!nativeBridge && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});

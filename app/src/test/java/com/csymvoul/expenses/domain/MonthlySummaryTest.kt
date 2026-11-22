@@ -74,6 +74,13 @@ class MonthlySummaryTest {
         assertNull(s.categories.first { it.category == Category.RENT }.goal)
     }
 
+    @Test fun `only entertainment can have a category goal`() {
+        val goals = Goals(perCategoryCents = mapOf(Category.ENTERTAINMENT to 2_000, Category.RENT to 50_000, Category.BILLS to 1_000))
+        val s = MonthlySummary.of(data.copy(goals = goals), nov)
+        assertEquals(listOf(Category.ENTERTAINMENT), s.categories.filter { it.goal != null }.map { it.category })
+        assertEquals(listOf(Category.ENTERTAINMENT), Goals.CATEGORIES_WITH_GOALS)
+    }
+
     @Test fun `empty month`() {
         val s = MonthlySummary.of(data.copy(goals = Goals(monthlyCents = 50_000)), YearMonth.of(2025, 1))
         assertEquals(0L, s.totalCents)

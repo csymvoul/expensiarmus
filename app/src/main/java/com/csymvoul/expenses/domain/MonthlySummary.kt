@@ -4,6 +4,7 @@ import com.csymvoul.expenses.model.AppData
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.FoodType
+import com.csymvoul.expenses.model.Goals
 import java.time.YearMonth
 
 data class GoalProgress(val goalCents: Long, val spentCents: Long) {
@@ -96,7 +97,9 @@ data class MonthlySummary(
                     category = category,
                     spentCents = spent,
                     shareOfMonth = if (total > 0) spent.toFloat() / total else 0f,
-                    goal = data.goals.perCategoryCents[category]?.takeIf { it > 0 }?.let { GoalProgress(it, spent) },
+                    goal = data.goals.perCategoryCents[category]
+                        ?.takeIf { it > 0 && category in Goals.CATEGORIES_WITH_GOALS }
+                        ?.let { GoalProgress(it, spent) },
                 )
             }
             return MonthlySummary(

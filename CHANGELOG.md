@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.0 (Android), web app 1.3.0 and iPhone app 1.1.0 – unreleased (2026-11-22)
+
+### Changed
+- **Goals:** Protego now has just the monthly total goal and an **Entertainment** goal. Goals saved earlier for other categories are ignored and no longer shown.
+- **Opening an expense** shows it read-only first: amount (your share and the full amount), date, category, food type and split ("Your share 50% (€18.00) · theirs 50% (€18.00)"). **✏️ Amend expense** opens the edit form, and Evanesco deletes it. After saving, you're back on the updated view; after deleting from the edit form, you're back on the list.
+
+### Added
+- **Calendar:** ‹ › arrows on the calendar card to move through months, and swiping left/right on the calendar.
+- Tests: 4 new Android tests (Entertainment-only goals, split wording), 107 in total. 2 new web tests, 31 in total. All passing.
+- Checked in a browser at phone size: goals, calendar arrows and swipe, view → amend → save → back, and delete from the edit form.
+
 ## iPhone app 1.0 and web app 1.2.0 – unreleased (2026-11-22)
 
 ### Added

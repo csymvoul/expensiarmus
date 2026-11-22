@@ -1,0 +1,153 @@
+package com.csymvoul.expenses.ui.screens
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.unit.dp
+import com.csymvoul.expenses.domain.ExpenseDetails
+import com.csymvoul.expenses.domain.Money
+import com.csymvoul.expenses.model.Expense
+import com.csymvoul.expenses.ui.components.EmblemBadge
+import com.csymvoul.expenses.ui.components.ParchmentCard
+import com.csymvoul.expenses.ui.components.WizardTopBar
+import com.csymvoul.expenses.ui.theme.color
+import com.csymvoul.expenses.ui.theme.emoji
+import com.csymvoul.expenses.ui.theme.nickname
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+private val longDate = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.ENGLISH)
+
+/** Read-only view of one expense, with Amend and Evanesco (delete). */
+@Composable
+fun ExpenseDetailScreen(
+    expense: Expense?,
+    onEdit: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    onBack: () -> Unit,
+) {
+    // Deleted from the edit screen, or gone: there is nothing to show.
+    if (expense == null) {
+        LaunchedEffect(Unit) { onBack() }
+        return
+    }
+    var confirmingDelete by remember { mutableStateOf(false) }
+    Scaffold(
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground,
+        topBar = {
+            WizardTopBar(
+                title = "📜 Ledger entry",
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { confirmingDelete = true }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
+                    }
+                    IconButton(onClick = { onEdit(expense.id) }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Amend")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            ParchmentCard(spacing = Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    EmblemBadge(expense.foodType?.emoji ?: expense.category.emoji, expense.category.color, size = 52.dp)
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(expense.title, style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            Money.format(expense.myShareCents),
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        if (expense.isSplit) {
+                            Text(
+                                "of ${Money.format(expense.amountCents)} in full",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
+                DetailRow("Date", expense.date.format(longDate))
+                DetailRow("Category", "${expense.category.emoji} ${expense.category.label}", expense.category.nickname)
+                expense.foodType?.let { DetailRow("Food", "${it.emoji} ${it.label}", it.nickname) }
+                DetailRow("Split", ExpenseDetails.splitLine(expense))
+            }
+            Button(onClick = { onEdit(expense.id) }, shape = CutCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                Text("✏️ Amend expense")
+            }
+            TextButton(onClick = { confirmingDelete = true }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                Text("Evanesco · delete", color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+
+    if (confirmingDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmingDelete = false },
+            title = { Text("Evanesco?") },
+            text = { Text("\"${expense.title}\" will vanish from the ledger. This cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = { confirmingDelete = false; onDelete(expense.id) }) { Text("Evanesco") }
+            },
+            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text("Keep it") } },
+        )
+    }
+}
+
+@Composable
+private fun DetailRow(label: String, value: String, note: String? = null) {
+    Column {
+        Text(label, style = MaterialTheme.typography.titleSmall)
+        Text(value, style = MaterialTheme.typography.bodyLarge)
+        note?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, fontStyle = FontStyle.Italic, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
