@@ -1,5 +1,24 @@
 # Changelog
 
+## iPhone app 1.0 and web app 1.2.0 – unreleased (2026-11-22)
+
+### Added
+- **Native iPhone app** (`ios/`) for personal use, installed with a free Apple ID through AltStore. It bundles the web app and adds:
+  - a real **21:30 notification** with the Android wording. The next 30 evenings are scheduled and refreshed whenever the data changes or the app opens. Tapping it opens Record expense. On/off switch under ⋮ → 🦉 Owl reminder, with a note if notifications are turned off in Settings.
+  - CSV export through the iPhone share sheet.
+  - a backup of the data in Documents/expensiarmus-data.json, visible in the Files app. It is restored automatically if the web view's storage is ever cleared.
+- `web/js/reminder.js`: reminder wording and the evenings to schedule, shared logic for the iPhone app.
+- `ios/build-ipa.sh` builds an unsigned `.ipa` for AltStore. The Xcode project is generated from `ios/project.yml` (XcodeGen).
+- Tests: 4 new web tests (29 in total) and Swift unit tests for message parsing, safe quoting and file types. The Swift logic checks pass when compiled for macOS; the Xcode test target runs once Xcode is installed.
+- Checked in a browser: the web app for friends is unchanged, and with a stand-in for the iPhone app the page sends the right schedule, save and share messages.
+
+### Changed (web app)
+- Inside the iPhone app the web app hides the "Add to Home Screen" hint and the evening banner (the real notification replaces it) and does not register its offline worker. Nothing changes on github.io.
+
+### Known issues / not yet done
+- Not built yet: Xcode is not installed on the Mac, so the iPhone app has not been compiled for iOS or run.
+- The iPhone app's data is separate from the github.io copy in Safari; there is no import yet.
+
 ## 1.3.0 (Android) and web app 1.1.0 – 2026-11-22
 
 ### Added

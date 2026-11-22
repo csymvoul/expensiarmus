@@ -1,6 +1,6 @@
 # Expensiarmus
 
-A personal, wizard-themed app for tracking monthly spending in euros, for Android (native app) and iPhone (web app you add to the home screen). Think of it as an enchanted expense report on parchment. Everything is stored on the phone; there is no account, server or internet access.
+A personal, wizard-themed app for tracking monthly spending in euros: a native Android app, a web app anyone can add to their iPhone home screen, and an iPhone app for personal use (installed with AltStore). Think of it as an enchanted expense report on parchment. Everything is stored on the phone; there is no account, server or internet access.
 
 ## What it does
 
@@ -21,6 +21,10 @@ A personal, wizard-themed app for tracking monthly spending in euros, for Androi
 
 The same app also runs as a web app at **https://csymvoul.github.io/expenses-app/**. Open it in Safari, tap **Share → Add to Home Screen**, and it gets its own icon, opens full screen and works offline. It has the same features and look as the Android app, except the 21:30 reminder: iPhones don't let web apps schedule notifications, so the app's 🦉 Owl reminder screen explains how to set a daily 21:30 reminder in the iPhone Reminders app. Data stays on the phone (in Safari's storage for the app), and nothing syncs between phones.
 
+## iPhone: the app (personal use)
+
+`ios/` holds a small native iPhone app that bundles the same web app and adds what a web page can't do: a real **21:30 notification** (same wording as on Android, scheduled for the next 30 evenings and refreshed whenever the data changes or the app opens), CSV export through the iPhone share sheet, and a backup copy of the data in the app's Documents folder (visible in the Files app). It is meant to be installed on one's own iPhone with a free Apple ID through AltStore; see [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## How it works
 
 - Kotlin + Jetpack Compose (Material 3), single activity, minimum Android 8.0 (API 26).
@@ -34,7 +38,8 @@ The same app also runs as a web app at **https://csymvoul.github.io/expenses-app
   - `reminder/`: alarm scheduling and the notification receiver
   - `ui/`: view model, screens (month, calendar, annals, category, search, add/edit, goals), theme and components
 - Unit tests for all of `model/`, `domain/` and `data/` are in `app/src/test/`.
-- The web app (`web/`) is plain HTML, CSS and JavaScript modules with no build step. Its logic (`web/js/model.js`, `money.js`, `summary.js`, `queries.js`, `csv.js`, `store.js`) mirrors the Kotlin code and uses the same data format; `app.js` draws the screens. It stores data in `localStorage` and works offline through a service worker (`web/sw.js`). Its tests run with Node's built-in test runner (`web/test/`).
+- The web app (`web/`) is plain HTML, CSS and JavaScript modules with no build step. Its logic (`web/js/model.js`, `money.js`, `summary.js`, `queries.js`, `csv.js`, `store.js`) mirrors the Kotlin code and uses the same data format; `app.js` draws the screens. It stores data in `localStorage` and works offline through a service worker (`web/sw.js`). Its tests run with Node's built-in test runner (`web/test/`). `web/js/reminder.js` works out the 21:30 reminders for the iPhone app.
+- The iPhone app (`ios/`) is SwiftUI with a `WKWebView` that serves the bundled `web/` folder from an `expensiarmus://` address. The page talks to Swift through a message handler (`Shell.swift`): `schedule` (notifications, `OwlScheduler.swift`), `save` (backup file, `Backup.swift`) and `share` (share sheet). The Xcode project is generated from `ios/project.yml` with XcodeGen.
 - The Cinzel font is licensed under the SIL Open Font License; see [licenses/Cinzel-OFL.txt](licenses/Cinzel-OFL.txt).
 
 ## More

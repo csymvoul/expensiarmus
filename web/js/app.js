@@ -4,7 +4,8 @@ import { parseToCents, format, forInput, compact } from './money.js';
 import { monthlySummary, describeGoal, yearSummary, allTimeSummary } from './summary.js';
 import { dailyTotals, onDay, calendarCells, byCategory, search, shiftMonth } from './queries.js';
 import { toCsv } from './csv.js';
-import { load, save } from './store.js';
+import { load, save, KEY } from './store.js';
+import { upcomingReminders } from './reminder.js';
 
 const app = document.getElementById('app');
 const storage = window.localStorage;
@@ -37,9 +38,23 @@ let draft = null; // the expense being added or edited
 const finder = { q: '', cats: [] };
 let navDepth = 0;
 
+// Inside the iPhone app the page can talk to Swift through this handler; on the web it is absent.
+const nativeBridge = window.webkit?.messageHandlers?.expensiarmus ?? null;
+const post = (message) => nativeBridge?.postMessage(message);
+const REMINDER_KEY = 'expensiarmus.reminder';
+const reminderOn = () => storage.getItem(REMINDER_KEY) !== 'off';
+
+/** Asks the iPhone app to (re)schedule the 21:30 owls for the coming evenings. */
+function scheduleOwls() {
+  post({ type: 'schedule', enabled: reminderOn(), reminders: reminderOn() ? upcomingReminders(data.expenses, new Date()) : [] });
+}
+
 function commit(next) {
   data = next;
   save(storage, data);
+  // The iPhone app keeps a copy outside the web view's storage, as a backup.
+  post({ type: 'save', key: KEY, json: storage.getItem(KEY) });
+  scheduleOwls();
 }
 
 // ---------- navigation ----------
@@ -213,14 +228,14 @@ function calendarCard() {
 }
 
 function owlBanner() {
-  if (ui.month !== today().slice(0, 7) || new Date().getHours() < 21) return '';
+  if (nativeBridge || ui.month !== today().slice(0, 7) || new Date().getHours() < 21) return '';
   if (data.expenses.some((e) => e.date === today())) return '';
   return `<button class="banner" data-action="go" data-to="#/edit">🦉 Owl post: nothing recorded today yet. Tap to record what you spent.</button>`;
 }
 
 function installBanner() {
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
-  if (!ios || navigator.standalone || storage.getItem('expensiarmus.installHintSeen')) return '';
+  if (!ios || nativeBridge || navigator.standalone || storage.getItem('expensiarmus.installHintSeen')) return '';
   return `<div class="banner install">
     <span>✨ Install Expensiarmus: tap <b>Share</b> <span class="share-glyph">⬆︎</span> then <b>Add to Home Screen</b>.</span>
     <button class="icon-btn small" data-action="dismiss-install" aria-label="Dismiss">✕</button></div>`;
@@ -472,6 +487,18 @@ function saveGoals() {
 // ---------- owl reminder ----------
 
 function owlScreen() {
+  if (nativeBridge) {
+    const denied = window.expensiarmusOwlStatus === 'denied';
+    return `${header('🦉 Owl reminder', { backBtn: true })}
+  <main>
+    ${card(`<h3 class="h-medium">A nightly owl at 21:30</h3>
+      <label class="switch-row"><span><span class="h-small">Send the 21:30 owl</span>
+        <span class="small soft">A notification every evening to record the day's expenses</span></span>
+        <input type="checkbox" class="switch" ${reminderOn() ? 'checked' : ''} data-input="owl-toggle"></label>
+      ${denied ? '<p class="error">Notifications are switched off for Expensiarmus. Turn them on in iPhone Settings → Notifications → Expensiarmus.</p>' : ''}
+      <p class="small soft">If nothing was recorded that day it says <i>"🦉 Owl post: did you forget the ledger?"</i>, otherwise it shows the day's count and total. Tap it to go straight to Record expense.</p>`)}
+  </main>`;
+  }
   return `${header('🦉 Owl reminder', { backBtn: true })}
   <main>
     ${card(`<h3 class="h-medium">A nightly owl at 21:30</h3>
@@ -557,6 +584,10 @@ async function exportCsv() {
   const name = `expensiarmus-${today()}.csv`;
   const blob = new Blob(['﻿' + toCsv(data.expenses)], { type: 'text/csv' });
   const file = new File([blob], name, { type: 'text/csv' });
+  if (nativeBridge) {
+    post({ type: 'share', filename: name, text: '\uFEFF' + toCsv(data.expenses) });
+    return;
+  }
   try {
     if (navigator.canShare?.({ files: [file] })) {
       await navigator.share({ files: [file], title: 'Expensiarmus ledger' });
@@ -659,6 +690,7 @@ const inputs = {
   },
   'search-q': (el) => { finder.q = el.value; app.querySelector('#results').innerHTML = searchResults(); },
   goal: () => checkGoals(),
+  'owl-toggle': (el) => { storage.setItem(REMINDER_KEY, el.checked ? 'on' : 'off'); scheduleOwls(); },
 };
 
 app.addEventListener('click', (ev) => {
@@ -677,10 +709,18 @@ const onInput = (ev) => {
 app.addEventListener('input', onInput);
 app.addEventListener('change', (ev) => {
   // Checkboxes and date pickers report through "change" on some browsers.
-  if (ev.target.matches('[data-input="edit-split"], [data-input="edit-date"]')) onInput(ev);
+  if (ev.target.matches('[data-input="edit-split"], [data-input="edit-date"], [data-input="owl-toggle"]')) onInput(ev);
 });
 window.addEventListener('hashchange', render);
 
 navigator.storage?.persist?.();
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if (!nativeBridge && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+// Hooks the iPhone app calls: open a screen from a notification, report notification permission.
+window.expensiarmusOpen = (hash) => { navDepth = 0; location.hash = hash; };
+window.addEventListener('owlstatus', () => { if (route().name === 'owl') render(); });
+// Keep the 30-day window of owls rolling whenever the app comes back to the foreground.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') scheduleOwls(); });
+
 render();
+scheduleOwls();

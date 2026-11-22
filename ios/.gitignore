@@ -1,0 +1,4 @@
+Expensiarmus.xcodeproj/
+build/
+*.ipa
+Expensiarmus/Info.plist

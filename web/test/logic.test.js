@@ -295,3 +295,40 @@ test('all-time summary', () => {
   assert.deepEqual(empty.bars, []);
   assert.equal(empty.totalCents, 0);
 });
+
+// --- 21:30 owl reminder (iPhone app) ---
+
+import { reminderMessage, upcomingReminders } from '../js/reminder.js';
+
+test('reminder wording matches the Android app', () => {
+  const day = '2026-11-22';
+  const none = reminderMessage([e('2026-11-21', 500, 'OTHER')], day);
+  assert.equal(none.title, '🦉 Owl post: did you forget the ledger?');
+  assert.equal(none.body, 'No expenses recorded today. Tap to record what you spent.');
+  const some = reminderMessage([e(day, 1000, 'OTHER'), e(day, 3000, 'OTHER', 50), e('2026-11-21', 9999, 'OTHER')], day);
+  assert.equal(some.title, '🦉 Owl post: anything else for the ledger?');
+  assert.equal(some.body, 'Today: 2 expenses, €25.00. Tap to add anything you missed.');
+  assert.equal(reminderMessage([e(day, 450, 'OTHER')], day).body, 'Today: 1 expense, €4.50. Tap to add anything you missed.');
+});
+
+test('upcoming reminders start today before 21:30', () => {
+  const list = upcomingReminders([e('2026-11-22', 1200, 'OTHER')], new Date(2026, 10, 22, 9, 0), 30);
+  assert.equal(list.length, 30);
+  assert.equal(list[0].date, '2026-11-22');
+  assert.equal(list[0].body, 'Today: 1 expense, €12.00. Tap to add anything you missed.');
+  assert.equal(list[1].date, '2026-11-23');
+  assert.equal(list[1].title, '🦉 Owl post: did you forget the ledger?');
+  assert.equal(list.at(-1).date, '2026-12-21');
+  assert.ok(list.every((r) => r.hour === 21 && r.minute === 30));
+});
+
+test('upcoming reminders skip today once 21:30 has passed', () => {
+  const list = upcomingReminders([], new Date(2026, 10, 22, 21, 30), 30);
+  assert.equal(list.length, 29);
+  assert.equal(list[0].date, '2026-11-23');
+});
+
+test('upcoming reminders cross month and year ends', () => {
+  const list = upcomingReminders([], new Date(2026, 11, 31, 8, 0), 3);
+  assert.deepEqual(list.map((r) => r.date), ['2026-12-31', '2027-01-01', '2027-01-02']);
+});
