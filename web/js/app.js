@@ -757,6 +757,12 @@ app.addEventListener('change', (ev) => {
 });
 window.addEventListener('hashchange', render);
 
+// Safari ignores user-scalable=no, so cancel its pinch gestures here (double-tap is off via CSS).
+for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(type, (ev) => ev.preventDefault(), { passive: false });
+}
+document.addEventListener('touchmove', (ev) => { if (ev.touches.length > 1) ev.preventDefault(); }, { passive: false });
+
 navigator.storage?.persist?.();
 if (!nativeBridge && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 

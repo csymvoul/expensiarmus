@@ -1,5 +1,18 @@
 # Changelog
 
+## Web app 1.3.2 and iPhone app 1.1.2 – unreleased (2026-11-22)
+
+### Changed
+- **No zooming:** double-tap and pinch no longer zoom the page.
+  - On github.io: `maximum-scale=1, user-scalable=no`, CSS `touch-action: manipulation` (also removes the tap delay), and a small script cancelling Safari's pinch gestures, since Safari ignores `user-scalable=no`.
+  - In the iPhone app: the web view is locked at 100% (zoom range 1–1 and its pinch recogniser switched off).
+- **Top bar stays at the top** while scrolling, like on Android. It's now fixed rather than sticky, which iPhone Safari and the app's web view didn't always honour, with matching space so no content sits under it.
+- 1 new web test guarding the no-zoom settings and the fixed bar. 32 in total, all passing.
+- Checked in a browser at phone size: the bar stays put after scrolling, and nothing is hidden under it.
+
+### Known issues
+- Safari may change how it treats pinch blocking in future iOS versions. The iPhone app is unaffected.
+
 ## 1.4.1 (Android), web app 1.3.1 and iPhone app 1.1.1 – unreleased (2026-11-22)
 
 ### Removed

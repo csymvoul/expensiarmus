@@ -10,6 +10,8 @@ struct WebView: UIViewRepresentable {
         config.setURLSchemeHandler(BundleSchemeHandler(), forURLScheme: Shell.scheme)
         config.userContentController.add(shell, name: "expensiarmus")
         config.websiteDataStore = .default()
+        // Respect the page's user-scalable=no.
+        config.ignoresViewportScaleLimits = false
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
@@ -18,6 +20,10 @@ struct WebView: UIViewRepresentable {
         // The page handles the notch and home indicator itself with env(safe-area-inset-*).
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.allowsBackForwardNavigationGestures = false
+        // No zooming at all: pinch and double-tap leave the page at 100%.
+        webView.scrollView.minimumZoomScale = 1
+        webView.scrollView.maximumZoomScale = 1
+        webView.scrollView.bouncesZoom = false
         shell.attach(to: webView)
         return webView
     }

@@ -43,6 +43,8 @@ final class Shell: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
 
     /// A notification tapped while the page was still loading is handled once it has loaded.
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        // WebKit sets up its pinch recogniser with the page; switch it off once the page is in.
+        webView.scrollView.pinchGestureRecognizer?.isEnabled = false
         if let route = pendingRoute {
             pendingRoute = nil
             open(route: route)

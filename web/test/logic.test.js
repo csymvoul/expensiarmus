@@ -349,3 +349,17 @@ test('split wording for the read-only view', () => {
   assert.equal(splitLine(e('2026-11-22', 3600, 'OTHER', 50), format), 'Your share 50% (€18.00) · theirs 50% (€18.00)');
   assert.equal(splitLine(e('2026-11-22', 1001, 'OTHER', 33), format), 'Your share 33% (€3.30) · theirs 67% (€6.71)');
 });
+
+// --- page setup: no zoom, fixed top bar ---
+
+import { readFileSync } from 'node:fs';
+
+test('page blocks zooming and keeps the top bar fixed', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
+  const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+  assert.match(html, /maximum-scale=1, user-scalable=no/);
+  assert.match(css, /html \{[^}]*touch-action: manipulation/);
+  assert.match(css, /\.bar \{\s*position: fixed;/);
+  assert.match(app, /'gesturestart', 'gesturechange', 'gestureend'/);
+});
