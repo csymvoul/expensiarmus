@@ -1,5 +1,10 @@
 # Changelog
 
+## iPhone app 1.3.1 and web app 1.5.1 – unreleased (2026-11-23)
+
+### Fixed
+- Quick add's number pad keys (digits, "." / "," and "⌫") weren't centred in the iPhone app. The 1.3.0 app was built just before the centring fix went into the web code. The keys now centre with flexbox, which works the same in Safari and the app's web view, and a test guards it. Checked in a browser: every key is exactly centred. The Android number pad uses Material buttons, which centre their content, so it needed no change.
+
 ## 1.6.0 (Android), web app 1.5.0 and iPhone app 1.3.0 – unreleased (2026-11-23)
 
 ### Added

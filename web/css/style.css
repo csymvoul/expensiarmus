@@ -391,7 +391,9 @@ main.with-tabs { padding-bottom: calc(170px + env(safe-area-inset-bottom)); }
 .quick-date input { min-height: 36px; width: auto; padding: 4px 10px; font-size: 15px; }
 .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .numpad button {
-  height: 48px; font-size: 22px; font-weight: 600; border-radius: 10px; text-align: center;
+  height: 48px; font-size: 22px; font-weight: 600; border-radius: 10px;
+  /* Centre the digit, ".", "," and "⌫" the same way in Safari and the iPhone app's web view. */
+  display: flex; align-items: center; justify-content: center; text-align: center; padding: 0; line-height: 1;
   background: var(--paper-center); border: 1px solid var(--gold-soft);
 }
 .numpad button:active { background: var(--line); }

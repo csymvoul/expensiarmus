@@ -359,6 +359,14 @@ test('page blocks zooming and keeps the top bar fixed', () => {
   assert.match(app, /'gesturestart', 'gesturechange', 'gestureend'/);
 });
 
+test('number pad keys are centred', () => {
+  const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
+  const rule = css.match(/\.numpad button \{([^}]*)\}/)[1];
+  assert.match(rule, /display: flex/);
+  assert.match(rule, /align-items: center/);
+  assert.match(rule, /justify-content: center/);
+});
+
 // --- per-month goals and warnings (same cases as the Android tests) ---
 
 import { goalFor, setGoal, removeGoal, migrateGoals, scopeText, alertsDue, markAlertsSent, LEGACY_START } from '../js/goals.js';
