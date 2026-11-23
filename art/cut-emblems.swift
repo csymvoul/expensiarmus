@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 // Tabs from art/emblems-tabs.jpg: y 277, size 213, x 80/339/597/856/1114 (ledger, calendar, annals, goals, settings).
 // Categories from art/emblems-categories.jpg: row 1 y 118 size 192, row 2 y 430 size 190, x 91/350/608/867/1125
 //   (rent, supermarket, entertainment, bills, shopping / fuel, other, food_delivery, food_dine_out, food_day_to_day).
+// Settings, logo pouch and search: see DEPLOYMENT.md, "Category and tab emblems".
 let args = CommandLine.arguments
 let src = CGImageSourceCreateWithURL(URL(fileURLWithPath: args[1]) as CFURL, nil)!
 let image = CGImageSourceCreateImageAtIndex(src, 0, nil)!

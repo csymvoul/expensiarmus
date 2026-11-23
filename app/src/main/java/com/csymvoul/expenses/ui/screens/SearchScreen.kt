@@ -1,6 +1,7 @@
 package com.csymvoul.expenses.ui.screens
 
 import com.csymvoul.expenses.ui.components.ChipEmblem
+import com.csymvoul.expenses.R
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -65,6 +66,7 @@ fun SearchScreen(expenses: List<Expense>, onOpen: (String) -> Unit, onBack: () -
         topBar = {
             WizardTopBar(
                 title = LocalWords.current.search,
+                icon = R.drawable.emblem_tab_search,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

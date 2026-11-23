@@ -48,6 +48,7 @@ import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.ui.components.EmblemBadge
+import com.csymvoul.expenses.ui.components.Tab
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.theme.color
 import com.csymvoul.expenses.ui.theme.icon
@@ -154,7 +155,9 @@ fun QuickAddSheet(
                 modifier = Modifier.fillMaxWidth(),
             )
             TextButton(onClick = { pickingDate = true }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                Text("📅 ${day.format(dayFormat)}")
+                EmblemBadge(Tab.CALENDAR.icon, size = 26.dp)
+                Spacer(Modifier.width(8.dp))
+                Text(day.format(dayFormat))
             }
             listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf(Money.decimalKey(), "0", "⌫")).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

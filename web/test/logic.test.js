@@ -600,7 +600,7 @@ test('withoutEmoji drops a leading emoji and keeps plain labels', () => {
 
 test('logo and Settings emblems exist on disk and are cached offline', () => {
   const sw = readFileSync(webFile('sw.js'), 'utf8');
-  assert.deepEqual(Object.keys(EMBLEMS), ['logo', 'geminio', 'reminder', 'themeSystem', 'themeLight', 'themeDark']);
+  assert.deepEqual(Object.keys(EMBLEMS), ['logo', 'search', 'geminio', 'reminder', 'themeSystem', 'themeLight', 'themeDark']);
   for (const path of Object.values(EMBLEMS)) {
     assert.ok(existsSync(webFile(path)), `${path} is missing`);
     assert.ok(sw.includes(`'${path}'`), `${path} is not cached`);
@@ -625,4 +625,12 @@ test('in dark mode the gold buttons get burgundy frame lines', () => {
   const media = css.slice(css.indexOf('@media (prefers-color-scheme: dark)'));
   assert.match(media.slice(0, media.indexOf('}\n}')), /--frame-line: #7B1E1E;/);
   assert.match(css, /\.frame \{[^}]*background: var\(--frame-line\)/);
+});
+
+test('Quick add date and Accio use the painted calendar and magnifier emblems', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  assert.match(app, /<label class="quick-date">\$\{emblem\(TAB_ICONS\.calendar, 28\)\}<input/);
+  assert.doesNotMatch(app, /quick-date">📅/);
+  assert.match(app, /data-to="#\/search"[^`]*\$\{emblem\(EMBLEMS\.search, 32\)\}/);
+  assert.match(app, /header\(W\.search, \{ backBtn: true, icon: EMBLEMS\.search \}\)/);
 });

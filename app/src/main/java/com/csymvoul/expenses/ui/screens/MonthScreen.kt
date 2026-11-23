@@ -23,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -119,7 +118,7 @@ fun MonthScreen(
                 icon = R.drawable.emblem_logo_pouch,
                 actions = {
                     IconButton(onClick = onSearch) {
-                        Icon(Icons.Default.Search, contentDescription = w.search)
+                        EmblemBadge(R.drawable.emblem_tab_search, size = 32.dp)
                     }
                 },
             )

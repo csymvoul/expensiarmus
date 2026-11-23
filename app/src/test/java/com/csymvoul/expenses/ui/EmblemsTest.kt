@@ -66,7 +66,7 @@ class EmblemsTest {
 
     @Test fun `logo and settings emblems are their own pictures`() {
         val icons = listOf(
-            R.drawable.emblem_logo_pouch, R.drawable.emblem_set_geminio, R.drawable.emblem_set_reminder,
+            R.drawable.emblem_logo_pouch, R.drawable.emblem_tab_search, R.drawable.emblem_set_geminio, R.drawable.emblem_set_reminder,
             R.drawable.emblem_set_theme_system, R.drawable.emblem_set_theme_light, R.drawable.emblem_set_theme_dark,
         )
         assertEquals(icons.size, icons.toSet().size)

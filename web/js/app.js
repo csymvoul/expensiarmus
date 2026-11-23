@@ -319,7 +319,7 @@ function monthSwitch(prev = 'prev-month', next = 'next-month', title = monthTitl
 /** The Ledger tab (overview of the month) and the Calendar tab. */
 function monthScreen(calendar) {
   const s = monthlySummary(data, ui.month);
-  const actions = `<button class="icon-btn" data-action="go" data-to="#/search" aria-label="${W.search}">${ICON.search}</button>`;
+  const actions = `<button class="icon-btn" data-action="go" data-to="#/search" aria-label="${W.search}">${emblem(EMBLEMS.search, 32)}</button>`;
   let body;
   if (!calendar) {
     body = `${totalCard(s)}
@@ -379,7 +379,7 @@ function quickSheet() {
     <input class="quick-title" type="text" placeholder="Title (optional)" value="${esc(q.title)}" data-input="quick-title" autocapitalize="sentences">
     <div id="quick-sugg">${suggestionList(q.title, 'quick-sugg')}</div>
     <div class="quick-amount" id="quick-amount">${esc(quickAmountText())}</div>
-    <label class="quick-date">📅 <input type="date" value="${q.date}" data-input="quick-date"></label>
+    <label class="quick-date">${emblem(TAB_ICONS.calendar, 28)}<input type="date" value="${q.date}" data-input="quick-date"></label>
     <div class="numpad">${keys.map((k) => `<button data-action="quick-key" data-key="${k}">${k}</button>`).join('')}</div>
     <p class="small center ${q.error ? 'error' : 'soft'}" id="quick-help">${q.error ? 'Type an amount first' : 'Tap a category to save'}</p>
     <div class="tiles">${tiles.map((t) => `<button class="tile" data-action="quick-save" data-cat="${t.cat}" data-food="${t.food}">
@@ -609,7 +609,7 @@ function searchResults() {
 }
 
 function searchScreen() {
-  return `${header(W.search, { backBtn: true })}
+  return `${header(W.search, { backBtn: true, icon: EMBLEMS.search })}
   <main>
     <label class="search-box">${ICON.search}<input type="search" value="${esc(finder.q)}" placeholder="${esc(W.searchPlaceholder)}" data-input="search-q" enterkeyhint="search"></label>
     <div class="chips">${CATEGORIES.map((c) => `<button class="chip ${finder.cats.includes(c.id) ? 'on' : ''}" data-action="search-cat" data-cat="${c.id}">${chipIcon(c)}${c.label}</button>`).join('')}</div>

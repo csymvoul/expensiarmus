@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.9.2 (Android), web app 1.8.2 and iPhone app 1.6.2 – unreleased (2026-11-23)
+
+### Changed
+- **Accio has its own emblem:** a gold magnifying glass (`art/emblem-search.jpg`) on the Ledger's search button and in the Accio page's top bar.
+- **Quick add:** the date button shows the painted calendar emblem instead of the 📅 emoji.
+
+### Fixed
+- **Owl reminder emblem** in Settings sat slightly to the right of its circle; it is now cut centred on the owl and clock.
+- Tests: the Android picture test and the web emblem tests now cover the magnifying glass, and a new web test checks the Quick add date and Accio emblems (149 Android, 56 web tests, all passing). Checked in a browser: Ledger top bar, Quick add, Settings and Accio.
+
+### Known issues
+- Not yet checked on an Android phone or in the iPhone app.
+
 ## 1.9.1 (Android), web app 1.8.1 and iPhone app 1.6.1 – unreleased (2026-11-23)
 
 ### Changed

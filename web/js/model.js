@@ -29,6 +29,7 @@ export const TAB_ICONS = {
 /** Painted emblems for the app's own title and the Settings cards. */
 export const EMBLEMS = {
   logo: 'icons/emblems/logo_pouch.png',
+  search: 'icons/emblems/tab_search.png',
   geminio: 'icons/emblems/set_geminio.png',
   reminder: 'icons/emblems/set_reminder.png',
   themeSystem: 'icons/emblems/set_theme_system.png',
