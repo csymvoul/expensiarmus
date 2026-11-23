@@ -3,6 +3,7 @@
 import { CATEGORIES, category } from './model.js';
 import { format } from './money.js';
 import { monthlySummary } from './summary.js';
+import { wordsFor } from './words.js';
 
 /** Start month given to converted pre-1.5 goals, so they keep covering past months too. */
 export const LEGACY_START = '2000-01';
@@ -64,25 +65,25 @@ export function scopeText(entry, month) {
 export const alertKey = (cat, month, level) => `${cat}|${month}|${level}`;
 
 /** Warnings not yet sent for a month: at 80% of a goal, and on reaching it (100%, which wins). */
-export function alertsDue(data, month) {
+export function alertsDue(data, month, words = wordsFor(true)) {
   const sent = new Set(data.alertsSent ?? []);
   return monthlySummary(data, month).categories.flatMap((c) => {
     const g = c.goal;
     if (!g) return [];
     const level = g.spentCents >= g.goalCents ? 100 : g.spentCents * 100 >= g.goalCents * 80 ? 80 : 0;
     if (!level || sent.has(alertKey(c.category, month, level))) return [];
-    return [alertMessage(c.category, month, level, g)];
+    return [alertMessage(c.category, month, level, g, words)];
   });
 }
 
-export function alertMessage(cat, month, level, g) {
+export function alertMessage(cat, month, level, g, words = wordsFor(true)) {
   const label = category(cat).label;
   const head = `${format(g.spentCents)} of ${format(g.goalCents)} in ${monthName(month)}`;
   return {
     category: cat,
     month,
     level,
-    title: level >= 100 ? `⚡ Your ${label} ward is broken` : `🦉 80% of your ${label} ward is spent`,
+    title: level >= 100 ? words.alert100(label) : words.alert80(label),
     body: g.spentCents > g.goalCents
       ? `${head} · ${format(g.spentCents - g.goalCents)} over.`
       : level >= 100 ? `${head} · nothing left.` : `${head} · ${format(g.goalCents - g.spentCents)} left. Time to slow down.`,

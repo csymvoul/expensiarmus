@@ -1,7 +1,13 @@
 package com.csymvoul.expenses.domain
 
+/** How amounts are shown: €1,234.56 or, in the Greek style, 1.234,56 €. */
+enum class MoneyStyle { ENGLISH, GREEK }
+
 /** Euro amounts are kept as whole cents (Long) to avoid floating point rounding errors. */
 object Money {
+    /** The style chosen in Settings; used whenever no style is passed. */
+    @Volatile var style: MoneyStyle = MoneyStyle.ENGLISH
+
     private val allowed = Regex("[0-9.,]+")
 
     /**
@@ -37,11 +43,13 @@ object Money {
     }
 
     /** "€1,234.56" */
-    fun format(cents: Long): String {
+    fun format(cents: Long, style: MoneyStyle = this.style): String {
         val sign = if (cents < 0) "-" else ""
         val abs = kotlin.math.abs(cents)
-        val euros = (abs / 100).toString().reversed().chunked(3).joinToString(",").reversed()
-        return "$sign€$euros.${(abs % 100).toString().padStart(2, '0')}"
+        val group = if (style == MoneyStyle.GREEK) "." else ","
+        val euros = (abs / 100).toString().reversed().chunked(3).joinToString(group).reversed()
+        val dec = (abs % 100).toString().padStart(2, '0')
+        return if (style == MoneyStyle.GREEK) "$sign$euros,$dec €" else "$sign€$euros.$dec"
     }
 
     /** "1234.56", for CSV files. */
@@ -52,18 +60,28 @@ object Money {
     }
 
     /** Short form for calendar cells: "€45", "€1.2k", "<€1". Whole euros are rounded half up. */
-    fun compact(cents: Long): String {
-        if (cents in 1..49) return "<€1"
+    fun compact(cents: Long, style: MoneyStyle = this.style): String {
+        val greek = style == MoneyStyle.GREEK
+        fun wrap(n: String) = if (greek) "$n€" else "€$n"
+        if (cents in 1..49) return "<${wrap("1")}"
         val euros = (cents + 50) / 100
         return when {
-            euros < 1_000 -> "€$euros"
-            euros < 10_000 -> "€${euros / 1_000}.${(euros % 1_000) / 100}k"
-            else -> "€${euros / 1_000}k"
+            euros < 1_000 -> wrap("$euros")
+            euros < 10_000 -> wrap("${euros / 1_000}${if (greek) "," else "."}${(euros % 1_000) / 100}k")
+            else -> wrap("${euros / 1_000}k")
         }
     }
 
     /** Text to pre-fill an amount field: "1234" for whole euros, otherwise "1234.56". */
-    fun forInput(cents: Long): String = if (cents % 100 == 0L) (cents / 100).toString() else plain(cents)
+    fun forInput(cents: Long, style: MoneyStyle = this.style): String = when {
+        cents % 100 == 0L -> (cents / 100).toString()
+        style == MoneyStyle.GREEK -> plain(cents).replace('.', ',')
+        else -> plain(cents)
+    }
+
+    /** The decimal separator to offer on a number pad. */
+    fun decimalKey(style: MoneyStyle = this.style): String = if (style == MoneyStyle.GREEK) "," else "."
+
 
     private const val MAX_EUROS = 100_000_000_000L
 }

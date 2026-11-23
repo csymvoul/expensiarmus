@@ -21,16 +21,20 @@ object Reminder {
      */
     fun useExactAlarm(sdk: Int, canScheduleExact: Boolean): Boolean = sdk < 31 || canScheduleExact
 
+    /** "21:30" → 21:30; null for anything else. */
+    fun parseTime(text: String): LocalTime? =
+        Regex("^([01]\\d|2[0-3]):([0-5]\\d)$").matchEntire(text)?.let { LocalTime.of(it.groupValues[1].toInt(), it.groupValues[2].toInt()) }
+
     data class Message(val title: String, val text: String)
 
-    fun message(expenses: List<Expense>, today: LocalDate): Message {
+    fun message(expenses: List<Expense>, today: LocalDate, words: Words = Words.WIZARD): Message {
         val todays = expenses.filter { it.date == today }
         if (todays.isEmpty()) {
-            return Message("🦉 Owl post: did you forget the ledger?", "No expenses recorded today. Tap to record what you spent.")
+            return Message(words.owlNothing, "No expenses recorded today. Tap to record what you spent.")
         }
         val count = if (todays.size == 1) "1 expense" else "${todays.size} expenses"
         return Message(
-            "🦉 Owl post: anything else for the ledger?",
+            words.owlSome,
             "Today: $count, ${Money.format(todays.sumOf { it.myShareCents })}. Tap to add anything you missed.",
         )
     }

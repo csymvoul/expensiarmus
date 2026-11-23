@@ -53,6 +53,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.csymvoul.expenses.domain.Money
+import com.csymvoul.expenses.domain.Suggestions
+import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.FoodType
@@ -75,13 +77,21 @@ private val dateFormat = DateTimeFormatter.ofPattern("EEE d MMMM yyyy", Locale.E
 fun EditExpenseScreen(
     existing: Expense?,
     defaultDate: LocalDate,
+    history: List<Expense>,
+    prefill: QuickPrefill?,
     onSave: (Expense) -> Unit,
     onDelete: (String) -> Unit,
     onBack: () -> Unit,
 ) {
-    var title by rememberSaveable { mutableStateOf(existing?.title ?: "") }
-    var amount by rememberSaveable { mutableStateOf(existing?.let { Money.forInput(it.amountCents) } ?: "") }
-    var date by rememberSaveable { mutableStateOf(existing?.date ?: defaultDate) }
+    val w = LocalWords.current
+    var title by rememberSaveable { mutableStateOf(existing?.title ?: prefill?.title ?: "") }
+    var amount by rememberSaveable { mutableStateOf(existing?.let { Money.forInput(it.amountCents) } ?: prefill?.amount ?: "") }
+    var date by rememberSaveable { mutableStateOf(existing?.date ?: prefill?.date ?: defaultDate) }
+    // Suggestions show for new expenses while typing a title, until one is picked.
+    var suggestionPicked by rememberSaveable { mutableStateOf(false) }
+    val suggestions = remember(history, title, suggestionPicked) {
+        if (existing != null || suggestionPicked) emptyList() else Suggestions.of(history, title)
+    }
     var category by rememberSaveable { mutableStateOf(existing?.category ?: Category.SUPERMARKET) }
     var foodType by rememberSaveable { mutableStateOf(existing?.foodType) }
     var split by rememberSaveable { mutableStateOf(existing?.isSplit ?: false) }
@@ -117,7 +127,7 @@ fun EditExpenseScreen(
         contentColor = MaterialTheme.colorScheme.onBackground, // a transparent scaffold would otherwise default to black text
         topBar = {
             WizardTopBar(
-                title = if (existing == null) "Record expense" else "Amend expense",
+                title = if (existing == null) w.newExpense else w.editExpense,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -147,7 +157,7 @@ fun EditExpenseScreen(
         ) {
             OutlinedTextField(
                 value = title,
-                onValueChange = { title = it },
+                onValueChange = { title = it; suggestionPicked = false },
                 label = { Text("Title") },
                 placeholder = { Text("e.g. Butterbeer with friends") },
                 singleLine = true,
@@ -159,10 +169,21 @@ fun EditExpenseScreen(
                 ),
                 modifier = Modifier.fillMaxWidth(),
             )
+            if (suggestions.isNotEmpty()) {
+                SuggestionList(suggestions) { s ->
+                    title = s.title
+                    amount = Money.forInput(s.amountCents)
+                    category = s.category
+                    foodType = s.foodType
+                    split = s.myPercent < 100
+                    myPercent = if (s.myPercent < 100) s.myPercent else 50
+                    suggestionPicked = true
+                }
+            }
             OutlinedTextField(
                 value = amount,
                 onValueChange = { amount = it },
-                label = { Text("Gold spent") },
+                label = { Text(w.amount) },
                 prefix = { Text("€ ") },
                 singleLine = true,
                 isError = showErrors && !amountOk,
@@ -189,7 +210,7 @@ fun EditExpenseScreen(
                     }
                 }
                 Text(
-                    "${category.nickname}: ${category.hint}",
+                    if (w.nicknames) "${category.nickname}: ${category.hint}" else category.hint,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -214,7 +235,7 @@ fun EditExpenseScreen(
                         }
                     }
                     Text(
-                        foodType?.let { "${it.nickname}: ${it.hint}" } ?: "Cinema, theatre, concerts, etc.",
+                        foodType?.let { if (w.nicknames) "${it.nickname}: ${it.hint}" else it.hint } ?: "Cinema, theatre, concerts, etc.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -223,7 +244,7 @@ fun EditExpenseScreen(
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Split with a fellow wizard", style = MaterialTheme.typography.titleSmall)
+                    Text(w.split, style = MaterialTheme.typography.titleSmall)
                     Text(
                         "Only your share counts toward totals and goals",
                         style = MaterialTheme.typography.bodySmall,
@@ -261,7 +282,7 @@ fun EditExpenseScreen(
             }
 
             Button(onClick = ::save, shape = CutCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                Text("Mischief managed · Save")
+                Text(w.save)
             }
         }
     }
@@ -289,12 +310,12 @@ fun EditExpenseScreen(
     if (confirmingDelete && existing != null) {
         AlertDialog(
             onDismissRequest = { confirmingDelete = false },
-            title = { Text("Evanesco?") },
-            text = { Text("\"${existing.title}\" will vanish from the ledger. This cannot be undone.") },
+            title = { Text(w.deleteTitle) },
+            text = { Text(w.deleteBody(existing.title)) },
             confirmButton = {
-                TextButton(onClick = { confirmingDelete = false; onDelete(existing.id) }) { Text("Evanesco") }
+                TextButton(onClick = { confirmingDelete = false; onDelete(existing.id) }) { Text(w.deleteBtn) }
             },
-            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text("Keep it") } },
+            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(w.keep) } },
         )
     }
 }

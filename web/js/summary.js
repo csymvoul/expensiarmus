@@ -1,6 +1,7 @@
 import { CATEGORIES, FOOD_TYPES, monthOf, myShareCents } from './model.js';
 import { format } from './money.js';
 import { goalFor } from './goals.js';
+import { wordsFor } from './words.js';
 
 const byNewest = (a, b) => (a.date === b.date ? a.title.toLowerCase().localeCompare(b.title.toLowerCase()) : a.date < b.date ? 1 : -1);
 export { byNewest };
@@ -18,10 +19,10 @@ export function goalProgress(goalCents, spentCents) {
 }
 
 /** "63% of €1,200.00 · €444.00 left", or the overspend with a broken ward. */
-export function describeGoal(g) {
+export function describeGoal(g, words = wordsFor(true)) {
   const head = `${g.percent}% of ${format(g.goalCents)}`;
   return g.isOver
-    ? `${head} · ${format(-g.remainingCents)} over. The Protego ward is broken!`
+    ? `${head} · ${format(-g.remainingCents)} over. ${words.overGoal}`
     : `${head} · ${format(g.remainingCents)} left`;
 }
 

@@ -13,8 +13,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -22,11 +27,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.csymvoul.expenses.data.AppSettings
 import com.csymvoul.expenses.domain.ExpenseQueries
+import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.domain.MonthlySummary
 import com.csymvoul.expenses.domain.PeriodSummary
 import com.csymvoul.expenses.model.Category
@@ -34,6 +42,10 @@ import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.reminder.OwlNotifier
 import com.csymvoul.expenses.reminder.ReminderScheduler
 import com.csymvoul.expenses.ui.ExpenseViewModel
+import com.csymvoul.expenses.ui.components.LocalWords
+import com.csymvoul.expenses.ui.components.Tab
+import com.csymvoul.expenses.ui.components.WizardBackdrop
+import com.csymvoul.expenses.ui.components.WizardTabBar
 import com.csymvoul.expenses.ui.screens.AnnalsScreen
 import com.csymvoul.expenses.ui.screens.AnnalsView
 import com.csymvoul.expenses.ui.screens.CategoryScreen
@@ -43,8 +55,10 @@ import com.csymvoul.expenses.ui.screens.ExpenseDetailScreen
 import com.csymvoul.expenses.ui.screens.GoalsScreen
 import com.csymvoul.expenses.ui.screens.MonthScreen
 import com.csymvoul.expenses.ui.screens.MonthView
+import com.csymvoul.expenses.ui.screens.QuickAddSheet
+import com.csymvoul.expenses.ui.screens.QuickPrefill
 import com.csymvoul.expenses.ui.screens.SearchScreen
-import com.csymvoul.expenses.ui.components.WizardBackdrop
+import com.csymvoul.expenses.ui.screens.SettingsScreen
 import com.csymvoul.expenses.ui.theme.ExpensesTheme
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -54,38 +68,54 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        AppSettings.get(this)
         ReminderScheduler.ensureChannel(this)
         ReminderScheduler.schedule(this)
         val record = intent.getBooleanExtra(EXTRA_RECORD, false)
         setContent {
-            ExpensesTheme { ExpensesApp(openRecord = record) }
+            val settings by AppSettings.state.collectAsState()
+            ExpensesTheme(settings.theme) {
+                // Static locals: any change of settings (words, number style) redraws every screen.
+                CompositionLocalProvider(LocalWords provides settings.words, LocalSettingsVersion provides settings) {
+                    ExpensesApp(openRecord = record)
+                }
+            }
         }
     }
 
     companion object {
-        /** Set by the reminder notification: open straight on "Record expense". */
+        /** Set by the reminder notification and the widget's ➕: open Quick add. */
         const val EXTRA_RECORD = "record_expense"
     }
 }
 
+private val LocalSettingsVersion = staticCompositionLocalOf<Any> { Unit }
+
 // Routes. The back stack is kept as routes joined by '|' so it survives rotation.
+// The four tabs (Ledger, Calendar, Annals, Protego) are top-level routes.
 private const val MONTH = "month"
-private const val GOALS = "goals"
-private const val SEARCH = "search"
+private const val CALENDAR = "calendar"
 private const val ANNALS = "annals"
+private const val GOALS = "goals"
+private const val SETTINGS = "settings"
+private const val SEARCH = "search"
 private const val EDIT = "edit:" // + expense id, empty for a new expense
 private const val VIEW = "view:" // + expense id: read-only view
 private const val CATEGORY = "category:" // + category name, optionally + ":" + food type name
 
+private val TAB_ROUTES = mapOf(Tab.LEDGER to MONTH, Tab.CALENDAR to CALENDAR, Tab.ANNALS to ANNALS, Tab.GOALS to GOALS)
+
 @Composable
 fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel()) {
     val data by vm.state.collectAsStateWithLifecycle()
-    var stack by rememberSaveable { mutableStateOf(if (openRecord) "$MONTH|$EDIT" else MONTH) }
+    val settings by AppSettings.state.collectAsStateWithLifecycle()
+    var stack by rememberSaveable { mutableStateOf(MONTH) }
     var month by rememberSaveable { mutableStateOf(YearMonth.now()) }
-    var view by rememberSaveable { mutableStateOf(MonthView.OVERVIEW) }
     var selectedDay by rememberSaveable { mutableStateOf<LocalDate?>(LocalDate.now()) }
     var annalsView by rememberSaveable { mutableStateOf(AnnalsView.YEAR) }
     var annalsYear by rememberSaveable { mutableStateOf(LocalDate.now().year) }
+    var quickOpen by rememberSaveable { mutableStateOf(openRecord) }
+    var prefill by remember { mutableStateOf<QuickPrefill?>(null) }
     val route = stack.substringAfterLast('|')
 
     fun push(r: String) { stack = "$stack|$r" }
@@ -100,16 +130,17 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
+    val words = LocalWords.current
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         if (uri != null) {
             scope.launch {
                 val ok = vm.exportCsv(context.contentResolver, uri)
-                Toast.makeText(context, if (ok) "Geminio! Ledger copied to CSV." else "The spell failed: export did not work.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, if (ok) words.exported else words.exportFailed, Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    var reminderOn by remember { mutableStateOf(ReminderScheduler.isEnabled(context)) }
     var owlsBlocked by remember { mutableStateOf(!OwlNotifier.canNotify(context)) }
     // Re-check whenever the app comes back, e.g. from the notification settings.
     LifecycleResumeEffect(Unit) {
@@ -127,7 +158,26 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
         }
     }
     LaunchedEffect(Unit) {
-        if (reminderOn && ReminderScheduler.firstPermissionAsk(context)) askForNotifications()
+        if (settings.reminderOn && ReminderScheduler.firstPermissionAsk(context)) askForNotifications()
+    }
+    val fixOwls = {
+        context.startActivity(
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName),
+        )
+    }
+    val testOwl = {
+        if (!OwlNotifier.show(context)) {
+            Toast.makeText(context, "Notifications are blocked: allow them first.", Toast.LENGTH_LONG).show()
+            askForNotifications()
+        }
+    }
+    val newExpenseDate = when {
+        route == CALENDAR && selectedDay?.let { YearMonth.from(it) } == month -> selectedDay!!
+        month == YearMonth.now() -> LocalDate.now()
+        else -> month.atDay(1)
+    }
+    val tabBar: @Composable (Tab) -> Unit = { selected ->
+        WizardTabBar(selected) { tab -> stack = TAB_ROUTES.getValue(tab) }
     }
 
     BackHandler(enabled = route != MONTH) { pop() }
@@ -142,7 +192,9 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                 },
                 onSet = { c, cents, onwards -> vm.setGoal(c, month, cents, onwards) },
                 onRemove = { c, onwards -> vm.removeGoal(c, month, onwards) },
-                onBack = ::pop,
+                onPreviousMonth = { month = month.minusMonths(1) },
+                onNextMonth = { month = month.plusMonths(1) },
+                bottomBar = { tabBar(Tab.GOALS) },
             )
             route == ANNALS -> {
                 val today = LocalDate.now()
@@ -159,7 +211,6 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                     onNextYear = { annalsYear++ },
                     onOpenMonth = {
                         month = it
-                        view = MonthView.OVERVIEW
                         stack = MONTH
                     },
                     onOpenYear = {
@@ -167,9 +218,23 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                         annalsView = AnnalsView.YEAR
                     },
                     onCategory = { c, t -> push(CATEGORY + c.name + (t?.let { ":" + it.name } ?: "")) },
-                    onBack = ::pop,
+                    bottomBar = { tabBar(Tab.ANNALS) },
                 )
             }
+            route == SETTINGS -> SettingsScreen(
+                settings = settings,
+                owlsBlocked = owlsBlocked,
+                onChange = { change ->
+                    val before = settings
+                    AppSettings.update(context, change)
+                    ReminderScheduler.reschedule(context)
+                    vm.refreshWidget()
+                    if (!before.reminderOn && AppSettings.get(context).reminderOn) askForNotifications()
+                },
+                onFixOwls = fixOwls,
+                onTestOwl = testOwl,
+                onBack = ::pop,
+            )
             route == SEARCH -> SearchScreen(
                 expenses = data.expenses,
                 onOpen = { push(VIEW + it) },
@@ -201,13 +266,12 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
             }
             route.startsWith(EDIT) -> key(route) {
                 val existing = route.removePrefix(EDIT).ifEmpty { null }?.let(data::find)
+                val handed = remember { prefill.also { prefill = null } }
                 EditExpenseScreen(
                     existing = existing,
-                    defaultDate = when {
-                        view == MonthView.CALENDAR && selectedDay?.let { YearMonth.from(it) } == month -> selectedDay!!
-                        month == YearMonth.now() -> LocalDate.now()
-                        else -> month.atDay(1)
-                    },
+                    defaultDate = newExpenseDate,
+                    history = data.expenses,
+                    prefill = handed,
                     onSave = {
                         vm.upsert(it)
                         month = YearMonth.from(it.date)
@@ -218,6 +282,7 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                 )
             }
             else -> {
+                val view = if (route == CALENDAR) MonthView.CALENDAR else MonthView.OVERVIEW
                 val summary = remember(data, month) { MonthlySummary.of(data, month) }
                 val day = selectedDay?.takeIf { YearMonth.from(it) == month }
                 val days = remember(data, month, day) {
@@ -230,43 +295,51 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                 MonthScreen(
                     summary = summary,
                     view = view,
-                    onViewChange = { view = it },
                     days = days,
                     onSelectDay = { selectedDay = it },
                     onPreviousMonth = { month = month.minusMonths(1) },
                     onNextMonth = { month = month.plusMonths(1) },
-                    onAdd = { push(EDIT) },
+                    onAdd = { quickOpen = true },
                     onOpen = { push(VIEW + it) },
                     onCategory = { c, t -> push(CATEGORY + c.name + (t?.let { ":" + it.name } ?: "")) },
                     onSearch = { push(SEARCH) },
-                    onAnnals = {
-                        annalsYear = month.year
-                        annalsView = AnnalsView.YEAR
-                        push(ANNALS)
-                    },
-                    onGoals = { push(GOALS) },
-                    reminderOn = reminderOn,
+                    onSettings = { push(SETTINGS) },
+                    reminderOn = settings.reminderOn,
                     owlsBlocked = owlsBlocked,
-                    onFixOwls = {
-                        context.startActivity(
-                            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                                .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName),
-                        )
-                    },
-                    onTestOwl = {
-                        if (!OwlNotifier.show(context)) {
-                            Toast.makeText(context, "Owl reminders are blocked: allow notifications first.", Toast.LENGTH_LONG).show()
-                            askForNotifications()
-                        }
-                    },
-                    onToggleReminder = {
-                        reminderOn = !reminderOn
-                        ReminderScheduler.setEnabled(context, reminderOn)
-                        if (reminderOn) askForNotifications()
-                    },
+                    onFixOwls = fixOwls,
+                    onTestOwl = testOwl,
                     onExport = { exportLauncher.launch("expensiarmus-${LocalDate.now()}.csv") },
+                    snackbar = snackbar,
+                    bottomBar = { tabBar(if (view == MonthView.CALENDAR) Tab.CALENDAR else Tab.LEDGER) },
                 )
             }
         }
+    }
+
+    if (quickOpen) {
+        QuickAddSheet(
+            history = data.expenses,
+            date = newExpenseDate,
+            onSave = { e ->
+                vm.upsert(e)
+                month = YearMonth.from(e.date)
+                quickOpen = false
+                if (route != MONTH && route != CALENDAR) stack = MONTH
+                scope.launch {
+                    val result = snackbar.showSnackbar(
+                        "Recorded ${e.title} · ${Money.format(e.myShareCents)}",
+                        actionLabel = "Undo",
+                        duration = SnackbarDuration.Short,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) vm.delete(e.id)
+                }
+            },
+            onMore = {
+                prefill = it
+                quickOpen = false
+                push(EDIT)
+            },
+            onDismiss = { quickOpen = false },
+        )
     }
 }

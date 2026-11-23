@@ -4,6 +4,7 @@ A personal, wizard-themed app for tracking monthly spending in euros: a native A
 
 ## What it does
 
+- **Quick add.** A number pad and big category tiles: type the amount, tap a tile, done (with Undo). Typing a title suggests earlier expenses, and tapping one records it again. The full form is one tap away.
 - **Record expenses** with a date, title, amount (€) and one of seven categories: Rent, Super market, Entertainment, Bills, Shopping (shoes, clothes, jewellery…), Fuel (petrol, diesel, LPG), Other.
 - **Food subgroups.** An Entertainment expense can be marked as food: *Delivery*, *Dine out* or *Day-to-day* (e.g. a coffee at work).
 - **Split expenses.** Mark an expense as shared and set your percentage (50-50 by default). Only your share counts toward totals, charts and goals; the full amount is still shown.
@@ -14,7 +15,10 @@ A personal, wizard-themed app for tracking monthly spending in euros: a native A
 - **Category pages.** Tap a category, or a food subgroup, to see all its expenses, grouped by month with monthly totals.
 - **Search.** Find expenses by part of the title, by category or food-type name, and/or by picking categories. Case and Greek accents are ignored.
 - **Goals (Protego).** Pick the categories you want to watch and set a goal for the month you're viewing, or for that month and every month after. Progress bars turn amber at 80% and red when over, and the app warns you at 80% and when a goal is passed (a notification on Android and in the iPhone app, a card on github.io).
-- **Evening reminder.** A notification at about 21:30 each day reminds you to record the day's expenses and shows what you've recorded so far. Tap it to go straight to "Record expense". It can be turned off from the ⋮ menu, ⋮ → Send a test owl now shows it immediately, and a banner warns if notifications are switched off for the app.
+- **Evening reminder.** A notification each evening (21:30 by default, any time in Settings) reminds you to record the day's expenses and shows what you've recorded so far. Tap it to go straight to "Record expense". It can be turned off from the ⋮ menu, ⋮ → Send a test owl now shows it immediately, and a banner warns if notifications are switched off for the app.
+- **Tabs:** Ledger, Calendar, Annals and Protego (goals) are always one tap away.
+- **Settings:** reminder on/off and time, wizard words or plain words, number format (€1,234.56 or 1.234,56 €) and theme.
+- **Android widget:** this month's total, goal bars and a ➕ for Quick add on the home screen.
 - **CSV export** of all expenses for backup or analysis.
 - **Wizard look:** parchment, burgundy and gold by day; a candle-lit castle theme in dark mode. Cards are framed in gold with corner sparkles, headings use the Cinzel font, and each category has an emblem and a wizarding nickname (🛍️ Shopping is *Diagon Alley*). The wording is full of spells: Accio to search, Protego for goals, Evanesco to delete.
 

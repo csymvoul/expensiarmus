@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,6 +34,7 @@ import com.csymvoul.expenses.domain.PeriodSummary
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.ui.components.BarChart
+import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.ParchmentCard
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import java.time.LocalDate
@@ -61,23 +61,16 @@ fun AnnalsScreen(
     onOpenMonth: (YearMonth) -> Unit,
     onOpenYear: (Int) -> Unit,
     onCategory: (Category, FoodType?) -> Unit,
-    onBack: () -> Unit,
+    bottomBar: @Composable () -> Unit,
 ) {
+    val w = LocalWords.current
     // The tapped bar, reset when switching year or view.
     var selected by rememberSaveable(view, year) { mutableStateOf<Int?>(null) }
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
-        topBar = {
-            WizardTopBar(
-                title = "📊 Annals",
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-            )
-        },
+        topBar = { WizardTopBar(title = w.annals) },
+        bottomBar = bottomBar,
     ) { padding ->
         LazyColumn(
             contentPadding = PaddingValues(
@@ -177,7 +170,7 @@ fun AnnalsScreen(
 private fun PeriodTotalCard(summary: PeriodSummary, view: AnnalsView, year: Int, today: LocalDate) {
     ParchmentCard(spacing = Arrangement.spacedBy(4.dp)) {
         Text(
-            if (view == AnnalsView.YEAR) "Gold spent in $year" else "Gold spent, all time",
+            if (view == AnnalsView.YEAR) LocalWords.current.spentIn(year) else LocalWords.current.spentAllTime,
             style = MaterialTheme.typography.titleSmall,
         )
         Text(

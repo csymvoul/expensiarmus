@@ -8,6 +8,7 @@ import android.content.Intent
 import androidx.core.app.NotificationManagerCompat
 import com.csymvoul.expenses.MainActivity
 import com.csymvoul.expenses.R
+import com.csymvoul.expenses.data.AppSettings
 import com.csymvoul.expenses.data.ExpenseStore
 import com.csymvoul.expenses.domain.Reminder
 import java.io.File
@@ -23,7 +24,7 @@ object OwlNotifier {
         if (!canNotify(context)) return false
         ReminderScheduler.ensureChannel(context)
         val data = ExpenseStore(File(context.filesDir, "expenses.json")).load()
-        val message = Reminder.message(data.expenses, LocalDate.now())
+        val message = Reminder.message(data.expenses, LocalDate.now(), AppSettings.get(context).words)
         val open = PendingIntent.getActivity(
             context,
             1,

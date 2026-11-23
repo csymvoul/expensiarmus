@@ -2,4 +2,13 @@
     <color name="ic_launcher_background">#5E1414</color>
     <color name="parchment">#F3E6C8</color>
     <color name="night">#17120E</color>
+    <!-- Home-screen widget: parchment by day -->
+    <color name="widget_paper">#F8EDD3</color>
+    <color name="widget_gold">#A87A1E</color>
+    <color name="widget_heading">#7B1E1E</color>
+    <color name="widget_ink">#3B2A1A</color>
+    <color name="widget_soft">#6B5236</color>
+    <color name="widget_track">#E6D3AA</color>
+    <color name="widget_accent">#7B1E1E</color>
+    <color name="widget_on_accent">#FFF4DC</color>
 </resources>

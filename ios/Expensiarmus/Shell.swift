@@ -66,6 +66,14 @@ final class Shell: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             if let id = body["id"] as? String, let title = body["title"] as? String, let text = body["body"] as? String {
                 owls.notifyNow(id: id, title: title, body: text)
             }
+        case "theme":
+            // "light" / "dark" from the app's Settings, or "system" to follow the phone.
+            let style: UIUserInterfaceStyle = switch body["value"] as? String {
+            case "light": .light
+            case "dark": .dark
+            default: .unspecified
+            }
+            webView?.window?.overrideUserInterfaceStyle = style
         case "share":
             if let name = body["filename"] as? String, let text = body["text"] as? String { share(text: text, filename: name) }
         default:

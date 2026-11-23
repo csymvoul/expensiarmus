@@ -67,4 +67,39 @@ export function search(expenses, query, categories = []) {
     .sort(byNewest);
 }
 
+/**
+ * Earlier expenses whose title starts with (or has a word starting with) what was typed, most used
+ * first. Each suggestion carries the latest amount, category, food type and split for that title.
+ */
+export function suggestions(expenses, typed, limit = 4) {
+  const q = normalize(typed);
+  if (!q) return [];
+  const groups = new Map();
+  expenses.forEach((e, i) => {
+    const key = normalize(e.title);
+    const g = groups.get(key) ?? { uses: 0, latest: null, at: -1 };
+    g.uses += 1;
+    if (!g.latest || e.date > g.latest.date || (e.date === g.latest.date && i > g.at)) {
+      g.latest = e;
+      g.at = i;
+    }
+    groups.set(key, g);
+  });
+  return [...groups.entries()]
+    .filter(([key]) => key.startsWith(q) || key.split(/\s+/).some((w) => w.startsWith(q)))
+    .sort(([ka, a], [kb, b]) => b.uses - a.uses || (a.latest.date < b.latest.date ? 1 : a.latest.date > b.latest.date ? -1 : ka.localeCompare(kb)))
+    .slice(0, limit)
+    .map(([, g]) => ({
+      title: g.latest.title,
+      amountCents: g.latest.amountCents,
+      category: g.latest.category,
+      foodType: g.latest.foodType ?? null,
+      myPercent: g.latest.myPercent,
+      uses: g.uses,
+    }));
+}
+
+/** Title used when Quick add saves without one: the food type, or else the category. */
+export const defaultTitle = (cat, food) => (food ? foodType(food).label : category(cat).label);
+
 export { CATEGORIES };

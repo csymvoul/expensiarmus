@@ -39,6 +39,7 @@ import com.csymvoul.expenses.domain.ExpenseDetails
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.ui.components.EmblemBadge
+import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.ParchmentCard
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.theme.color
@@ -62,13 +63,14 @@ fun ExpenseDetailScreen(
         LaunchedEffect(Unit) { onBack() }
         return
     }
+    val w = LocalWords.current
     var confirmingDelete by remember { mutableStateOf(false) }
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             WizardTopBar(
-                title = "📜 Ledger entry",
+                title = w.entry,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -115,15 +117,15 @@ fun ExpenseDetailScreen(
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
                 DetailRow("Date", expense.date.format(longDate))
-                DetailRow("Category", "${expense.category.emoji} ${expense.category.label}", expense.category.nickname)
-                expense.foodType?.let { DetailRow("Food", "${it.emoji} ${it.label}", it.nickname) }
+                DetailRow("Category", "${expense.category.emoji} ${expense.category.label}", expense.category.nickname.takeIf { w.nicknames })
+                expense.foodType?.let { DetailRow("Food", "${it.emoji} ${it.label}", it.nickname.takeIf { w.nicknames }) }
                 DetailRow("Split", ExpenseDetails.splitLine(expense))
             }
             Button(onClick = { onEdit(expense.id) }, shape = CutCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                Text("✏️ Amend expense")
+                Text(w.amend)
             }
             TextButton(onClick = { confirmingDelete = true }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                Text("Evanesco · delete", color = MaterialTheme.colorScheme.error)
+                Text(w.deleteLink, color = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -131,12 +133,12 @@ fun ExpenseDetailScreen(
     if (confirmingDelete) {
         AlertDialog(
             onDismissRequest = { confirmingDelete = false },
-            title = { Text("Evanesco?") },
-            text = { Text("\"${expense.title}\" will vanish from the ledger. This cannot be undone.") },
+            title = { Text(w.deleteTitle) },
+            text = { Text(w.deleteBody(expense.title)) },
             confirmButton = {
-                TextButton(onClick = { confirmingDelete = false; onDelete(expense.id) }) { Text("Evanesco") }
+                TextButton(onClick = { confirmingDelete = false; onDelete(expense.id) }) { Text(w.deleteBtn) }
             },
-            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text("Keep it") } },
+            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(w.keep) } },
         )
     }
 }

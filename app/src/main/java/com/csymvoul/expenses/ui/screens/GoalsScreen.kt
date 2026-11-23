@@ -17,7 +17,8 @@ import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
@@ -51,6 +52,7 @@ import com.csymvoul.expenses.model.GoalEntry
 import com.csymvoul.expenses.model.Goals
 import com.csymvoul.expenses.ui.components.EmblemBadge
 import com.csymvoul.expenses.ui.components.GoalBar
+import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.ParchmentCard
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.theme.color
@@ -73,8 +75,11 @@ fun GoalsScreen(
     spent: Map<Category, Long>,
     onSet: (Category, Long, Boolean) -> Unit,
     onRemove: (Category, Boolean) -> Unit,
-    onBack: () -> Unit,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit,
+    bottomBar: @Composable () -> Unit,
 ) {
+    val w = LocalWords.current
     var editing by rememberSaveable(month) { mutableStateOf<Category?>(null) }
     var adding by rememberSaveable(month) { mutableStateOf(false) }
     val active = Category.entries.mapNotNull { c -> goals.goalFor(c, month)?.let { c to it } }
@@ -83,16 +88,8 @@ fun GoalsScreen(
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
-        topBar = {
-            WizardTopBar(
-                title = "Protego · ${month.format(monthName)}",
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-            )
-        },
+        topBar = { WizardTopBar(title = "${w.goals} · ${month.format(monthName)}") },
+        bottomBar = bottomBar,
     ) { padding ->
         Column(
             Modifier
@@ -103,15 +100,28 @@ fun GoalsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onPreviousMonth) {
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous month", tint = MaterialTheme.colorScheme.primary)
+                }
+                Text(
+                    month.format(monthYear),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                )
+                IconButton(onClick = onNextMonth) {
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month", tint = MaterialTheme.colorScheme.primary)
+                }
+            }
             Text(
-                "Cast a ward on the vaults you want to watch in ${month.format(monthYear)}. " +
-                    "An owl warns you at 80% and when a ward breaks.",
+                w.goalsIntro(month.format(monthYear)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (active.isEmpty() && !adding) {
                 Text(
-                    "No wards for this month yet.",
+                    w.noGoals,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(8.dp),
@@ -138,7 +148,7 @@ fun GoalsScreen(
             }
             if (adding) {
                 ParchmentCard {
-                    Text("A new ward", style = MaterialTheme.typography.titleMedium)
+                    Text(w.aNewWard, style = MaterialTheme.typography.titleMedium)
                     WardEditor(
                         month = month,
                         fixedCategory = null,
@@ -155,7 +165,7 @@ fun GoalsScreen(
                     onClick = { adding = true; editing = null },
                     shape = CutCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("🛡 Cast a new ward") }
+                ) { Text(w.newWard) }
             }
         }
     }
@@ -179,7 +189,7 @@ private fun WardSummary(category: Category, entry: GoalEntry, spentCents: Long, 
         Text(Money.format(entry.cents), style = MaterialTheme.typography.titleMedium)
     }
     GoalBar(progress)
-    Text(progress.describe(), style = MaterialTheme.typography.bodySmall)
+    Text(progress.describe(LocalWords.current), style = MaterialTheme.typography.bodySmall)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -204,7 +214,7 @@ private fun WardEditor(
 
     Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (fixedCategory == null) {
-            Text("Which vault?", style = MaterialTheme.typography.titleSmall)
+            Text(LocalWords.current.whichCategory, style = MaterialTheme.typography.titleSmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 choices.forEach { c ->
                     FilterChip(selected = picked == c, onClick = { picked = c }, label = { Text("${c.emoji} ${c.label}") })
@@ -250,7 +260,7 @@ private fun WardEditor(
     if (confirmRemove && onRemove != null) {
         AlertDialog(
             onDismissRequest = { confirmRemove = false },
-            title = { Text("Remove this ward?") },
+            title = { Text(LocalWords.current.removeWard) },
             text = { Text("Remove it for $name only, or for $name and every month after?") },
             confirmButton = {
                 Row {

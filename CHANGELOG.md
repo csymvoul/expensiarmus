@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.6.0 (Android), web app 1.5.0 and iPhone app 1.3.0 – unreleased (2026-11-23)
+
+### Added
+- **Quick add.** ✒️ (or ＋) opens a sheet with a big number pad: type the amount, tap a category tile (the 7 categories plus 🦉 Delivery, 🍷 Dine out, ☕ Day-to-day), done. The title is optional and defaults to the category or food type. A short **Recorded … · Undo** bar follows. **More details ›** opens the full form already filled in. The date is today, or the selected calendar day.
+- **Suggestions from your history.** Typing a title in Quick add or the full form offers earlier expenses ("Fre" → *Freddo espresso · €2.50 · Day-to-day*), most used first, ignoring case and Greek accents. In Quick add, tapping one records it at once (with Undo); in the full form it fills in amount, category, food type and split.
+- **Bottom tabs:** 📜 Ledger · 📅 Calendar · 📊 Annals · 🛡 Protego. The Overview/Calendar switch and the links under the monthly total are gone; Protego has its own month switcher.
+- **Settings** (⋮ → ⚙️ Settings):
+  - reminder on/off and **any time** (no longer fixed at 21:30);
+  - **Wizard words** on/off: plain labels (Goals, Search, Delete, Totals…), no nicknames, and plain notification texts;
+  - **number format**: €1,234.56 or Greek 1.234,56 €;
+  - **theme**: like the phone, light or dark (the iPhone app follows it too).
+- **Android home-screen widget:** this month's total, up to three goal bars (closest to their goal first), and ➕ for Quick add. It updates after every change and every 30 minutes.
+- Tests: 15 new Android tests (143 in total) and 7 new web tests (45 in total), all passing. Checked in a browser at phone size: Quick add (number pad, tiles, Undo, suggestions, More details), suggestions in the full form, tabs, Settings with plain words, the Greek format, dark theme and a custom time, and the iPhone app's theme, reminder time and test owl.
+
+### Fixed
+- Web: after an update, a phone could load the new main script with stale cached copies of other files and show a blank page. The offline worker now bypasses the browser's cache when it installs or refreshes.
+
+### Known issues
+- The widget and the Android screens haven't been tried on a phone yet.
+
 ## 1.5.0 (Android), web app 1.4.0 and iPhone app 1.2.0 – unreleased (2026-11-23)
 
 ### Changed

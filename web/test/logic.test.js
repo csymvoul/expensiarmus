@@ -436,3 +436,91 @@ test('each warning only once per month; a jump past the goal covers 80% too', ()
   const jump = wardData(fun(7000));
   assert.deepEqual(markAlertsSent(jump, alertsDue(jump, '2026-11')).alertsSent.sort(), ['ENTERTAINMENT|2026-11|100', 'ENTERTAINMENT|2026-11|80']);
 });
+
+// --- settings, number styles, words, suggestions (1.6) ---
+
+import { setMoneyStyle } from '../js/money.js';
+import { wordsFor } from '../js/words.js';
+import { loadSettings, saveSettings, validTime, DEFAULTS, SETTINGS_KEY } from '../js/settings.js';
+import { suggestions, defaultTitle } from '../js/queries.js';
+
+test('Greek number style', () => {
+  assert.equal(format(123456, 'el'), '1.234,56 €');
+  assert.equal(format(-310, 'el'), '-3,10 €');
+  assert.equal(format(5, 'el'), '0,05 €');
+  assert.equal(compact(4520, 'el'), '45€');
+  assert.equal(compact(123456, 'el'), '1,2k€');
+  assert.equal(compact(30, 'el'), '<1€');
+  assert.equal(forInput(1250, 'el'), '12,50');
+  assert.equal(parseToCents(forInput(123456, 'el')), 123456);
+  setMoneyStyle('el');
+  assert.equal(format(1250), '12,50 €');
+  setMoneyStyle('en');
+  assert.equal(format(1250), '€12.50');
+});
+
+test('plain and wizard words', () => {
+  const w = wordsFor(true);
+  const p = wordsFor(false);
+  assert.equal(w.goalsTab, '🛡 Protego');
+  assert.equal(p.goalsTab, '🎯 Goals');
+  assert.equal(p.search, 'Search');
+  assert.equal(p.deleteBtn, 'Delete');
+  assert.equal(p.alert80('Fuel'), '80% of your Fuel goal is spent');
+  // Every wording exists in both sets.
+  assert.deepEqual(Object.keys(w).sort(), Object.keys(p).sort());
+});
+
+test('plain words reach reminders and goal warnings', () => {
+  const plain = wordsFor(false);
+  assert.equal(reminderMessage([], '2026-11-22', plain).title, "Did you record today's expenses?");
+  const d = { expenses: [e('2026-11-10', 6500, 'ENTERTAINMENT')], goals: setGoal({ entries: [] }, 'ENTERTAINMENT', '2026-11', 6000, false), alertsSent: [] };
+  assert.equal(alertsDue(d, '2026-11', plain)[0].title, "You've reached your Entertainment goal");
+  assert.equal(describeGoal(goalProgress(2000, 3000), plain), '150% of €20.00 · €10.00 over. Over the goal!');
+});
+
+test('reminders at a chosen time', () => {
+  const list = upcomingReminders([], new Date(2026, 10, 22, 20, 0), 3, '19:45');
+  assert.deepEqual(list.map((r) => `${r.date} ${r.hour}:${r.minute}`), ['2026-11-23 19:45', '2026-11-24 19:45']);
+  assert.equal(upcomingReminders([], new Date(2026, 10, 22, 8, 0), 1, '07:05').length, 0);
+  assert.equal(upcomingReminders([], new Date(2026, 10, 22, 7, 0), 1, '07:05')[0].hour, 7);
+});
+
+test('settings load with defaults, keep valid values and migrate the old reminder switch', () => {
+  const s = fakeStorage();
+  assert.deepEqual(loadSettings(s), DEFAULTS);
+  s.setItem('expensiarmus.reminder', 'off');
+  assert.equal(loadSettings(s).reminderOn, false);
+  saveSettings(s, { ...DEFAULTS, reminderTime: '07:15', wizard: false, money: 'el', theme: 'dark' });
+  assert.deepEqual(loadSettings(s), { reminderOn: true, reminderTime: '07:15', wizard: false, money: 'el', theme: 'dark' });
+  s.setItem(SETTINGS_KEY, JSON.stringify({ reminderTime: '25:00', money: 'xx', theme: 'purple' }));
+  assert.deepEqual(loadSettings(s), { ...DEFAULTS, reminderOn: false });
+  s.setItem(SETTINGS_KEY, '{oops');
+  assert.equal(loadSettings(s).reminderTime, '21:30');
+  assert.ok(validTime('00:00') && validTime('23:59') && !validTime('24:00') && !validTime('9:30'));
+});
+
+const history = [
+  makeExpense({ id: 'a', date: '2026-11-01', title: 'Freddo espresso', amountCents: 250, category: 'ENTERTAINMENT', foodType: 'DAY_TO_DAY' }),
+  makeExpense({ id: 'b', date: '2026-11-03', title: 'Freddo espresso', amountCents: 270, category: 'ENTERTAINMENT', foodType: 'DAY_TO_DAY' }),
+  makeExpense({ id: 'c', date: '2026-11-02', title: 'Fresh juice', amountCents: 400, category: 'ENTERTAINMENT', foodType: 'DAY_TO_DAY' }),
+  makeExpense({ id: 'd', date: '2026-11-04', title: 'Diesel', amountCents: 6000, category: 'FUEL' }),
+  makeExpense({ id: 'e', date: '2026-11-05', title: 'Σουβλάκι με Μαρία', amountCents: 3600, category: 'ENTERTAINMENT', myPercent: 50, foodType: 'DINE_OUT' }),
+];
+
+test('suggestions from history: most used first, latest amount', () => {
+  const s = suggestions(history, 'fre');
+  assert.deepEqual(s.map((x) => x.title), ['Freddo espresso', 'Fresh juice']);
+  assert.deepEqual(s[0], { title: 'Freddo espresso', amountCents: 270, category: 'ENTERTAINMENT', foodType: 'DAY_TO_DAY', myPercent: 100, uses: 2 });
+  assert.deepEqual(suggestions(history, 'espr').map((x) => x.title), ['Freddo espresso']);
+  assert.deepEqual(suggestions(history, 'μαρια').map((x) => [x.title, x.myPercent]), [['Σουβλάκι με Μαρία', 50]]);
+  assert.deepEqual(suggestions(history, ''), []);
+  assert.deepEqual(suggestions(history, 'xyz'), []);
+  assert.equal(suggestions(history, 'f', 1).length, 1);
+});
+
+test('quick add default titles', () => {
+  assert.equal(defaultTitle('SUPERMARKET', null), 'Super market');
+  assert.equal(defaultTitle('ENTERTAINMENT', 'DAY_TO_DAY'), 'Day-to-day');
+  assert.equal(defaultTitle('FUEL', null), 'Fuel');
+});

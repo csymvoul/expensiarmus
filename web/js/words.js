@@ -1,0 +1,53 @@
+// The app's wording, with the wizard theme ("Protego", "Accio"…) or in plain words. Chosen in Settings.
+
+const WIZARD = {
+  wizard: true,
+  ledgerTab: '📜 Ledger', calendarTab: '📅 Calendar', annalsTab: '📊 Annals', goalsTab: '🛡 Protego',
+  annals: '📊 Annals', goals: 'Protego', search: 'Accio', settings: '⚙️ Settings',
+  fab: '✒️ Record expense', newExpense: 'Record expense', editExpense: 'Amend expense', entry: '📜 Ledger entry',
+  amend: '✏️ Amend expense', amount: 'Gold spent', spentThisMonth: 'Gold spent this month', spentIn: (y) => `Gold spent in ${y}`,
+  spentAllTime: 'Gold spent, all time', whereWent: 'Where the gold went', food: 'Feasts & Food', ledger: 'The Ledger',
+  ledgerEmpty: 'The ledger is blank. Tap Record expense to write the first line.',
+  dayHint: 'Tap a day and say Revelio.', dayEmpty: 'No gold left your vault this day.',
+  split: 'Split with a fellow wizard', save: 'Mischief managed · Save',
+  deleteTitle: 'Evanesco?', deleteBtn: 'Evanesco', deleteLink: 'Evanesco · delete', keep: 'Keep it',
+  deleteBody: (t) => `"${t}" will vanish from the ledger. This cannot be undone.`,
+  searchPlaceholder: 'Accio expense… (title or category)',
+  searchHint: 'Say Accio! Type part of a title, or pick one or more vaults.', searchNothing: 'Revelio found nothing. Try another word.',
+  ward: 'ward', wards: 'wards', vault: 'vault', newWard: '🛡 Cast a new ward', aNewWard: 'A new ward', removeWard: 'Remove this ward?',
+  goalsIntro: (m) => `Cast a ward on the vaults you want to watch in ${m}. An owl warns you at 80% and when a ward breaks.`,
+  noGoals: 'No wards for this month yet.', whichCategory: 'Which vault?',
+  categoryEmpty: 'This vault is empty. Nothing recorded here yet.',
+  exportMenu: '📜 Geminio · export CSV', exported: 'Geminio! Ledger copied to CSV.', exportFailed: 'The spell failed: export did not work.',
+  testOwl: '🦉 Send a test owl now', reminder: '🦉 Owl reminder', reminderSwitch: 'Send the evening owl',
+  owlNothing: '🦉 Owl post: did you forget the ledger?', owlSome: '🦉 Owl post: anything else for the ledger?',
+  alert80: (c) => `🦉 80% of your ${c} ward is spent`, alert100: (c) => `⚡ Your ${c} ward is broken`,
+  overGoal: 'The Protego ward is broken!', nicknames: true,
+};
+
+const PLAIN = {
+  wizard: false,
+  ledgerTab: '📜 Expenses', calendarTab: '📅 Calendar', annalsTab: '📊 Totals', goalsTab: '🎯 Goals',
+  annals: '📊 Totals', goals: 'Goals', search: 'Search', settings: '⚙️ Settings',
+  fab: '＋ Add expense', newExpense: 'New expense', editExpense: 'Edit expense', entry: 'Expense',
+  amend: '✏️ Edit expense', amount: 'Amount', spentThisMonth: 'Spent this month', spentIn: (y) => `Spent in ${y}`,
+  spentAllTime: 'Spent, all time', whereWent: 'By category', food: 'Food', ledger: 'Expenses',
+  ledgerEmpty: 'No expenses this month yet.',
+  dayHint: 'Tap a day to see its expenses.', dayEmpty: 'Nothing spent on this day.',
+  split: 'Split with someone', save: 'Save',
+  deleteTitle: 'Delete expense?', deleteBtn: 'Delete', deleteLink: 'Delete', keep: 'Cancel',
+  deleteBody: (t) => `"${t}" will be deleted. This cannot be undone.`,
+  searchPlaceholder: 'Search by title or category',
+  searchHint: 'Type part of a title, or pick one or more categories.', searchNothing: 'Nothing found.',
+  ward: 'goal', wards: 'goals', vault: 'category', newWard: '🎯 Add a goal', aNewWard: 'A new goal', removeWard: 'Remove this goal?',
+  goalsIntro: (m) => `Set goals for the categories you want to watch in ${m}. You get a warning at 80% and when a goal is passed.`,
+  noGoals: 'No goals for this month yet.', whichCategory: 'Which category?',
+  categoryEmpty: 'Nothing recorded in this category yet.',
+  exportMenu: 'Export CSV', exported: 'Expenses exported.', exportFailed: 'Export failed.',
+  testOwl: 'Send a test reminder now', reminder: 'Daily reminder', reminderSwitch: 'Send the daily reminder',
+  owlNothing: 'Did you record today\'s expenses?', owlSome: 'Anything else to record today?',
+  alert80: (c) => `80% of your ${c} goal is spent`, alert100: (c) => `You've reached your ${c} goal`,
+  overGoal: 'Over the goal!', nicknames: false,
+};
+
+export const wordsFor = (wizard) => (wizard === false ? PLAIN : WIZARD);

@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,9 +36,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -70,6 +68,7 @@ import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.components.DonutChart
 import com.csymvoul.expenses.ui.components.ExpenseRow
 import com.csymvoul.expenses.ui.components.GoalBar
+import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.OrnamentHeading
 import com.csymvoul.expenses.ui.components.ParchmentCard
 import com.csymvoul.expenses.ui.theme.color
@@ -96,7 +95,6 @@ data class DayDetails(
 fun MonthScreen(
     summary: MonthlySummary,
     view: MonthView,
-    onViewChange: (MonthView) -> Unit,
     days: DayDetails,
     onSelectDay: (LocalDate) -> Unit,
     onPreviousMonth: () -> Unit,
@@ -105,17 +103,20 @@ fun MonthScreen(
     onOpen: (String) -> Unit,
     onCategory: (Category, FoodType?) -> Unit,
     onSearch: () -> Unit,
-    onAnnals: () -> Unit,
-    onGoals: () -> Unit,
+    onSettings: () -> Unit,
     reminderOn: Boolean,
-    onToggleReminder: () -> Unit,
     owlsBlocked: Boolean,
     onFixOwls: () -> Unit,
     onTestOwl: () -> Unit,
     onExport: () -> Unit,
+    snackbar: SnackbarHostState,
+    bottomBar: @Composable () -> Unit,
 ) {
+    val w = LocalWords.current
     var menuOpen by remember { mutableStateOf(false) }
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
+        bottomBar = bottomBar,
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground, // a transparent scaffold would otherwise default to black text
         topBar = {
@@ -123,7 +124,7 @@ fun MonthScreen(
                 title = "Expensiarmus",
                 actions = {
                     IconButton(onClick = onSearch) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
+                        Icon(Icons.Default.Search, contentDescription = w.search)
                     }
                     Box {
                         IconButton(onClick = { menuOpen = true }) {
@@ -131,24 +132,15 @@ fun MonthScreen(
                         }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                             DropdownMenuItem(
-                                text = { Text("📊 Annals · year & all-time totals") },
-                                onClick = { menuOpen = false; onAnnals() },
+                                text = { Text("⚙️ Settings") },
+                                onClick = { menuOpen = false; onSettings() },
                             )
                             DropdownMenuItem(
-                                text = { Text("🛡 Protego · monthly goals") },
-                                onClick = { menuOpen = false; onGoals() },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("🦉 Owl reminder at 21:30") },
-                                trailingIcon = { Checkbox(checked = reminderOn, onCheckedChange = null) },
-                                onClick = { menuOpen = false; onToggleReminder() },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("🦉 Send a test owl now") },
+                                text = { Text(w.testOwl) },
                                 onClick = { menuOpen = false; onTestOwl() },
                             )
                             DropdownMenuItem(
-                                text = { Text("📜 Geminio · export CSV") },
+                                text = { Text(w.exportMenu) },
                                 onClick = { menuOpen = false; onExport() },
                             )
                         }
@@ -163,7 +155,7 @@ fun MonthScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 icon = { Icon(Icons.Default.Create, contentDescription = null) },
-                text = { Text("Record expense") },
+                text = { Text(w.fab.substringAfter(' ')) },
             )
         },
     ) { padding ->
@@ -180,27 +172,16 @@ fun MonthScreen(
                 item { OwlsBlockedBanner(onFixOwls) }
             }
             item { MonthSwitcher(summary, onPreviousMonth, onNextMonth) }
-            item { TotalCard(summary, onGoals, onAnnals) }
-            item {
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    MonthView.entries.forEachIndexed { i, v ->
-                        SegmentedButton(
-                            selected = view == v,
-                            onClick = { onViewChange(v) },
-                            shape = SegmentedButtonDefaults.itemShape(i, MonthView.entries.size),
-                        ) { Text(if (v == MonthView.OVERVIEW) "📜 Overview" else "📅 Calendar") }
-                    }
-                }
-            }
             when (view) {
                 MonthView.OVERVIEW -> {
+                    item { TotalCard(summary) }
                     item { BreakdownCard(summary.categories, summary.totalCents, summary.month, onCategory) }
                     if (summary.food.totalCents > 0) {
                         item { FoodCard(summary.food) { onCategory(Category.ENTERTAINMENT, it) } }
                     }
-                    item { OrnamentHeading("The Ledger") }
+                    item { OrnamentHeading(w.ledger) }
                     if (summary.expenses.isEmpty()) {
-                        item { Hint("The ledger is blank. Tap Record expense to write the first line.") }
+                        item { Hint(w.ledgerEmpty) }
                     }
                     items(summary.expenses, key = { it.id }) { expense ->
                         ExpenseRow(expense, onClick = { onOpen(expense.id) })
@@ -215,7 +196,7 @@ fun MonthScreen(
                     }
                     val day = days.selected
                     if (day == null) {
-                        item { Hint("Tap a day and say Revelio.") }
+                        item { Hint(w.dayHint) }
                     } else {
                         item {
                             OrnamentHeading(day.format(longDayFormat))
@@ -227,7 +208,7 @@ fun MonthScreen(
                             )
                         }
                         if (days.expenses.isEmpty()) {
-                            item { Hint("No gold left your vault this day.") }
+                            item { Hint(w.dayEmpty) }
                         }
                         items(days.expenses, key = { "day-" + it.id }) { expense ->
                             ExpenseRow(expense, onClick = { onOpen(expense.id) })
@@ -294,9 +275,9 @@ private fun MonthSwitcher(summary: MonthlySummary, onPrevious: () -> Unit, onNex
 }
 
 @Composable
-private fun TotalCard(summary: MonthlySummary, onGoals: () -> Unit, onAnnals: () -> Unit) {
+private fun TotalCard(summary: MonthlySummary) {
     ParchmentCard(spacing = Arrangement.spacedBy(4.dp)) {
-        Text("Gold spent this month", style = MaterialTheme.typography.titleSmall)
+        Text(LocalWords.current.spentThisMonth, style = MaterialTheme.typography.titleSmall)
         Text(
             Money.format(summary.totalCents),
             style = MaterialTheme.typography.headlineLarge,
@@ -308,13 +289,6 @@ private fun TotalCard(summary: MonthlySummary, onGoals: () -> Unit, onAnnals: ()
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
-        Spacer(Modifier.height(8.dp))
-        TextButton(onClick = onGoals, contentPadding = PaddingValues(0.dp)) {
-            Text("🛡 Protego: wards for ${summary.month.format(DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH))}")
-        }
-        TextButton(onClick = onAnnals, contentPadding = PaddingValues(0.dp)) {
-            Text("📊 See the whole year in the Annals")
         }
     }
 }
@@ -330,7 +304,7 @@ internal fun BreakdownCard(
     var highlighted by remember(resetKey) { mutableStateOf<Category?>(null) }
     val glow = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
     ParchmentCard(spacing = Arrangement.spacedBy(10.dp)) {
-        Text("Where the gold went", style = MaterialTheme.typography.titleMedium)
+        Text(LocalWords.current.whereWent, style = MaterialTheme.typography.titleMedium)
         if (totalCents > 0) {
             DonutChart(
                 slices = categories.map { it.category.color to it.spentCents.toFloat() },
@@ -377,12 +351,14 @@ internal fun BreakdownCard(
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
                         Text(c.category.label, style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            c.category.nickname,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontStyle = FontStyle.Italic,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        if (LocalWords.current.nicknames) {
+                            Text(
+                                c.category.nickname,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontStyle = FontStyle.Italic,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text(Money.format(c.spentCents), fontWeight = FontWeight.SemiBold)
@@ -402,7 +378,7 @@ internal fun BreakdownCard(
                     Spacer(Modifier.height(4.dp))
                     GoalBar(goal, Modifier.padding(start = 40.dp, end = 24.dp), height = 8.dp)
                     Text(
-                        goal.describe(),
+                        goal.describe(LocalWords.current),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 40.dp, top = 2.dp),
@@ -411,7 +387,7 @@ internal fun BreakdownCard(
             }
         }
         Text(
-            "Tap a slice to highlight it, or a vault to see all its expenses.",
+            "Tap a slice to highlight it, or a ${LocalWords.current.vault} to see all its expenses.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -422,7 +398,7 @@ internal fun BreakdownCard(
 internal fun FoodCard(food: FoodSummary, onFoodType: (FoodType) -> Unit) {
     ParchmentCard(spacing = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Feasts & Food", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(LocalWords.current.food, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             Text(Money.format(food.totalCents), fontWeight = FontWeight.Bold)
         }
         // One bar split into the food types, widths proportional to spending.
@@ -454,7 +430,7 @@ internal fun FoodCard(food: FoodSummary, onFoodType: (FoodType) -> Unit) {
                 Column(Modifier.weight(1f)) {
                     Text(t.type.label, style = MaterialTheme.typography.titleSmall)
                     Text(
-                        t.type.nickname + " · " + if (t.count == 1) "1 time" else "${t.count} times",
+                        (if (LocalWords.current.nicknames) t.type.nickname + " · " else "") + if (t.count == 1) "1 time" else "${t.count} times",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

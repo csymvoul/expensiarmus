@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.csymvoul.expenses.R
+import com.csymvoul.expenses.data.ThemeMode
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.FoodType
 
@@ -110,10 +111,15 @@ internal fun wizardTypography(heading: Color): Typography {
     )
 }
 
-/** Parchment by day, castle by night: follows the phone's light/dark setting. */
+/** Parchment by day, castle by night: follows the phone's light/dark setting unless one is chosen in Settings. */
 @Composable
-fun ExpensesTheme(content: @Composable () -> Unit) {
-    val scheme = if (isSystemInDarkTheme()) Night else Parchment
+fun ExpensesTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -> Unit) {
+    val dark = when (mode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    val scheme = if (dark) Night else Parchment
     MaterialTheme(
         colorScheme = scheme,
         typography = wizardTypography(heading = scheme.primary),

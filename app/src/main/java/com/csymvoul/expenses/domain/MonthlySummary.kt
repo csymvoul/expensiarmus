@@ -19,10 +19,10 @@ data class GoalProgress(val goalCents: Long, val spentCents: Long) {
     val isOver: Boolean get() = spentCents > goalCents
 
     /** "63% of €1,200.00 · €444.00 left", or the overspend with a broken ward. */
-    fun describe(): String {
+    fun describe(words: Words = Words.WIZARD): String {
         val head = "$percent% of ${Money.format(goalCents)}"
         return if (isOver) {
-            "$head · ${Money.format(-remainingCents)} over. The Protego ward is broken!"
+            "$head · ${Money.format(-remainingCents)} over. ${words.overGoal}"
         } else {
             "$head · ${Money.format(remainingCents)} left"
         }

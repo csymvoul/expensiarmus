@@ -37,6 +37,7 @@ import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.ui.components.EmblemBadge
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.components.ExpenseRow
+import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.ParchmentCard
 import com.csymvoul.expenses.ui.theme.color
 import com.csymvoul.expenses.ui.theme.emoji
@@ -86,11 +87,13 @@ fun CategoryScreen(
                         EmblemBadge(category.emoji, category.color, size = 44.dp)
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text(
-                                category.nickname,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontStyle = FontStyle.Italic,
-                            )
+                            if (LocalWords.current.nicknames) {
+                                Text(
+                                    category.nickname,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontStyle = FontStyle.Italic,
+                                )
+                            }
                             Text(category.hint, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
@@ -130,7 +133,7 @@ fun CategoryScreen(
             if (groups.isEmpty()) {
                 item {
                     Text(
-                        "This vault is empty. Nothing recorded here yet.",
+                        LocalWords.current.categoryEmpty,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().padding(16.dp),

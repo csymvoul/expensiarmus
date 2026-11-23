@@ -1,16 +1,20 @@
 // Expensiarmus web app: screens, navigation and event handling. Logic lives in the other modules.
 import { CATEGORIES, FOOD_TYPES, category, foodType, makeExpense, myShareCents, isSplit, splitLine, upsert, remove, find, monthOf } from './model.js';
-import { parseToCents, format, forInput, compact } from './money.js';
+import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
 import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
-import { dailyTotals, onDay, calendarCells, byCategory, search, shiftMonth } from './queries.js';
+import { dailyTotals, onDay, calendarCells, byCategory, search, shiftMonth, suggestions, defaultTitle } from './queries.js';
 import { toCsv } from './csv.js';
 import { load, save, KEY } from './store.js';
 import { upcomingReminders } from './reminder.js';
+import { wordsFor } from './words.js';
+import { loadSettings, saveSettings, validTime } from './settings.js';
 
 const app = document.getElementById('app');
 const storage = window.localStorage;
 let data = load(storage);
+let settings = loadSettings(storage);
+let W = wordsFor(settings.wizard);
 
 const pad = (n) => String(n).padStart(2, '0');
 const today = () => {
@@ -23,36 +27,57 @@ const asDate = (iso) => {
 };
 const fmt = (iso, opts) => new Intl.DateTimeFormat('en-GB', opts).format(asDate(iso));
 const monthTitle = (month) => fmt(`${month}-01`, { month: 'long', year: 'numeric' });
+const monthName = (m) => fmt(`${m}-01`, { month: 'long' });
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const newId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
 
 const ui = {
   month: today().slice(0, 7),
-  view: 'overview',
   day: today(),
   highlighted: null,
   menu: false,
   modal: false,
+  quick: null, // the Quick add sheet, when open
   annals: { view: 'year', year: Number(today().slice(0, 4)), bar: null },
 };
 let draft = null; // the expense being added or edited
+let prefill = null; // what Quick add hands to the full form ("More details")
 const finder = { q: '', cats: [] };
 let navDepth = 0;
 
 // Inside the iPhone app the page can talk to Swift through this handler; on the web it is absent.
 const nativeBridge = window.webkit?.messageHandlers?.expensiarmus ?? null;
 const post = (message) => nativeBridge?.postMessage(message);
-const REMINDER_KEY = 'expensiarmus.reminder';
-const reminderOn = () => storage.getItem(REMINDER_KEY) !== 'off';
 
-/** Asks the iPhone app to (re)schedule the 21:30 owls for the coming evenings. */
+/** Applies the settings: number style, wording, theme (also for the iPhone app's own colours). */
+function applySettings() {
+  setMoneyStyle(settings.money);
+  W = wordsFor(settings.wizard);
+  if (settings.theme === 'system') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = settings.theme;
+  post({ type: 'theme', value: settings.theme });
+}
+
+function updateSettings(change) {
+  settings = { ...settings, ...change };
+  saveSettings(storage, settings);
+  applySettings();
+  scheduleOwls();
+  render();
+}
+
+/** Asks the iPhone app to (re)schedule the evening owls for the coming days, at the chosen time. */
 function scheduleOwls() {
-  post({ type: 'schedule', enabled: reminderOn(), reminders: reminderOn() ? upcomingReminders(data.expenses, new Date()) : [] });
+  post({
+    type: 'schedule',
+    enabled: settings.reminderOn,
+    reminders: settings.reminderOn ? upcomingReminders(data.expenses, new Date(), 30, settings.reminderTime, W) : [],
+  });
 }
 
 function commit(next) {
   // Warn once when a category of the current month reaches 80% of its goal, or goes over.
-  const alerts = alertsDue(next, today().slice(0, 7));
+  const alerts = alertsDue(next, today().slice(0, 7), W);
   data = alerts.length ? markAlertsSent(next, alerts) : next;
   save(storage, data);
   // The iPhone app keeps a copy outside the web view's storage, as a backup.
@@ -75,6 +100,8 @@ function showGoalAlert(a) {
 }
 
 // ---------- navigation ----------
+
+const TABS = ['month', 'calendar', 'annals', 'goals'];
 
 function route() {
   const [name, a, b] = location.hash.replace(/^#\/?/, '').split('/');
@@ -114,11 +141,22 @@ function header(title, { backBtn = false, actions = '' } = {}) {
   </div></header>`;
 }
 
+/** The bottom tab bar: Ledger · Calendar · Annals · Protego (or the plain names). */
+function tabBar(active) {
+  const tabs = [['month', '#/', W.ledgerTab], ['calendar', '#/calendar', W.calendarTab], ['annals', '#/annals', W.annalsTab], ['goals', '#/goals', W.goalsTab]];
+  return `<nav class="tabs">${tabs.map(([key, to, label]) => {
+    const [icon, ...words] = label.split(' ');
+    return `<button class="tab ${active === key ? 'on' : ''}" data-action="tab" data-to="${to}"><span class="tab-icon">${icon}</span><span>${esc(words.join(' '))}</span></button>`;
+  }).join('')}</nav>`;
+}
+
 const card = (inner, cls = '') => `<section class="card ${cls}"><div class="paper">${inner}</div></section>`;
 const emblem = (emoji, color, size = 30) =>
   `<span class="emblem" style="--c:${color};--s:${size}px">${emoji}</span>`;
 const ornament = (text) => `<h2 class="ornament"><span>${esc(text)}</span></h2>`;
 const hint = (text) => `<p class="hint">${esc(text)}</p>`;
+/** Category hint, with its wizard nickname in front when wizard words are on. */
+const withNickname = (thing) => (W.nicknames ? `${thing.nickname}: ${thing.hint}` : thing.hint);
 
 function goalBar(g, thin = false) {
   const cls = g.isOver ? 'over' : g.percent >= 80 ? 'warn' : '';
@@ -137,7 +175,21 @@ function expenseRow(e, showYear = false) {
   </button>`;
 }
 
-// ---------- month screen ----------
+/** Earlier expenses matching a typed title, as tappable suggestions. */
+function suggestionList(typed, action) {
+  const list = suggestions(data.expenses, typed);
+  if (!list.length) return '';
+  return `<div class="suggestions">${list.map((s, i) => {
+    const c = category(s.category);
+    const f = s.foodType ? foodType(s.foodType) : null;
+    return `<button class="suggestion" data-action="${action}" data-i="${i}">
+      ${emblem(f ? f.emoji : c.emoji, c.color, 26)}
+      <span class="row-main"><span class="row-title">${esc(s.title)}</span><span class="row-sub">${esc((f ? f.label : c.label) + (s.myPercent < 100 ? ` · split ${s.myPercent}%` : ''))}</span></span>
+      <b>${format(s.amountCents)}</b></button>`;
+  }).join('')}</div>`;
+}
+
+// ---------- ledger and calendar ----------
 
 /** SVG donut; slices are stroked arcs clockwise from 12 o'clock. Tapping one highlights it. */
 function donut(summary) {
@@ -150,7 +202,7 @@ function donut(summary) {
   const gap = visible.length > 1 ? 2 : 0;
   const pt = (deg) => [cx + r * Math.sin((deg * Math.PI) / 180), cx - r * Math.cos((deg * Math.PI) / 180)];
   let start = 0;
-  const arcs = summary.categories.map((c, i) => {
+  const arcs = summary.categories.map((c) => {
     if (c.spentCents <= 0) return '';
     const sweep = (c.spentCents / total) * 360;
     const sel = ui.highlighted === c.category;
@@ -182,13 +234,10 @@ function donut(summary) {
 }
 
 function totalCard(s) {
-  const goal = `<button class="link" data-action="go" data-to="#/goals">🛡 Protego: wards for ${fmt(`${s.month}-01`, { month: 'long' })}</button>`;
   return card(`
-    <h3 class="h-small">Gold spent this month</h3>
+    <h3 class="h-small">${W.spentThisMonth}</h3>
     <p class="total">${format(s.totalCents)}</p>
-    ${s.paidTotalCents !== s.totalCents ? `<p class="small soft">Your share. Full bills came to ${format(s.paidTotalCents)}.</p>` : ''}
-    ${goal}
-    <button class="link" data-action="annals">📊 See the whole year in the Annals</button>`);
+    ${s.paidTotalCents !== s.totalCents ? `<p class="small soft">Your share. Full bills came to ${format(s.paidTotalCents)}.</p>` : ''}`);
 }
 
 function breakdownCard(s) {
@@ -198,17 +247,17 @@ function breakdownCard(s) {
     return `<button class="legend ${ui.highlighted === c.category ? 'glow' : ''} ${dim ? 'dim' : ''}" data-action="category" data-cat="${cat.id}">
       <span class="legend-row">
         ${emblem(cat.emoji, cat.color)}
-        <span class="row-main"><span class="h-small">${esc(cat.label)}</span><span class="row-sub italic">${esc(cat.nickname)}</span></span>
+        <span class="row-main"><span class="h-small">${esc(cat.label)}</span>${W.nicknames ? `<span class="row-sub italic">${esc(cat.nickname)}</span>` : ''}</span>
         <span class="row-amount"><b>${format(c.spentCents)}</b><small>${Math.round(c.shareOfMonth * 100)}%</small></span><span class="chev">${ICON.right}</span>
       </span>
-      ${c.goal ? `<span class="legend-goal">${goalBar(c.goal, true)}<span class="small soft">${esc(describeGoal(c.goal))}</span></span>` : ''}
+      ${c.goal ? `<span class="legend-goal">${goalBar(c.goal, true)}<span class="small soft">${esc(describeGoal(c.goal, W))}</span></span>` : ''}
     </button>`;
   });
   return card(`
-    <h3 class="h-medium">Where the gold went</h3>
+    <h3 class="h-medium">${W.whereWent}</h3>
     ${s.totalCents > 0 ? donut(s) : ''}
     ${rows.join('')}
-    <p class="small soft">Tap a slice to highlight it, or a vault to see all its expenses.</p>`);
+    <p class="small soft">Tap a slice to highlight it, or a ${W.vault} to see all its expenses.</p>`);
 }
 
 function foodCard(food) {
@@ -216,14 +265,15 @@ function foodCard(food) {
     .map((t) => `<span style="flex:${t.spentCents};background:${foodType(t.type).color}"></span>`).join('');
   const rows = food.types.map((t) => {
     const f = foodType(t.type);
+    const times = t.count === 1 ? '1 time' : `${t.count} times`;
     return `<button class="legend" data-action="category" data-cat="ENTERTAINMENT" data-food="${f.id}"><span class="legend-row">
       ${emblem(f.emoji, f.color)}
-      <span class="row-main"><span class="h-small">${f.label}</span><span class="row-sub">${f.nickname} · ${t.count === 1 ? '1 time' : `${t.count} times`}</span></span>
+      <span class="row-main"><span class="h-small">${f.label}</span><span class="row-sub">${W.nicknames ? `${f.nickname} · ` : ''}${times}</span></span>
       <span class="row-amount"><b>${format(t.spentCents)}</b><small>${Math.round(t.shareOfFood * 100)}%</small></span><span class="chev">${ICON.right}</span>
     </span></button>`;
   });
   return card(`
-    <div class="split-head"><h3 class="h-medium">Feasts &amp; Food</h3><b>${format(food.totalCents)}</b></div>
+    <div class="split-head"><h3 class="h-medium">${esc(W.food)}</h3><b>${format(food.totalCents)}</b></div>
     <div class="stack-bar">${bar}</div>
     ${rows.join('')}
     ${food.otherEntertainmentCents > 0 ? `<p class="small soft">Other entertainment (not food): ${format(food.otherEntertainmentCents)}</p>` : ''}`);
@@ -243,10 +293,13 @@ function calendarCard() {
   return card(`<div class="cal">${['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((w) => `<span class="wd">${w}</span>`).join('')}${cells.join('')}</div>`);
 }
 
+/** On the web (no notifications), a banner after the reminder time when nothing was recorded today. */
 function owlBanner() {
-  if (nativeBridge || ui.month !== today().slice(0, 7) || new Date().getHours() < 21) return '';
+  if (nativeBridge || !settings.reminderOn || ui.month !== today().slice(0, 7)) return '';
+  const now = new Date();
+  if (`${pad(now.getHours())}:${pad(now.getMinutes())}` < settings.reminderTime) return '';
   if (data.expenses.some((e) => e.date === today())) return '';
-  return `<button class="banner" data-action="go" data-to="#/edit">🦉 Owl post: nothing recorded today yet. Tap to record what you spent.</button>`;
+  return `<button class="banner" data-action="quick">${esc(W.owlNothing)} Tap to record what you spent.</button>`;
 }
 
 function installBanner() {
@@ -257,24 +310,33 @@ function installBanner() {
     <button class="icon-btn small" data-action="dismiss-install" aria-label="Dismiss">✕</button></div>`;
 }
 
-function monthScreen() {
+function monthSwitch(prev = 'prev-month', next = 'next-month', title = monthTitle(ui.month)) {
+  return `<div class="month-switch">
+      <button class="icon-btn gold" data-action="${prev}" aria-label="Previous">${ICON.left}</button>
+      <h2 class="h-large">${title}</h2>
+      <button class="icon-btn gold" data-action="${next}" aria-label="Next">${ICON.right}</button>
+    </div>`;
+}
+
+/** The Ledger tab (overview of the month) and the Calendar tab. */
+function monthScreen(calendar) {
   const s = monthlySummary(data, ui.month);
   const menu = ui.menu
     ? `<div class="menu">
-        <button data-action="annals">📊 Annals · year &amp; all-time totals</button>
-        <button data-action="go" data-to="#/goals">🛡 Protego · monthly goals</button>
-        <button data-action="go" data-to="#/owl">🦉 Owl reminder at 21:30</button>
-        <button data-action="export">📜 Geminio · export CSV</button>
+        <button data-action="go" data-to="#/settings">${W.settings}</button>
+        ${nativeBridge ? `<button data-action="test-owl">${W.testOwl}</button>` : ''}
+        <button data-action="export">${W.exportMenu}</button>
       </div>`
     : '';
-  const actions = `<button class="icon-btn" data-action="go" data-to="#/search" aria-label="Search">${ICON.search}</button>
+  const actions = `<button class="icon-btn" data-action="go" data-to="#/search" aria-label="${W.search}">${ICON.search}</button>
     <button class="icon-btn" data-action="menu" aria-label="More">${ICON.more}</button>${menu}`;
   let body;
-  if (ui.view === 'overview') {
-    body = `${breakdownCard(s)}
+  if (!calendar) {
+    body = `${totalCard(s)}
+      ${breakdownCard(s)}
       ${s.food.totalCents > 0 ? foodCard(s.food) : ''}
-      ${ornament('The Ledger')}
-      ${s.expenses.length ? `<div class="list">${s.expenses.map((e) => expenseRow(e)).join('')}</div>` : hint('The ledger is blank. Tap Record expense to write the first line.')}`;
+      ${ornament(W.ledger)}
+      ${s.expenses.length ? `<div class="list">${s.expenses.map((e) => expenseRow(e)).join('')}</div>` : hint(W.ledgerEmpty)}`;
   } else {
     const day = ui.day && monthOf(ui.day) === ui.month ? ui.day : null;
     const list = day ? onDay(data.expenses, day) : [];
@@ -282,39 +344,114 @@ function monthScreen() {
       ${day
         ? `${ornament(fmt(day, { weekday: 'long', day: 'numeric', month: 'long' }))}
            <p class="center h-small">Spent: ${format(list.reduce((a, e) => a + myShareCents(e), 0))}</p>
-           ${list.length ? `<div class="list">${list.map((e) => expenseRow(e)).join('')}</div>` : hint('No gold left your vault this day.')}`
-        : hint('Tap a day and say Revelio.')}`;
+           ${list.length ? `<div class="list">${list.map((e) => expenseRow(e)).join('')}</div>` : hint(W.dayEmpty)}`
+        : hint(W.dayHint)}`;
   }
   return `${header('Expensiarmus', { actions })}
-  <main>
+  <main class="with-tabs">
     ${installBanner()}${owlBanner()}
-    <div class="month-switch">
-      <button class="icon-btn gold" data-action="prev-month" aria-label="Previous month">${ICON.left}</button>
-      <h2 class="h-large">${monthTitle(ui.month)}</h2>
-      <button class="icon-btn gold" data-action="next-month" aria-label="Next month">${ICON.right}</button>
-    </div>
-    ${totalCard(s)}
-    <div class="segmented">
-      <button class="${ui.view === 'overview' ? 'on' : ''}" data-action="view" data-view="overview">📜 Overview</button>
-      <button class="${ui.view === 'calendar' ? 'on' : ''}" data-action="view" data-view="calendar">📅 Calendar</button>
-    </div>
+    ${monthSwitch()}
     ${body}
   </main>
-  <button class="fab" data-action="go" data-to="#/edit">✒️ Record expense</button>`;
+  <button class="fab" data-action="quick">${esc(W.fab)}</button>
+  ${tabBar(calendar ? 'calendar' : 'month')}
+  ${ui.quick ? quickSheet() : ''}`;
+}
+
+// ---------- Quick add ----------
+
+/** Date for a new expense: the selected calendar day, today, or the 1st of the month being viewed. */
+function newExpenseDate() {
+  if (route().name === 'calendar' && ui.day && monthOf(ui.day) === ui.month) return ui.day;
+  return ui.month === today().slice(0, 7) ? today() : `${ui.month}-01`;
+}
+
+const decimalKey = () => (settings.money === 'el' ? ',' : '.');
+const quickAmountText = () => {
+  const typed = ui.quick.amount || '0';
+  return settings.money === 'el' ? `${typed} €` : `€${typed}`;
+};
+
+function quickSheet() {
+  const q = ui.quick;
+  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', decimalKey(), '0', '⌫'];
+  const tiles = [
+    ...CATEGORIES.map((c) => ({ cat: c.id, food: '', emoji: c.emoji, label: c.label, color: c.color })),
+    ...FOOD_TYPES.map((f) => ({ cat: 'ENTERTAINMENT', food: f.id, emoji: f.emoji, label: f.label, color: f.color })),
+  ];
+  return `<div class="sheet-backdrop" data-action="quick-close"></div>
+  <div class="sheet" role="dialog" aria-label="${esc(W.newExpense)}">
+    <div class="sheet-head">
+      <button class="link" data-action="quick-close">Cancel</button>
+      <span class="h-small">${esc(W.newExpense)}</span>
+      <button class="link" data-action="quick-more">More details ›</button>
+    </div>
+    <input class="quick-title" type="text" placeholder="Title (optional)" value="${esc(q.title)}" data-input="quick-title" autocapitalize="sentences">
+    <div id="quick-sugg">${suggestionList(q.title, 'quick-sugg')}</div>
+    <div class="quick-amount" id="quick-amount">${esc(quickAmountText())}</div>
+    <label class="quick-date">📅 <input type="date" value="${q.date}" data-input="quick-date"></label>
+    <div class="numpad">${keys.map((k) => `<button data-action="quick-key" data-key="${k}">${k}</button>`).join('')}</div>
+    <p class="small center ${q.error ? 'error' : 'soft'}" id="quick-help">${q.error ? 'Type an amount first' : 'Tap a category to save'}</p>
+    <div class="tiles">${tiles.map((t) => `<button class="tile" data-action="quick-save" data-cat="${t.cat}" data-food="${t.food}">
+      ${emblem(t.emoji, t.color, 38)}<span>${esc(t.label)}</span></button>`).join('')}</div>
+  </div>`;
+}
+
+function quickKey(key) {
+  const q = ui.quick;
+  let a = q.amount;
+  if (key === '⌫') a = a.slice(0, -1);
+  else if (key === '.' || key === ',') {
+    if (!/[.,]/.test(a)) a = (a || '0') + key;
+  } else {
+    const dec = a.match(/[.,](\d*)$/);
+    if (dec && dec[1].length >= 2) return;
+    if (a.replace(/\D/g, '').length >= 8) return;
+    a = a === '0' ? key : a + key;
+  }
+  q.amount = a;
+  q.error = false;
+  app.querySelector('#quick-amount').textContent = quickAmountText();
+  const help = app.querySelector('#quick-help');
+  help.className = 'small center soft';
+  help.textContent = 'Tap a category to save';
+}
+
+/** Saves an expense from Quick add and offers Undo for a few seconds. */
+function quickRecord(e) {
+  commit(upsert(data, e));
+  ui.quick = null;
+  ui.month = monthOf(e.date);
+  render();
+  undoBar(`Recorded ${e.title} · ${format(myShareCents(e))}`, e.id);
+}
+
+function undoBar(text, id) {
+  document.querySelectorAll('.undo-bar').forEach((x) => x.remove());
+  const bar = document.createElement('div');
+  bar.className = 'undo-bar';
+  bar.innerHTML = `<span>${esc(text)}</span><button>Undo</button>`;
+  bar.querySelector('button').addEventListener('click', () => {
+    commit(remove(data, id));
+    bar.remove();
+    render();
+  });
+  document.body.append(bar);
+  setTimeout(() => bar.remove(), 5000);
 }
 
 // ---------- add / edit ----------
 
 function startDraft(id) {
   const e = id ? find(data, id) : null;
-  const inMonth = ui.day && monthOf(ui.day) === ui.month;
-  const date = e?.date ?? (ui.view === 'calendar' && inMonth ? ui.day : ui.month === today().slice(0, 7) ? today() : `${ui.month}-01`);
+  const p = !e ? prefill : null;
+  prefill = null;
   return {
     key: id ?? 'new',
     id: e?.id ?? null,
-    title: e?.title ?? '',
-    amount: e ? forInput(e.amountCents) : '',
-    date,
+    title: e?.title ?? p?.title ?? '',
+    amount: e ? forInput(e.amountCents) : p?.amount ?? '',
+    date: e?.date ?? p?.date ?? newExpenseDate(),
     category: e?.category ?? 'SUPERMARKET',
     foodType: e?.foodType ?? null,
     split: e ? isSplit(e) : false,
@@ -329,6 +466,14 @@ function shareLine() {
   return `You pay ${format(Math.floor((cents * draft.myPercent + 50) / 100))} of ${format(cents)}`;
 }
 
+function deleteModal(title, id = '') {
+  return `<div class="modal-backdrop"><div class="card modal"><div class="paper">
+      <h3 class="h-medium">${esc(W.deleteTitle)}</h3>
+      <p>${esc(W.deleteBody(title))}</p>
+      <div class="modal-actions"><button class="link" data-action="cancel-delete">${esc(W.keep)}</button><button class="btn danger" data-action="confirm-delete" data-id="${esc(id)}">${esc(W.deleteBtn)}</button></div>
+    </div></div></div>`;
+}
+
 function editScreen(id) {
   if (!draft || draft.key !== (id ?? 'new')) draft = startDraft(id);
   const d = draft;
@@ -336,7 +481,7 @@ function editScreen(id) {
   const titleBad = d.showErrors && !d.title.trim();
   const amountBad = d.showErrors && !(cents > 0);
   const cat = category(d.category);
-  const actions = `${d.id ? `<button class="icon-btn" data-action="ask-delete" aria-label="Delete">${ICON.trash}</button>` : ''}
+  const actions = `${d.id ? `<button class="icon-btn" data-action="ask-delete" aria-label="${esc(W.deleteBtn)}">${ICON.trash}</button>` : ''}
     <button class="icon-btn" data-action="save" aria-label="Save">${ICON.check}</button>`;
   const catChips = CATEGORIES.map((c) =>
     `<button class="chip ${d.category === c.id ? 'on' : ''}" data-action="edit-cat" data-cat="${c.id}">${c.emoji} ${c.label}</button>`).join('');
@@ -344,7 +489,7 @@ function editScreen(id) {
     ? `<div class="field"><span class="h-small">Is it food?</span><div class="chips">
         <button class="chip ${!d.foodType ? 'on' : ''}" data-action="edit-food" data-food="">Not food</button>
         ${FOOD_TYPES.map((f) => `<button class="chip ${d.foodType === f.id ? 'on' : ''}" data-action="edit-food" data-food="${f.id}">${f.emoji} ${f.label}</button>`).join('')}
-      </div><p class="small soft">${esc(d.foodType ? `${foodType(d.foodType).nickname}: ${foodType(d.foodType).hint}` : 'Cinema, theatre, concerts, etc.')}</p></div>`
+      </div><p class="small soft">${esc(d.foodType ? withNickname(foodType(d.foodType)) : 'Cinema, theatre, concerts, etc.')}</p></div>`
     : '';
   const split = d.split
     ? `<div class="field">
@@ -354,31 +499,38 @@ function editScreen(id) {
         <p id="share-line">${shareLine()}</p>
       </div>`
     : '';
-  const modal = ui.modal
-    ? `<div class="modal-backdrop"><div class="card modal"><div class="paper">
-        <h3 class="h-medium">Evanesco?</h3>
-        <p>"${esc(d.title)}" will vanish from the ledger. This cannot be undone.</p>
-        <div class="modal-actions"><button class="link" data-action="cancel-delete">Keep it</button><button class="btn danger" data-action="confirm-delete">Evanesco</button></div>
-      </div></div></div>`
-    : '';
-  return `${header(d.id ? 'Amend expense' : 'Record expense', { backBtn: true, actions })}
+  return `${header(d.id ? W.editExpense : W.newExpense, { backBtn: true, actions })}
   <main class="form">
-    <label class="field"><span class="label">Title</span>
-      <input type="text" value="${esc(d.title)}" placeholder="e.g. Butterbeer with friends" data-input="edit-title" class="${titleBad ? 'bad' : ''}" autocapitalize="sentences">
-      ${titleBad ? '<span class="error">Enter a title</span>' : ''}</label>
-    <label class="field"><span class="label">Gold spent</span>
-      <span class="money-input ${amountBad ? 'bad' : ''}"><span>€</span><input type="text" inputmode="decimal" value="${esc(d.amount)}" placeholder="0.00" data-input="edit-amount"></span>
-      ${amountBad ? '<span class="error">Enter an amount, e.g. 12.50</span>' : ''}</label>
+    <div class="field"><label class="label" for="edit-title">Title</label>
+      <input id="edit-title" type="text" value="${esc(d.title)}" placeholder="e.g. Butterbeer with friends" data-input="edit-title" class="${titleBad ? 'bad' : ''}" autocapitalize="sentences" autocomplete="off">
+      <div id="title-sugg">${d.id ? '' : suggestionList(d.title, 'edit-sugg')}</div>
+      ${titleBad ? '<span class="error">Enter a title</span>' : ''}</div>
+    <label class="field"><span class="label">${esc(W.amount)}</span>
+      <span class="money-input ${amountBad ? 'bad' : ''}"><span>€</span><input type="text" inputmode="decimal" value="${esc(d.amount)}" placeholder="0${decimalKey()}00" data-input="edit-amount"></span>
+      ${amountBad ? `<span class="error">Enter an amount, e.g. 12${decimalKey()}50</span>` : ''}</label>
     <label class="field"><span class="label">Date</span>
       <input type="date" value="${d.date}" data-input="edit-date"></label>
     <div class="field"><span class="h-small">Category</span><div class="chips">${catChips}</div>
-      <p class="small soft">${esc(`${cat.nickname}: ${cat.hint}`)}</p></div>
+      <p class="small soft">${esc(withNickname(cat))}</p></div>
     ${foodChips}
-    <label class="switch-row"><span><span class="h-small">Split with a fellow wizard</span><span class="small soft">Only your share counts toward totals and goals</span></span>
+    <label class="switch-row"><span><span class="h-small">${esc(W.split)}</span><span class="small soft">Only your share counts toward totals and goals</span></span>
       <input type="checkbox" class="switch" ${d.split ? 'checked' : ''} data-input="edit-split"></label>
     ${split}
-    <button class="btn wide" data-action="save">Mischief managed · Save</button>
-  </main>${modal}`;
+    <button class="btn wide" data-action="save">${esc(W.save)}</button>
+  </main>${ui.modal ? deleteModal(d.title) : ''}`;
+}
+
+/** Fills the form from a suggestion: amount, category, food type and split. */
+function applySuggestion(s) {
+  Object.assign(draft, {
+    title: s.title,
+    amount: forInput(s.amountCents),
+    category: s.category,
+    foodType: s.foodType,
+    split: s.myPercent < 100,
+    myPercent: s.myPercent < 100 ? s.myPercent : 50,
+  });
+  render();
 }
 
 function saveDraft() {
@@ -410,21 +562,14 @@ function viewScreen(id) {
   const e = find(data, id);
   if (!e) {
     setTimeout(back, 0); // deleted from the edit screen: nothing to show
-    return header('📜 Ledger entry', { backBtn: true });
+    return header(W.entry, { backBtn: true });
   }
   const c = category(e.category);
   const f = e.foodType ? foodType(e.foodType) : null;
   const row = (label, value, note = '') => `<div class="detail"><span class="h-small">${label}</span><span>${esc(value)}</span>${note ? `<span class="small soft italic">${esc(note)}</span>` : ''}</div>`;
-  const actions = `<button class="icon-btn" data-action="ask-delete" aria-label="Delete">${ICON.trash}</button>
-    <button class="icon-btn" data-action="amend" data-id="${esc(e.id)}" aria-label="Amend">${ICON.pen}</button>`;
-  const modal = ui.modal
-    ? `<div class="modal-backdrop"><div class="card modal"><div class="paper">
-        <h3 class="h-medium">Evanesco?</h3>
-        <p>"${esc(e.title)}" will vanish from the ledger. This cannot be undone.</p>
-        <div class="modal-actions"><button class="link" data-action="cancel-delete">Keep it</button><button class="btn danger" data-action="confirm-delete" data-id="${esc(e.id)}">Evanesco</button></div>
-      </div></div></div>`
-    : '';
-  return `${header('📜 Ledger entry', { backBtn: true, actions })}
+  const actions = `<button class="icon-btn" data-action="ask-delete" aria-label="${esc(W.deleteBtn)}">${ICON.trash}</button>
+    <button class="icon-btn" data-action="amend" data-id="${esc(e.id)}" aria-label="Edit">${ICON.pen}</button>`;
+  return `${header(W.entry, { backBtn: true, actions })}
   <main>
     ${card(`<div class="legend-row">${emblem(f ? f.emoji : c.emoji, c.color, 52)}
         <span class="row-main"><span class="h-large">${esc(e.title)}</span>
@@ -432,12 +577,12 @@ function viewScreen(id) {
           ${isSplit(e) ? `<span class="small soft">of ${format(e.amountCents)} in full</span>` : ''}</span></div>
       <hr class="gold-rule">
       ${row('Date', fmt(e.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}
-      ${row('Category', `${c.emoji} ${c.label}`, c.nickname)}
-      ${f ? row('Food', `${f.emoji} ${f.label}`, f.nickname) : ''}
+      ${row('Category', `${c.emoji} ${c.label}`, W.nicknames ? c.nickname : '')}
+      ${f ? row('Food', `${f.emoji} ${f.label}`, W.nicknames ? f.nickname : '') : ''}
       ${row('Split', splitLine(e, format))}`)}
-    <button class="btn wide" data-action="amend" data-id="${esc(e.id)}">✏️ Amend expense</button>
-    <button class="link center-link" data-action="ask-delete">Evanesco · delete</button>
-  </main>${modal}`;
+    <button class="btn wide" data-action="amend" data-id="${esc(e.id)}">${esc(W.amend)}</button>
+    <button class="link center-link" data-action="ask-delete">${esc(W.deleteLink)}</button>
+  </main>${ui.modal ? deleteModal(e.title, e.id) : ''}`;
 }
 
 // ---------- category ----------
@@ -455,12 +600,12 @@ function categoryScreen(catId, foodId) {
   return `${header(`${cat.emoji} ${cat.label}`, { backBtn: true })}
   <main>
     ${card(`<div class="legend-row">${emblem(cat.emoji, cat.color, 44)}
-        <span class="row-main"><span class="h-small italic">${esc(cat.nickname)}</span><span>${esc(cat.hint)}</span></span></div>
+        <span class="row-main">${W.nicknames ? `<span class="h-small italic">${esc(cat.nickname)}</span>` : ''}<span>${esc(cat.hint)}</span></span></div>
       <span class="label">All time${foodId ? ` · ${foodType(foodId).label}` : ''}</span>
       <p class="total">${format(groups.reduce((a, g) => a + g.totalCents, 0))}</p>
       <p class="small soft">${count === 1 ? '1 expense' : `${count} expenses`} in ${groups.length === 1 ? '1 month' : `${groups.length} months`}</p>`)}
     ${foodChips}
-    ${groups.length ? '' : hint('This vault is empty. Nothing recorded here yet.')}
+    ${groups.length ? '' : hint(W.categoryEmpty)}
     ${groups.map((g) => `<div class="group-head"><span class="h-small">${monthTitle(g.month)}</span><b>${format(g.totalCents)}</b></div>
       <div class="list">${g.expenses.map((e) => expenseRow(e)).join('')}</div>`).join('')}
   </main>`;
@@ -469,28 +614,26 @@ function categoryScreen(catId, foodId) {
 // ---------- search ----------
 
 function searchResults() {
-  if (!finder.q.trim() && finder.cats.length === 0) return hint('Say Accio! Type part of a title, or pick one or more vaults.');
+  if (!finder.q.trim() && finder.cats.length === 0) return hint(W.searchHint);
   const found = search(data.expenses, finder.q, finder.cats);
   return `<p class="h-small">${found.length === 1 ? '1 expense' : `${found.length} expenses`} · ${format(found.reduce((a, e) => a + myShareCents(e), 0))}</p>
-    ${found.length ? `<div class="list">${found.map((e) => expenseRow(e, true)).join('')}</div>` : hint('Revelio found nothing. Try another word.')}`;
+    ${found.length ? `<div class="list">${found.map((e) => expenseRow(e, true)).join('')}</div>` : hint(W.searchNothing)}`;
 }
 
 function searchScreen() {
-  return `${header('Accio', { backBtn: true })}
+  return `${header(W.search, { backBtn: true })}
   <main>
-    <label class="search-box">${ICON.search}<input type="search" value="${esc(finder.q)}" placeholder="Accio expense… (title or category)" data-input="search-q" enterkeyhint="search"></label>
+    <label class="search-box">${ICON.search}<input type="search" value="${esc(finder.q)}" placeholder="${esc(W.searchPlaceholder)}" data-input="search-q" enterkeyhint="search"></label>
     <div class="chips">${CATEGORIES.map((c) => `<button class="chip ${finder.cats.includes(c.id) ? 'on' : ''}" data-action="search-cat" data-cat="${c.id}">${c.emoji} ${c.label}</button>`).join('')}</div>
     <div id="results">${searchResults()}</div>
   </main>`;
 }
 
-// ---------- goals (Protego) ----------
-
-const monthName = (m) => fmt(`${m}-01`, { month: 'long' });
+// ---------- goals (Protego tab) ----------
 
 function wardEditor(m, fixed, choices, ed) {
   const name = monthName(m);
-  const picker = fixed ? '' : `<span class="h-small">Which vault?</span>
+  const picker = fixed ? '' : `<span class="h-small">${esc(W.whichCategory)}</span>
     <div class="chips">${choices.map((c) => `<button class="chip ${ed.picked === c.id ? 'on' : ''}" data-action="ward-pick" data-cat="${c.id}">${c.emoji} ${c.label}</button>`).join('')}</div>`;
   return `<div class="ward-editor">
     ${picker}
@@ -521,30 +664,31 @@ function goalsScreen() {
         <span class="legend-row">${emblem(c.emoji, c.color, 36)}
           <span class="row-main"><span class="h-small">${c.label}</span><span class="row-sub italic">${esc(scopeText(entry, m))}</span></span>
           <b class="h-medium">${format(entry.cents)}</b></span>
-        ${goalBar(g)}<span class="small">${esc(describeGoal(g))}</span>
+        ${goalBar(g)}<span class="small">${esc(describeGoal(g, W))}</span>
       </button>
       ${ed && ed.cat === c.id ? wardEditor(m, true, [], ed) : ''}`);
   });
   const adding = ed && ed.adding
-    ? card(`<h3 class="h-medium">A new ward</h3>${wardEditor(m, false, free, ed)}`)
-    : free.length ? '<button class="btn wide" data-action="ward-add">🛡 Cast a new ward</button>' : '';
+    ? card(`<h3 class="h-medium">${esc(W.aNewWard)}</h3>${wardEditor(m, false, free, ed)}`)
+    : free.length ? `<button class="btn wide" data-action="ward-add">${esc(W.newWard)}</button>` : '';
   const name = monthName(m);
   const modal = ed && ed.confirmRemove
     ? `<div class="modal-backdrop"><div class="card modal"><div class="paper">
-        <h3 class="h-medium">Remove this ward?</h3>
+        <h3 class="h-medium">${esc(W.removeWard)}</h3>
         <p>Remove it for ${name} only, or for ${name} and every month after?</p>
-        <div class="modal-actions"><button class="link" data-action="ward-remove-cancel">Keep it</button>
+        <div class="modal-actions"><button class="link" data-action="ward-remove-cancel">${esc(W.keep)}</button>
           <button class="link" data-action="ward-remove-one">Only ${name}</button>
           <button class="btn danger" data-action="ward-remove-on">From ${name} on</button></div>
       </div></div></div>`
     : '';
-  return `${header(`Protego · ${name}`, { backBtn: true })}
-  <main>
-    <p class="soft">Cast a ward on the vaults you want to watch in ${monthTitle(m)}. An owl warns you at 80% and when a ward breaks.</p>
-    ${active.length || (ed && ed.adding) ? '' : hint('No wards for this month yet.')}
+  return `${header(`${W.goals} · ${name}`)}
+  <main class="with-tabs">
+    ${monthSwitch()}
+    <p class="soft">${esc(W.goalsIntro(monthTitle(m)))}</p>
+    ${active.length || (ed && ed.adding) ? '' : hint(W.noGoals)}
     ${wards.join('')}
     ${adding}
-  </main>${modal}`;
+  </main>${tabBar('goals')}${modal}`;
 }
 
 function saveWard() {
@@ -567,35 +711,39 @@ function removeWard(onwards) {
   render();
 }
 
-// ---------- owl reminder ----------
+// ---------- settings ----------
 
-function owlScreen() {
-  if (nativeBridge) {
-    const denied = window.expensiarmusOwlStatus === 'denied';
-    return `${header('🦉 Owl reminder', { backBtn: true })}
+function choice(action, value, current, label) {
+  return `<button class="chip ${current === value ? 'on' : ''}" data-action="${action}" data-v="${value}">${label}</button>`;
+}
+
+function settingsScreen() {
+  const denied = window.expensiarmusOwlStatus === 'denied';
+  const t = settings.reminderTime;
+  const reminderHelp = nativeBridge
+    ? `${denied ? '<p class="error">Notifications are switched off for Expensiarmus. Turn them on in iPhone Settings → Notifications → Expensiarmus.</p>' : ''}
+       <p class="small soft">Every day at ${t}: <i>"${esc(W.owlNothing)}"</i>, or the day's count and total. Tap it to record an expense.</p>`
+    : `<p class="small soft">A web app can't send scheduled notifications on iPhone, so let the <b>Reminders</b> app do it: add a reminder <i>"Record today's expenses in Expensiarmus"</i>, tap <b>ⓘ</b>, turn on <b>Date</b> and <b>Time</b>, set <b>${t}</b>, <b>Repeat: Daily</b>. After ${t} the app also shows a banner if nothing was recorded that day.</p>`;
+  return `${header(W.settings, { backBtn: true })}
   <main>
-    ${card(`<h3 class="h-medium">A nightly owl at 21:30</h3>
-      <label class="switch-row"><span><span class="h-small">Send the 21:30 owl</span>
-        <span class="small soft">A notification every evening to record the day's expenses</span></span>
-        <input type="checkbox" class="switch" ${reminderOn() ? 'checked' : ''} data-input="owl-toggle"></label>
-      ${denied ? '<p class="error">Notifications are switched off for Expensiarmus. Turn them on in iPhone Settings → Notifications → Expensiarmus.</p>' : ''}
-      <p class="small soft">If nothing was recorded that day it says <i>"🦉 Owl post: did you forget the ledger?"</i>, otherwise it shows the day's count and total. Tap it to go straight to Record expense.</p>`)}
-  </main>`;
-  }
-  return `${header('🦉 Owl reminder', { backBtn: true })}
-  <main>
-    ${card(`<h3 class="h-medium">A nightly owl at 21:30</h3>
-      <p>A web app can't send its own scheduled notifications on iPhone, so let iOS send the owl. Set it up once:</p>
-      <ol class="steps">
-        <li>Open the <b>Reminders</b> app and add a new reminder: <i>🦉 Record today's expenses in Expensiarmus</i>.</li>
-        <li>Tap the <b>ⓘ</b> next to it, turn on <b>Date</b> and <b>Time</b>, and set the time to <b>21:30</b>.</li>
-        <li>Set <b>Repeat</b> to <b>Daily</b>, then tap <b>Done</b>.</li>
-      </ol>
-      <p class="small soft">Every evening at 21:30 your iPhone will remind you. Open Expensiarmus from the home screen to record what you spent. Inside the app, an owl banner also appears after 21:00 if nothing has been recorded that day.</p>`)}
+    ${card(`<h3 class="h-medium">${esc(W.reminder)}</h3>
+      <label class="switch-row"><span><span class="h-small">${esc(W.reminderSwitch)}</span><span class="small soft">A daily nudge to record the day's expenses</span></span>
+        <input type="checkbox" class="switch" ${settings.reminderOn ? 'checked' : ''} data-input="set-reminder"></label>
+      <label class="field"><span class="label">Time</span><input type="time" value="${t}" data-input="set-time"></label>
+      ${reminderHelp}
+      ${nativeBridge ? `<button class="link" data-action="test-owl">${esc(W.testOwl)}</button>` : ''}`)}
+    ${card(`<h3 class="h-medium">Wizard words</h3>
+      <label class="switch-row"><span><span class="h-small">Use wizard words</span>
+        <span class="small soft">Protego, Accio, Evanesco… Off: Goals, Search, Delete.</span></span>
+        <input type="checkbox" class="switch" ${settings.wizard ? 'checked' : ''} data-input="set-wizard"></label>`)}
+    ${card(`<h3 class="h-medium">Number format</h3>
+      <div class="chips">${choice('set-money', 'en', settings.money, '€1,234.56')}${choice('set-money', 'el', settings.money, '1.234,56 €')}</div>`)}
+    ${card(`<h3 class="h-medium">Theme</h3>
+      <div class="chips">${choice('set-theme', 'system', settings.theme, '📱 Like the phone')}${choice('set-theme', 'light', settings.theme, '☀️ Light')}${choice('set-theme', 'dark', settings.theme, '🌙 Dark')}</div>`)}
   </main>`;
 }
 
-// ---------- annals ----------
+// ---------- annals (tab) ----------
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -636,19 +784,15 @@ function annalsScreen() {
   }
   const facts = [s.expenseCount === 1 ? '1 expense' : `${s.expenseCount} expenses`,
     s.biggest ? `biggest: ${s.biggest.title}, ${format(myShareCents(s.biggest))}` : ''].filter(Boolean).join(' · ');
-  return `${header('📊 Annals', { backBtn: true })}
-  <main>
+  return `${header(W.annals)}
+  <main class="with-tabs">
     <div class="segmented">
       <button class="${a.view === 'year' ? 'on' : ''}" data-action="annals-view" data-view="year">📅 By year</button>
       <button class="${a.view === 'all' ? 'on' : ''}" data-action="annals-view" data-view="all">✦ All time</button>
     </div>
-    ${a.view === 'year' ? `<div class="month-switch">
-      <button class="icon-btn gold" data-action="prev-year" aria-label="Previous year">${ICON.left}</button>
-      <h2 class="h-large">${a.year}</h2>
-      <button class="icon-btn gold" data-action="next-year" aria-label="Next year">${ICON.right}</button>
-    </div>` : ''}
+    ${a.view === 'year' ? monthSwitch('prev-year', 'next-year', String(a.year)) : ''}
     ${card(`
-      <h3 class="h-small">${a.view === 'year' ? `Gold spent in ${a.year}` : 'Gold spent, all time'}</h3>
+      <h3 class="h-small">${a.view === 'year' ? W.spentIn(a.year) : W.spentAllTime}</h3>
       <p class="total">${format(s.totalCents)}</p>
       ${s.paidTotalCents !== s.totalCents ? `<p class="small soft">Your share. Full bills came to ${format(s.paidTotalCents)}.</p>` : ''}
       ${s.monthsCounted > 0 ? `<p>Monthly average: ${format(s.averagePerMonthCents)} over ${s.monthsCounted === 1 ? '1 month' : `${s.monthsCounted} months`}</p>` : ''}
@@ -658,19 +802,20 @@ function annalsScreen() {
       ${s.bars.length ? barChart(s.bars, a.bar) + barInfo : '<p class="soft">Nothing recorded yet.</p>'}`)}
     ${breakdownCard(s)}
     ${s.food.totalCents > 0 ? foodCard(s.food) : ''}
-  </main>`;
+  </main>${tabBar('annals')}`;
 }
 
 // ---------- CSV export ----------
 
 async function exportCsv() {
   const name = `expensiarmus-${today()}.csv`;
-  const blob = new Blob(['﻿' + toCsv(data.expenses)], { type: 'text/csv' });
-  const file = new File([blob], name, { type: 'text/csv' });
+  const text = '﻿' + toCsv(data.expenses);
   if (nativeBridge) {
-    post({ type: 'share', filename: name, text: '\uFEFF' + toCsv(data.expenses) });
+    post({ type: 'share', filename: name, text });
     return;
   }
+  const blob = new Blob([text], { type: 'text/csv' });
+  const file = new File([blob], name, { type: 'text/csv' });
   try {
     if (navigator.canShare?.({ files: [file] })) {
       await navigator.share({ files: [file], title: 'Expensiarmus ledger' });
@@ -679,9 +824,9 @@ async function exportCsv() {
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     }
-    toast('Geminio! Ledger copied to CSV.');
+    toast(W.exported);
   } catch (err) {
-    if (err?.name !== 'AbortError') toast('The spell failed: export did not work.');
+    if (err?.name !== 'AbortError') toast(W.exportFailed);
   }
 }
 
@@ -698,9 +843,12 @@ function render() {
   if (r.name !== 'edit') draft = null;
   if (r.name !== ui.modalScreen) ui.modal = false;
   ui.modalScreen = r.name;
-  if (r.name !== 'month') ui.menu = false;
+  if (r.name !== 'month' && r.name !== 'calendar') {
+    ui.menu = false;
+    ui.quick = null;
+  }
   if (r.name !== 'goals') ui.goalEdit = null;
-  if (r.name !== ui.lastScreen && (r.name === 'month' || r.name === 'annals')) ui.highlighted = null;
+  if (r.name !== ui.lastScreen && TABS.includes(r.name)) ui.highlighted = null;
   ui.lastScreen = r.name;
   switch (r.name) {
     case 'edit': app.innerHTML = editScreen(r.a); break;
@@ -708,36 +856,32 @@ function render() {
     case 'category': app.innerHTML = categoryScreen(r.a, r.b); break;
     case 'search': app.innerHTML = searchScreen(); break;
     case 'goals': app.innerHTML = goalsScreen(); break;
-    case 'owl': app.innerHTML = owlScreen(); break;
+    case 'settings':
+    case 'owl': app.innerHTML = settingsScreen(); break;
     case 'annals': app.innerHTML = annalsScreen(); break;
-    default: app.innerHTML = monthScreen();
+    case 'calendar': app.innerHTML = monthScreen(true); break;
+    default: app.innerHTML = monthScreen(false);
   }
 }
 
 const actions = {
   back,
   go: (el) => go(el.dataset.to),
+  tab: (el) => { navDepth = 0; location.replace(el.dataset.to); },
   menu: () => { ui.menu = !ui.menu; render(); },
-  'prev-month': () => { ui.month = shiftMonth(ui.month, -1); ui.highlighted = null; render(); },
-  'next-month': () => { ui.month = shiftMonth(ui.month, 1); ui.highlighted = null; render(); },
-  view: (el) => { ui.view = el.dataset.view; render(); },
+  'prev-month': () => { ui.month = shiftMonth(ui.month, -1); ui.highlighted = null; ui.goalEdit = null; render(); },
+  'next-month': () => { ui.month = shiftMonth(ui.month, 1); ui.highlighted = null; ui.goalEdit = null; render(); },
   slice: (el) => {
     const c = el.dataset.cat;
     ui.highlighted = ui.highlighted === c ? null : c;
     render();
   },
   'slice-clear': () => { ui.highlighted = null; render(); },
-  annals: () => {
-    ui.menu = false;
-    ui.annals = { view: 'year', year: Number(ui.month.slice(0, 4)), bar: null };
-    ui.highlighted = null;
-    go('#/annals');
-  },
   'annals-view': (el) => { ui.annals = { ...ui.annals, view: el.dataset.view, bar: null }; ui.highlighted = null; render(); },
   'prev-year': () => { ui.annals = { ...ui.annals, year: ui.annals.year - 1, bar: null }; ui.highlighted = null; render(); },
   'next-year': () => { ui.annals = { ...ui.annals, year: ui.annals.year + 1, bar: null }; ui.highlighted = null; render(); },
   bar: (el) => { const i = Number(el.dataset.index); ui.annals = { ...ui.annals, bar: ui.annals.bar === i ? null : i }; render(); },
-  'open-month': (el) => { ui.month = el.dataset.month; ui.view = 'overview'; ui.highlighted = null; navDepth = 0; location.hash = '#/'; },
+  'open-month': (el) => { ui.month = el.dataset.month; ui.highlighted = null; navDepth = 0; location.replace('#/'); },
   'open-year': (el) => { ui.annals = { view: 'year', year: Number(el.dataset.year), bar: null }; ui.highlighted = null; render(); },
   day: (el) => { ui.day = el.dataset.day; render(); },
   category: (el) => go(`#/category/${el.dataset.cat}${el.dataset.food ? `/${el.dataset.food}` : ''}`),
@@ -745,6 +889,40 @@ const actions = {
   open: (el) => go(`#/view/${encodeURIComponent(el.dataset.id)}`),
   amend: (el) => go(`#/edit/${encodeURIComponent(el.dataset.id)}`),
   export: () => { ui.menu = false; render(); exportCsv(); },
+  'test-owl': () => {
+    ui.menu = false;
+    const [first] = upcomingReminders(data.expenses, new Date(new Date().setHours(0, 0, 0, 0)), 1, '23:59', W);
+    post({ type: 'notify', id: 'owl-test', title: first.title, body: first.body });
+    render();
+  },
+  quick: () => { ui.quick = { title: '', amount: '', date: newExpenseDate(), error: false }; render(); },
+  'quick-close': () => { ui.quick = null; render(); },
+  'quick-key': (el) => quickKey(el.dataset.key),
+  'quick-more': () => {
+    const q = ui.quick;
+    prefill = { title: q.title, amount: q.amount, date: q.date };
+    ui.quick = null;
+    go('#/edit');
+  },
+  'quick-save': (el) => {
+    const q = ui.quick;
+    const cents = parseToCents(q.amount);
+    if (!(cents > 0)) {
+      q.error = true;
+      const help = app.querySelector('#quick-help');
+      help.className = 'small center error';
+      help.textContent = 'Type an amount first';
+      return;
+    }
+    const cat = el.dataset.cat;
+    const food = el.dataset.food || null;
+    quickRecord(makeExpense({ id: newId(), date: q.date, title: q.title.trim() || defaultTitle(cat, food), amountCents: cents, category: cat, foodType: food }));
+  },
+  'quick-sugg': (el) => {
+    const s = suggestions(data.expenses, ui.quick.title)[Number(el.dataset.i)];
+    quickRecord(makeExpense({ id: newId(), date: ui.quick.date, title: s.title, amountCents: s.amountCents, category: s.category, foodType: s.foodType, myPercent: s.myPercent }));
+  },
+  'edit-sugg': (el) => applySuggestion(suggestions(data.expenses, draft.title)[Number(el.dataset.i)]),
   'edit-cat': (el) => { draft.category = el.dataset.cat; if (draft.category !== 'ENTERTAINMENT') draft.foodType = null; render(); },
   'edit-food': (el) => { draft.foodType = el.dataset.food || null; render(); },
   'edit-pct': (el) => { draft.myPercent = Number(el.dataset.pct); render(); },
@@ -781,11 +959,16 @@ const actions = {
   'ward-remove-cancel': () => { ui.goalEdit.confirmRemove = false; render(); },
   'ward-remove-one': () => removeWard(false),
   'ward-remove-on': () => removeWard(true),
+  'set-money': (el) => updateSettings({ money: el.dataset.v }),
+  'set-theme': (el) => updateSettings({ theme: el.dataset.v }),
   'dismiss-install': () => { storage.setItem('expensiarmus.installHintSeen', '1'); render(); },
 };
 
 const inputs = {
-  'edit-title': (el) => { draft.title = el.value; },
+  'edit-title': (el) => {
+    draft.title = el.value;
+    if (!draft.id) app.querySelector('#title-sugg').innerHTML = suggestionList(el.value, 'edit-sugg');
+  },
   'edit-amount': (el) => { draft.amount = el.value; const s = app.querySelector('#share-line'); if (s) s.textContent = shareLine(); },
   'edit-date': (el) => { draft.date = el.value; },
   'edit-split': (el) => { draft.split = el.checked; render(); },
@@ -794,14 +977,21 @@ const inputs = {
     app.querySelector('#pct-label').textContent = `My share: ${draft.myPercent}% · Theirs: ${100 - draft.myPercent}%`;
     app.querySelector('#share-line').textContent = shareLine();
   },
+  'quick-title': (el) => { ui.quick.title = el.value; app.querySelector('#quick-sugg').innerHTML = suggestionList(el.value, 'quick-sugg'); },
+  'quick-date': (el) => { if (el.value) ui.quick.date = el.value; },
   'search-q': (el) => { finder.q = el.value; app.querySelector('#results').innerHTML = searchResults(); },
   'ward-amount': (el) => { ui.goalEdit.amount = el.value; app.querySelector('#ward-error').hidden = true; },
   'ward-onwards': (el) => {
     ui.goalEdit.onwards = el.checked;
     app.querySelector('#ward-scope').textContent = el.checked ? `Also for the months after ${monthName(ui.month)}` : `Only ${monthTitle(ui.month)}`;
   },
-  'owl-toggle': (el) => { storage.setItem(REMINDER_KEY, el.checked ? 'on' : 'off'); scheduleOwls(); },
+  'set-reminder': (el) => updateSettings({ reminderOn: el.checked }),
+  'set-time': (el) => { if (validTime(el.value)) updateSettings({ reminderTime: el.value }); },
+  'set-wizard': (el) => updateSettings({ wizard: el.checked }),
 };
+
+// Settings controls change on "change" only, so typing a time doesn't re-render mid-edit.
+const ON_CHANGE = ['edit-split', 'edit-date', 'quick-date', 'ward-onwards', 'set-reminder', 'set-time', 'set-wizard'];
 
 app.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-action]');
@@ -812,14 +1002,13 @@ app.addEventListener('click', (ev) => {
   if (ui.menu && el.dataset.action !== 'menu' && !el.closest('.menu')) ui.menu = false;
   actions[el.dataset.action]?.(el, ev);
 });
-const onInput = (ev) => {
+app.addEventListener('input', (ev) => {
   const el = ev.target.closest('[data-input]');
-  if (el) inputs[el.dataset.input]?.(el);
-};
-app.addEventListener('input', onInput);
+  if (el && !ON_CHANGE.includes(el.dataset.input)) inputs[el.dataset.input]?.(el);
+});
 app.addEventListener('change', (ev) => {
-  // Checkboxes and date pickers report through "change" on some browsers.
-  if (ev.target.matches('[data-input="edit-split"], [data-input="edit-date"], [data-input="owl-toggle"], [data-input="ward-onwards"]')) onInput(ev);
+  const el = ev.target.closest('[data-input]');
+  if (el && ON_CHANGE.includes(el.dataset.input)) inputs[el.dataset.input]?.(el);
 });
 window.addEventListener('hashchange', render);
 
@@ -833,10 +1022,21 @@ navigator.storage?.persist?.();
 if (!nativeBridge && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
 // Hooks the iPhone app calls: open a screen from a notification, report notification permission.
-window.expensiarmusOpen = (hash) => { navDepth = 0; location.hash = hash; };
-window.addEventListener('owlstatus', () => { if (route().name === 'owl') render(); });
+window.expensiarmusOpen = (hash) => {
+  navDepth = 0;
+  if (hash === '#/edit') {
+    // The owl opens Quick add on the Ledger.
+    location.hash = '#/';
+    ui.quick = { title: '', amount: '', date: today(), error: false };
+    render();
+    return;
+  }
+  location.hash = hash;
+};
+window.addEventListener('owlstatus', () => { if (route().name === 'settings') render(); });
 // Keep the 30-day window of owls rolling whenever the app comes back to the foreground.
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') scheduleOwls(); });
 
+applySettings();
 render();
 scheduleOwls();

@@ -1,5 +1,10 @@
 // Euro amounts are whole cents to avoid floating point rounding errors.
 
+/** 'en' shows €1,234.56; 'el' (Greek) shows 1.234,56 €. Set from the settings. */
+let style = 'en';
+export const setMoneyStyle = (s) => { style = s === 'el' ? 'el' : 'en'; };
+export const moneyStyle = () => style;
+
 const MAX_EUROS = 100_000_000_000;
 
 /**
@@ -33,12 +38,14 @@ export function parseToCents(input) {
   return euros * 100 + Number(fracRaw.padEnd(2, '0'));
 }
 
-/** "€1,234.56" */
-export function format(cents) {
+/** "€1,234.56", or "1.234,56 €" in the Greek style. */
+export function format(cents, s = style) {
   const sign = cents < 0 ? '-' : '';
   const abs = Math.abs(cents);
-  const euros = Math.floor(abs / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return `${sign}€${euros}.${String(abs % 100).padStart(2, '0')}`;
+  const group = s === 'el' ? '.' : ',';
+  const euros = Math.floor(abs / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, group);
+  const dec = String(abs % 100).padStart(2, '0');
+  return s === 'el' ? `${sign}${euros},${dec} €` : `${sign}€${euros}.${dec}`;
 }
 
 /** "1234.56", for CSV files. */
@@ -48,14 +55,18 @@ export function plain(cents) {
   return `${sign}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, '0')}`;
 }
 
-/** Text to pre-fill an amount field: "1234" for whole euros, otherwise "1234.56". */
-export const forInput = (cents) => (cents % 100 === 0 ? String(cents / 100) : plain(cents));
+/** Text to pre-fill an amount field: "1234" for whole euros, otherwise "1234.56" ("1234,56" in Greek style). */
+export const forInput = (cents, s = style) => {
+  if (cents % 100 === 0) return String(cents / 100);
+  return s === 'el' ? plain(cents).replace('.', ',') : plain(cents);
+};
 
-/** Short form for calendar cells: "€45", "€1.2k", "<€1". */
-export function compact(cents) {
-  if (cents >= 1 && cents <= 49) return '<€1';
+/** Short form for calendar cells: "€45", "€1.2k", "<€1" (Greek style: "45€", "1,2k€", "<1€"). */
+export function compact(cents, s = style) {
+  const wrap = (n) => (s === 'el' ? `${n}€` : `€${n}`);
+  if (cents >= 1 && cents <= 49) return `<${wrap(1)}`;
   const euros = Math.floor((cents + 50) / 100);
-  if (euros < 1000) return `€${euros}`;
-  if (euros < 10000) return `€${Math.floor(euros / 1000)}.${Math.floor((euros % 1000) / 100)}k`;
-  return `€${Math.floor(euros / 1000)}k`;
+  if (euros < 1000) return wrap(euros);
+  if (euros < 10000) return wrap(`${Math.floor(euros / 1000)}${s === 'el' ? ',' : '.'}${Math.floor((euros % 1000) / 100)}k`);
+  return wrap(`${Math.floor(euros / 1000)}k`);
 }

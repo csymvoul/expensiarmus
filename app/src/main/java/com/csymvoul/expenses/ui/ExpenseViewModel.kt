@@ -5,6 +5,7 @@ import android.content.ContentResolver
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.csymvoul.expenses.data.AppSettings
 import com.csymvoul.expenses.data.ExpenseStore
 import com.csymvoul.expenses.domain.CsvExporter
 import com.csymvoul.expenses.domain.GoalAlerts
@@ -12,6 +13,7 @@ import com.csymvoul.expenses.model.AppData
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.reminder.GoalNotifier
+import com.csymvoul.expenses.widget.LedgerWidget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,14 +53,18 @@ class ExpenseViewModel(app: Application) : AndroidViewModel(app) {
             mutex.withLock {
                 val changed = change(_state.value)
                 // Warn once when a category of the current month reaches 80% of its goal, or goes over.
-                val alerts = GoalAlerts.due(changed, YearMonth.now())
+                val alerts = GoalAlerts.due(changed, YearMonth.now(), AppSettings.get(getApplication()).words)
                 val next = GoalAlerts.markSent(changed, alerts)
                 _state.value = next
                 withContext(Dispatchers.IO) { store.save(next) }
                 alerts.forEach { GoalNotifier.show(getApplication(), it) }
+                refreshWidget()
             }
         }
     }
+
+    /** Redraws the home-screen widget, if one is placed. */
+    fun refreshWidget() = LedgerWidget.refresh(getApplication())
 
     /** Writes all expenses as CSV (UTF-8 with BOM so Excel shows Greek text correctly). */
     suspend fun exportCsv(resolver: ContentResolver, uri: Uri): Boolean = withContext(Dispatchers.IO) {

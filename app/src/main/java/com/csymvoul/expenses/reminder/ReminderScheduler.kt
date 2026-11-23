@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.csymvoul.expenses.data.AppSettings
 import com.csymvoul.expenses.domain.Reminder
 import java.time.ZonedDateTime
 
@@ -19,16 +20,15 @@ object ReminderScheduler {
     const val CHANNEL = "daily_reminder"
     const val ACTION_REMIND = "com.csymvoul.expenses.action.REMIND"
     private const val PREFS = "settings"
-    private const val KEY_ENABLED = "daily_reminder"
     private const val KEY_ASKED = "notification_permission_asked"
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun isEnabled(context: Context) = prefs(context).getBoolean(KEY_ENABLED, true)
+    fun isEnabled(context: Context) = AppSettings.get(context).reminderOn
 
-    fun setEnabled(context: Context, enabled: Boolean) {
-        prefs(context).edit().putBoolean(KEY_ENABLED, enabled).apply()
-        if (enabled) schedule(context) else cancel(context)
+    /** Re-arms (or cancels) the reminder after the switch or the time changed in Settings. */
+    fun reschedule(context: Context) {
+        if (isEnabled(context)) schedule(context) else cancel(context)
     }
 
     /** True only the first time it is called, so the permission prompt is shown once on its own. */
@@ -40,7 +40,7 @@ object ReminderScheduler {
 
     fun schedule(context: Context) {
         if (!isEnabled(context)) return
-        val at = Reminder.nextTrigger(ZonedDateTime.now()).toInstant().toEpochMilli()
+        val at = Reminder.nextTrigger(ZonedDateTime.now(), AppSettings.get(context).reminderTime).toInstant().toEpochMilli()
         val alarms = context.getSystemService(AlarmManager::class.java)
         val exact = Reminder.useExactAlarm(
             Build.VERSION.SDK_INT,

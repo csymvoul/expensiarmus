@@ -42,6 +42,7 @@ import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.components.ExpenseRow
+import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.theme.emoji
 
 /** Search all expenses by title, category or food type, optionally narrowed to some categories. */
@@ -61,7 +62,7 @@ fun SearchScreen(expenses: List<Expense>, onOpen: (String) -> Unit, onBack: () -
         contentColor = MaterialTheme.colorScheme.onBackground, // a transparent scaffold would otherwise default to black text
         topBar = {
             WizardTopBar(
-                title = "Accio",
+                title = LocalWords.current.search,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -83,7 +84,7 @@ fun SearchScreen(expenses: List<Expense>, onOpen: (String) -> Unit, onBack: () -
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    placeholder = { Text("Accio expense… (title or category)") },
+                    placeholder = { Text(LocalWords.current.searchPlaceholder) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
                         if (query.isNotEmpty()) {
@@ -115,7 +116,7 @@ fun SearchScreen(expenses: List<Expense>, onOpen: (String) -> Unit, onBack: () -
                 }
             }
             if (query.isBlank() && categories.isEmpty()) {
-                item { SearchHint("Say Accio! Type part of a title, or pick one or more vaults.") }
+                item { SearchHint(LocalWords.current.searchHint) }
             } else {
                 item {
                     Text(
@@ -127,7 +128,7 @@ fun SearchScreen(expenses: List<Expense>, onOpen: (String) -> Unit, onBack: () -
                     )
                 }
                 if (results.isEmpty()) {
-                    item { SearchHint("Revelio found nothing. Try another word.") }
+                    item { SearchHint(LocalWords.current.searchNothing) }
                 }
                 items(results, key = { it.id }) { expense ->
                     ExpenseRow(expense, onClick = { onOpen(expense.id) }, showYear = true)
