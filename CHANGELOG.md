@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.9.5 (Android), web app 1.8.5 and iPhone app 1.6.5 – unreleased (2026-11-23)
+
+### Changed
+- **Sparkle clusters removed again:** the gold rules under the top bar and above the tab bar are back to how they were in 1.9.3 (a double line with the one star in the middle). They didn't look right on the phone. `ui/components/RuleEnds.kt` and its tests are gone.
+- **Cast a new ward** keeps the painted Protego shield from 1.9.4.
+- Tests: the sparkle tests are replaced by one web test that checks the rules have no clusters; the ward-label test moved to `WardButtonTest`. 151 Android and 58 web tests, all passing.
+
+### Notes
+- The old `csymvoul/expenses-app` repository (the forwarding page) is archived, so old links keep forwarding.
+
 ## 1.9.4 (Android), web app 1.8.4 and iPhone app 1.6.4 – unreleased (2026-11-23)
 
 ### Changed

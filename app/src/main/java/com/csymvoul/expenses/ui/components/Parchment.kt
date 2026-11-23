@@ -147,7 +147,7 @@ private fun DrawScope.drawFrame(paperCenter: Color, paperEdge: Color, gold: Colo
 
 /** Two thin gold lines with a sparkle in the middle. */
 @Composable
-fun GoldRule(modifier: Modifier = Modifier, sparkleEnds: Boolean = false, flipEnds: Boolean = false) {
+fun GoldRule(modifier: Modifier = Modifier) {
     val gold = MaterialTheme.colorScheme.secondary
     Canvas(modifier.fillMaxWidth().height(10.dp)) {
         val y1 = 3.dp.toPx()
@@ -155,12 +155,6 @@ fun GoldRule(modifier: Modifier = Modifier, sparkleEnds: Boolean = false, flipEn
         drawLine(gold, Offset(0f, y1), Offset(size.width, y1), 1.2.dp.toPx())
         drawLine(gold.copy(alpha = 0.5f), Offset(0f, y2), Offset(size.width, y2), 0.8.dp.toPx())
         drawSparkle(Offset(center.x, (y1 + y2) / 2), 5.dp.toPx(), gold)
-        if (sparkleEnds) {
-            ruleEndSparks(size.width / density, flipEnds).forEach { s ->
-                val at = Offset(s.x.dp.toPx(), (y1 + y2) / 2 + s.dy.dp.toPx())
-                if (s.speck) drawCircle(gold, s.radius.dp.toPx(), at) else drawSparkle(at, s.radius.dp.toPx(), gold)
-            }
-        }
     }
 }
 
@@ -192,7 +186,7 @@ fun WizardTopBar(
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         )
-        GoldRule(sparkleEnds = true)
+        GoldRule()
     }
 }
 

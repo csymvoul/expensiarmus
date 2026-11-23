@@ -48,7 +48,7 @@ fun WizardTabBar(selected: Tab, onSelect: (Tab) -> Unit) {
         Tab.GOALS to w.goalsTab, Tab.SETTINGS to w.settingsTab,
     )
     Column {
-        GoldRule(sparkleEnds = true, flipEnds = true)
+        GoldRule()
         NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
             Tab.entries.forEach { tab ->
                 val name = labels.getValue(tab).split(" ", limit = 2).let { parts -> parts.getOrElse(1) { parts[0] } }

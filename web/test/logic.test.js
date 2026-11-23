@@ -645,22 +645,14 @@ test('Quick add date uses the calendar emblem; Accio uses a magnifier with no ba
   assert.equal(css.match(/--search-glyph: url\('\.\.\/icons\/emblems\/search_dark\.png'\)/g).length, 2);
 });
 
-test('header and tab-bar rules end in sparkle clusters that follow the theme gold', () => {
-  const css = readFileSync(webFile('css/style.css'), 'utf8');
-  const rule = css.slice(css.indexOf('.bar::before, .tabs::before {'));
-  const block = rule.slice(0, rule.indexOf('}'));
-  assert.match(block, /background: var\(--gold\)/);
-  assert.match(block, /-webkit-mask: url\("data:image\/svg\+xml,[^"]+"\) left top[^,]*, url\("data:image\/svg\+xml,[^"]+"\) right top/);
-  // Quotes inside the SVG must be escaped, or the url("…") would end early and the rule would be dropped.
-  for (const svg of block.match(/data:image\/svg\+xml,[^)]*/g)) assert.ok(!svg.slice(0, -1).includes('"'), 'unescaped quote in sparkle SVG');
-  assert.match(block, /[^-]mask: url\(/);
-  assert.match(css, /\.tabs::before \{ top: -13px; transform: scaleY\(-1\); \}/);
-  assert.match(css, /\.bar::before \{ bottom: -13px; \}/);
-});
-
 test('Cast a new ward shows the painted Protego shield, not the emoji', () => {
   const app = readFileSync(webFile('js/app.js'), 'utf8');
   assert.match(app, /data-action="ward-add"><span class="frame"><span class="frame-inner with-emblem">\$\{emblem\(TAB_ICONS\.goals, 26\)\}\$\{esc\(withoutEmoji\(W\.newWard\)\)\}/);
   assert.equal(withoutEmoji('🛡 Cast a new ward'), 'Cast a new ward');
   assert.equal(withoutEmoji('🎯 Add a goal'), 'Add a goal');
+});
+
+test('the header and tab-bar rules have no sparkle clusters at their ends', () => {
+  const css = readFileSync(webFile('css/style.css'), 'utf8');
+  assert.doesNotMatch(css, /\.bar::before|\.tabs::before/);
 });

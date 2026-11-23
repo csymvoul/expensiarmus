@@ -20,7 +20,7 @@ A personal, wizard-themed app for tracking monthly spending in euros: a native A
 - **Settings:** reminder on/off and time, wizard words or plain words, number format (€1,234.56 or 1.234,56 €), theme, and CSV export (Geminio).
 - **Android widget:** this month's total, goal bars and a ➕ for Quick add on the home screen.
 - **CSV export** of all expenses for backup or analysis.
-- **Wizard look:** parchment, burgundy and gold by day; a candle-lit castle theme in dark mode. Cards are framed in gold with corner sparkles, the gold rules under the top bar and over the tab bar end in sparkle clusters, headings use the Cinzel font, and each category, food type and tab has a painted gold-on-burgundy emblem; each category also has a wizarding nickname (Shopping is *Diagon Alley*). The wording is full of spells: Accio to search, Protego for goals, Evanesco to delete.
+- **Wizard look:** parchment, burgundy and gold by day; a candle-lit castle theme in dark mode. Cards are framed in gold with corner sparkles, headings use the Cinzel font, and each category, food type and tab has a painted gold-on-burgundy emblem; each category also has a wizarding nickname (Shopping is *Diagon Alley*). The wording is full of spells: Accio to search, Protego for goals, Evanesco to delete.
 
 ## iPhone: the web app
 
