@@ -24,11 +24,15 @@ A personal, wizard-themed app for tracking monthly spending in euros: a native A
 
 ## iPhone: the web app
 
-The same app also runs as a web app at **https://csymvoul.github.io/expenses-app/**. Open it in Safari, tap **Share → Add to Home Screen**, and it gets its own icon, opens full screen and works offline. It has the same features and look as the Android app, except the 21:30 reminder: iPhones don't let web apps schedule notifications, so the app's 🦉 Owl reminder screen explains how to set a daily 21:30 reminder in the iPhone Reminders app. Data stays on the phone (in Safari's storage for the app), and nothing syncs between phones.
+The same app also runs as a web app at **https://csymvoul.github.io/expensiarmus/**. Open it in Safari, tap **Share → Add to Home Screen**, and it gets its own icon, opens full screen and works offline. It has the same features and look as the Android app, except the 21:30 reminder: iPhones don't let web apps schedule notifications, so the app's ⚙️ Settings tab explains how to set a daily reminder in the iPhone Reminders app. Data stays on the phone (in Safari's storage for the app), and nothing syncs between phones.
 
 ## iPhone: the app (personal use)
 
 `ios/` holds a small native iPhone app that bundles the same web app and adds what a web page can't do: a real **21:30 notification** (same wording as on Android, scheduled for the next 30 evenings and refreshed whenever the data changes or the app opens), CSV export through the iPhone share sheet, and a backup copy of the data in the app's Documents folder (visible in the Files app). It is meant to be installed on one's own iPhone with a free Apple ID through AltStore; see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Logo
+
+A gold coin pouch with a sparkling wand on burgundy (`art/logo.jpg`). `art/make-icons.swift` turns it into every app icon: the Android launcher icon, the iPhone app icon and the web app's icons.
 
 ## How it works
 

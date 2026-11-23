@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.0 (Android), web app 1.7.0 and iPhone app 1.5.0 – unreleased (2026-11-23)
+
+### Changed
+- **New logo:** a gold coin pouch with a sparkling wand on burgundy, used for the Android launcher icon, the iPhone app icon and the web app's home-screen icon and favicon. Android uses a roomier crop so round and squircle icon masks don't cut into the art. The source picture and the script that makes every icon are in `art/`.
+- **The GitHub repository is now `csymvoul/expensiarmus`,** and the web app is at https://csymvoul.github.io/expensiarmus/. The old address forwards there, and installed copies on friends' phones move over by themselves; see DEPLOYMENT.md, "Old web address".
+
+### Known issues
+- Android 13+ "themed icons" no longer show a monochrome version of the logo; the launcher shows the full-colour icon instead.
+
 ## 1.7.2 (Android), web app 1.6.2 and iPhone app 1.4.2 – unreleased (2026-11-23)
 
 ### Changed

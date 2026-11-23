@@ -36,7 +36,7 @@ For a new version, increase `versionCode` (and `versionName`) in `app/build.grad
    - **USB cable:** connect the phone, pick "File transfer" on it, and copy the APK into `Download`. On a Mac this needs Android's file-transfer app, or use `adb install` (below).
    - **Google Drive:** upload the APK, open it in the Drive app on the phone and tap Install.
    - **adb:** turn on USB debugging (Settings → About phone → tap Build number 7 times → Developer options → USB debugging), then run
-     `~/Library/Android/sdk/platform-tools/adb install -r Expensiarmus-1.7.2.apk`
+     `~/Library/Android/sdk/platform-tools/adb install -r Expensiarmus-1.8.0.apk`
 2. Open the APK on the phone. The first time, Android asks you to allow installing unknown apps from that source (Files, Drive or Chrome). Allow it, then tap Install.
 3. On Android 13+ the app asks once to allow notifications. Allow it to get the 21:30 reminder. If you missed it: Settings → Apps → Expensiarmus → Notifications.
 4. To add the widget: long-press the home screen → Widgets → Expensiarmus. If the 21:30 owl still doesn't come, exempt the app from battery optimisation: Settings → Apps → Expensiarmus → Battery → Unrestricted.
@@ -48,7 +48,7 @@ Build with a higher `versionCode` and the same key, then install the new APK the
 
 ## Web app (iPhone)
 
-The web app in `web/` is published to GitHub Pages at https://csymvoul.github.io/expenses-app/ by the workflow `.github/workflows/pages.yml`. Every push to `main` that changes `web/` runs the tests and then deploys. It can also be started by hand from the repository's **Actions** tab ("Deploy web app to GitHub Pages" → Run workflow).
+The web app in `web/` is published to GitHub Pages at https://csymvoul.github.io/expensiarmus/ by the workflow `.github/workflows/pages.yml`. Every push to `main` that changes `web/` runs the tests and then deploys. It can also be started by hand from the repository's **Actions** tab ("Deploy web app to GitHub Pages" → Run workflow).
 
 One-time setup (already done): in the repository's **Settings → Pages**, the source is **GitHub Actions**.
 
@@ -70,7 +70,7 @@ When you change any file in `web/`, also bump `VERSION` in `web/sw.js` (for exam
 
 ### Install on an iPhone
 
-1. Open https://csymvoul.github.io/expenses-app/ in **Safari**. Other browsers can't add web apps to the home screen on all iOS versions.
+1. Open https://csymvoul.github.io/expensiarmus/ in **Safari**. Other browsers can't add web apps to the home screen on all iOS versions.
 2. Tap **Share** → **Add to Home Screen** → **Add**.
 3. Open Expensiarmus from the home screen.
 4. For the evening reminder, follow the steps in the app's ⚙️ Settings tab. It sets up a daily reminder in the iPhone Reminders app.
@@ -121,3 +121,17 @@ If the app ever expires, it just won't open until AltStore refreshes it (open Al
 ### Updating
 
 Build again with `ios/build-ipa.sh`, AirDrop the new `.ipa` to the iPhone and install it through **AltStore → My Apps → +** (not AltServer's "Sideload .ipa", which can create a new certificate and make iOS ask to trust the developer again). Bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `ios/project.yml` for each update. The data stays in the app (and in its backup file).
+
+### Old web address
+
+Until 1.8 the repository was called `expenses-app`, so the web app lived at https://csymvoul.github.io/expenses-app/. A separate small repository, `csymvoul/expenses-app`, now holds only a forwarding page (and an offline worker that removes the old installed copy), so old links and home-screen icons open https://csymvoul.github.io/expensiarmus/. Saved expenses carry over, because both addresses are on the same site and share its storage.
+
+## App icons
+
+The icons for all three apps are made from `art/logo.jpg`:
+
+```bash
+swiftc -O -o /tmp/make-icons art/make-icons.swift && /tmp/make-icons art/logo.jpg /tmp/icons
+```
+
+Then copy `icon-512.png`, `icon-192.png`, `icon-maskable-512.png`, `apple-touch-icon.png` and `favicon-64.png` to `web/icons/`, `icon-1024.png` to `ios/Expensiarmus/Assets.xcassets/AppIcon.appiconset/`, and each `ic_launcher_foreground-<density>.png` to `app/src/main/res/mipmap-<density>/ic_launcher_foreground.png`.

@@ -1,10 +1,10 @@
 // Offline support: serve the app from the cache, refresh the cache in the background.
 // Bump VERSION when files change so old caches are cleared.
-const VERSION = 'expensiarmus-web-1.6.2';
+const VERSION = 'expensiarmus-web-1.7.0';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css', 'fonts/cinzel.ttf',
   'js/app.js', 'js/model.js', 'js/money.js', 'js/summary.js', 'js/queries.js', 'js/csv.js', 'js/store.js', 'js/reminder.js', 'js/goals.js', 'js/words.js', 'js/settings.js',
-  'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
+  'icons/favicon-64.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
 ];
 
 self.addEventListener('install', (event) => {
