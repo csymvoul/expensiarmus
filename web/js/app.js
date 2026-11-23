@@ -343,7 +343,7 @@ function monthScreen(calendar) {
     ${monthSwitch()}
     ${body}
   </main>
-  <button class="fab" data-action="quick"><span class="fab-frame"><span class="fab-inner">${esc(W.fab)}</span></span></button>
+  <button class="fab" data-action="quick"><span class="frame"><span class="frame-inner">${esc(W.fab)}</span></span></button>
   ${tabBar(calendar ? 'calendar' : 'month')}
   ${ui.quick ? quickSheet() : ''}`;
 }
@@ -460,7 +460,7 @@ function deleteModal(title, id = '') {
   return `<div class="modal-backdrop"><div class="card modal"><div class="paper">
       <h3 class="h-medium">${esc(W.deleteTitle)}</h3>
       <p>${esc(W.deleteBody(title))}</p>
-      <div class="modal-actions"><button class="link" data-action="cancel-delete">${esc(W.keep)}</button><button class="btn danger" data-action="confirm-delete" data-id="${esc(id)}">${esc(W.deleteBtn)}</button></div>
+      <div class="modal-actions"><button class="link" data-action="cancel-delete">${esc(W.keep)}</button><button class="btn danger" data-action="confirm-delete" data-id="${esc(id)}"><span class="frame"><span class="frame-inner">${esc(W.deleteBtn)}</span></span></button></div>
     </div></div></div>`;
 }
 
@@ -506,7 +506,7 @@ function editScreen(id) {
     <label class="switch-row"><span><span class="h-small">${esc(W.split)}</span><span class="small soft">Only your share counts toward totals and goals</span></span>
       <input type="checkbox" class="switch" ${d.split ? 'checked' : ''} data-input="edit-split"></label>
     ${split}
-    <button class="btn wide" data-action="save">${esc(W.save)}</button>
+    <button class="btn wide" data-action="save"><span class="frame"><span class="frame-inner">${esc(W.save)}</span></span></button>
   </main>${ui.modal ? deleteModal(d.title) : ''}`;
 }
 
@@ -570,7 +570,7 @@ function viewScreen(id) {
       ${row('Category', `${c.emoji} ${c.label}`, W.nicknames ? c.nickname : '')}
       ${f ? row('Food', `${f.emoji} ${f.label}`, W.nicknames ? f.nickname : '') : ''}
       ${row('Split', splitLine(e, format))}`)}
-    <button class="btn wide" data-action="amend" data-id="${esc(e.id)}">${esc(W.amend)}</button>
+    <button class="btn wide" data-action="amend" data-id="${esc(e.id)}"><span class="frame"><span class="frame-inner">${esc(W.amend)}</span></span></button>
     <button class="link center-link" data-action="ask-delete">${esc(W.deleteLink)}</button>
   </main>${ui.modal ? deleteModal(e.title, e.id) : ''}`;
 }
@@ -637,7 +637,7 @@ function wardEditor(m, fixed, choices, ed) {
       ${fixed ? '<button class="link danger-link" data-action="ward-remove">Remove</button>' : ''}
       <span class="spacer"></span>
       <button class="link" data-action="ward-cancel">Cancel</button>
-      <button class="btn" data-action="ward-save">Save</button>
+      <button class="btn" data-action="ward-save"><span class="frame"><span class="frame-inner">Save</span></span></button>
     </div>
   </div>`;
 }
@@ -660,7 +660,7 @@ function goalsScreen() {
   });
   const adding = ed && ed.adding
     ? card(`<h3 class="h-medium">${esc(W.aNewWard)}</h3>${wardEditor(m, false, free, ed)}`)
-    : free.length ? `<button class="btn wide" data-action="ward-add">${esc(W.newWard)}</button>` : '';
+    : free.length ? `<button class="btn wide" data-action="ward-add"><span class="frame"><span class="frame-inner">${esc(W.newWard)}</span></span></button>` : '';
   const name = monthName(m);
   const modal = ed && ed.confirmRemove
     ? `<div class="modal-backdrop"><div class="card modal"><div class="paper">
@@ -668,7 +668,7 @@ function goalsScreen() {
         <p>Remove it for ${name} only, or for ${name} and every month after?</p>
         <div class="modal-actions"><button class="link" data-action="ward-remove-cancel">${esc(W.keep)}</button>
           <button class="link" data-action="ward-remove-one">Only ${name}</button>
-          <button class="btn danger" data-action="ward-remove-on">From ${name} on</button></div>
+          <button class="btn danger" data-action="ward-remove-on"><span class="frame"><span class="frame-inner">From ${name} on</span></span></button></div>
       </div></div></div>`
     : '';
   return `${header(`${W.goals} · ${name}`)}
@@ -731,7 +731,7 @@ function settingsScreen() {
       <div class="chips">${choice('set-theme', 'system', settings.theme, '📱 Like the phone')}${choice('set-theme', 'light', settings.theme, '☀️ Light')}${choice('set-theme', 'dark', settings.theme, '🌙 Dark')}</div>`)}
     ${card(`<h3 class="h-medium">${esc(W.exportTitle)}</h3>
       <p class="small soft">All your expenses as a CSV file, for a backup or a spreadsheet.</p>
-      <button class="btn" data-action="export">${esc(W.exportButton)}</button>`)}
+      <button class="btn" data-action="export"><span class="frame"><span class="frame-inner">${esc(W.exportButton)}</span></span></button>`)}
   </main>${tabBar('settings')}`;
 }
 

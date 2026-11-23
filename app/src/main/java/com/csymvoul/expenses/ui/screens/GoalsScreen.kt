@@ -2,6 +2,7 @@ package com.csymvoul.expenses.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -54,6 +55,7 @@ import com.csymvoul.expenses.ui.components.EmblemBadge
 import com.csymvoul.expenses.ui.components.GoalBar
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.ParchmentCard
+import com.csymvoul.expenses.ui.components.WizardButton
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.theme.color
 import com.csymvoul.expenses.ui.theme.emoji
@@ -161,11 +163,9 @@ fun GoalsScreen(
                     )
                 }
             } else if (free.isNotEmpty()) {
-                Button(
-                    onClick = { adding = true; editing = null },
-                    shape = CutCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text(w.newWard) }
+                WizardButton(onClick = { adding = true; editing = null }, modifier = Modifier.fillMaxWidth()) {
+                    Text(w.newWard)
+                }
             }
         }
     }
@@ -249,10 +249,10 @@ private fun WardEditor(
             }
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onCancel) { Text("Cancel") }
-            Button(
+            WizardButton(
                 onClick = { picked?.let { c -> cents?.let { onSave(c, it, onwards) } } },
                 enabled = picked != null && amountOk,
-                shape = CutCornerShape(10.dp),
+                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
             ) { Text("Save") }
         }
     }

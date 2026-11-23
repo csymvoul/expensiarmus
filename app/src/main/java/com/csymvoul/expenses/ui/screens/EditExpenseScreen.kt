@@ -58,6 +58,7 @@ import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.FoodType
+import com.csymvoul.expenses.ui.components.WizardButton
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.theme.emoji
 import com.csymvoul.expenses.ui.theme.nickname
@@ -281,7 +282,7 @@ fun EditExpenseScreen(
                 }
             }
 
-            Button(onClick = ::save, shape = CutCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+            WizardButton(onClick = ::save, modifier = Modifier.fillMaxWidth()) {
                 Text(w.save)
             }
         }

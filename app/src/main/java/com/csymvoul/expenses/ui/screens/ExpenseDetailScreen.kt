@@ -41,6 +41,7 @@ import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.ui.components.EmblemBadge
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.ParchmentCard
+import com.csymvoul.expenses.ui.components.WizardButton
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.theme.color
 import com.csymvoul.expenses.ui.theme.emoji
@@ -121,7 +122,7 @@ fun ExpenseDetailScreen(
                 expense.foodType?.let { DetailRow("Food", "${it.emoji} ${it.label}", it.nickname.takeIf { w.nicknames }) }
                 DetailRow("Split", ExpenseDetails.splitLine(expense))
             }
-            Button(onClick = { onEdit(expense.id) }, shape = CutCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+            WizardButton(onClick = { onEdit(expense.id) }, modifier = Modifier.fillMaxWidth()) {
                 Text(w.amend)
             }
             TextButton(onClick = { confirmingDelete = true }, modifier = Modifier.align(Alignment.CenterHorizontally)) {

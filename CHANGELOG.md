@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.1 (Android), web app 1.6.1 and iPhone app 1.4.1 – unreleased (2026-11-23)
+
+### Changed
+- **Every main button has the Record expense look:** a burgundy seal with cut corners, a double gold border, corner sparkles and a shadow. That covers Geminio · export CSV, Cast a new ward, the ward's Save, Mischief managed · Save, Amend expense, and the Evanesco / "From … on" confirmations (in red). Text links such as Cancel stay plain.
+  - Web: one shared frame (`.frame` / `.frame-inner`) for all of them.
+  - Android: one shared `WizardButton`.
+- 1 web test now checks that every main button carries the frame (47 web tests). 144 Android tests, all passing. Checked in a browser: all four main buttons are framed, gold-bordered and shadowed.
+
 ## 1.7.0 (Android), web app 1.6.0 and iPhone app 1.4.0 – unreleased (2026-11-23)
 
 ### Changed

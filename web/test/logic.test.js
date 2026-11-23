@@ -363,7 +363,12 @@ test('record button is framed and floats on a shadow; settings is a tab', () => 
   const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
   const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
   assert.match(css, /\.fab \{[^}]*filter: drop-shadow/);
-  assert.match(css, /\.fab-frame \{[^}]*background: var\(--gold\)/);
+  assert.match(css, /\.frame \{[^}]*background: var\(--gold\)/);
+  // Every main button carries the same frame as the Record button.
+  const buttons = app.match(/<button class="(btn|fab)[^"]*"[^>]*>/g);
+  const framed = app.match(/<button class="(btn|fab)[^"]*"[^>]*><span class="frame"><span class="frame-inner">/g);
+  assert.ok(buttons.length >= 8);
+  assert.equal(framed.length, buttons.length);
   assert.match(app, /\['settings', '#\/settings', W\.settings\]/);
   assert.doesNotMatch(app, /test-owl/);
   assert.equal(wordsFor(true).exportButton, 'Geminio · export CSV');

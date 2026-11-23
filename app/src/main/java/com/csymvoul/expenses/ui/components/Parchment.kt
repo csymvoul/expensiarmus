@@ -1,6 +1,9 @@
 package com.csymvoul.expenses.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.draw.alpha
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.layout.width
@@ -207,34 +210,55 @@ fun OrnamentHeading(text: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * The "Record expense" button: a burgundy seal in the same frame as the cards (cut corners,
- * double gold border, corner sparkles), floating above the page on a shadow.
+ * A main button: a burgundy seal in the same frame as the cards (cut corners, double gold border,
+ * corner sparkles), floating on a shadow. Used for Record expense and every other main button.
  */
 @Composable
-fun WizardFab(text: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
+fun WizardButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    cut: Dp = 12.dp,
+    elevation: Dp = 6.dp,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 22.dp, vertical = 14.dp),
+    content: @Composable RowScope.() -> Unit,
+) {
     val gold = MaterialTheme.colorScheme.secondary
     Surface(
         onClick = onClick,
-        shape = CutCornerShape(14.dp),
+        enabled = enabled,
+        modifier = modifier.alpha(if (enabled) 1f else 0.45f),
+        shape = CutCornerShape(cut),
         color = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
         border = BorderStroke(2.dp, gold),
-        shadowElevation = 12.dp,
+        shadowElevation = if (enabled) elevation else 0.dp,
     ) {
         Row(
             Modifier
                 .drawBehind {
-                    drawPath(chamfered(5.dp.toPx(), 14.dp.toPx()), gold.copy(alpha = 0.6f), style = Stroke(1.dp.toPx()))
-                    val s = 9.dp.toPx()
+                    drawPath(chamfered(5.dp.toPx(), cut.toPx()), gold.copy(alpha = 0.6f), style = Stroke(1.dp.toPx()))
+                    val s = 8.dp.toPx()
                     listOf(Offset(s, s), Offset(size.width - s, s), Offset(s, size.height - s), Offset(size.width - s, size.height - s))
-                        .forEach { drawSparkle(it, 3.5.dp.toPx(), gold) }
+                        .forEach { drawSparkle(it, 3.dp.toPx(), gold) }
                 }
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(contentPadding),
+            horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            icon()
-            Spacer(Modifier.width(10.dp))
-            Text(text, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onPrimary)
+            ProvideTextStyle(MaterialTheme.typography.titleSmall.copy(color = MaterialTheme.colorScheme.onPrimary)) {
+                content()
+            }
         }
+    }
+}
+
+/** The "Record expense" button: the framed seal, larger, on a deeper shadow. */
+@Composable
+fun WizardFab(text: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
+    WizardButton(onClick = onClick, cut = 14.dp, elevation = 12.dp, contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)) {
+        icon()
+        Spacer(Modifier.width(10.dp))
+        Text(text)
     }
 }

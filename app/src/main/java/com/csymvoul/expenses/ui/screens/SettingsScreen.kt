@@ -36,6 +36,7 @@ import com.csymvoul.expenses.data.ThemeMode
 import com.csymvoul.expenses.domain.MoneyStyle
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.ParchmentCard
+import com.csymvoul.expenses.ui.components.WizardButton
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import java.time.LocalTime
 
@@ -98,7 +99,7 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Button(onClick = onExport, shape = CutCornerShape(10.dp)) { Text(w.exportButton) }
+                WizardButton(onClick = onExport) { Text(w.exportButton) }
             }
             ParchmentCard {
                 Text("Theme", style = MaterialTheme.typography.titleMedium)
