@@ -36,7 +36,7 @@ For a new version, increase `versionCode` (and `versionName`) in `app/build.grad
    - **USB cable:** connect the phone, pick "File transfer" on it, and copy the APK into `Download`. On a Mac this needs Android's file-transfer app, or use `adb install` (below).
    - **Google Drive:** upload the APK, open it in the Drive app on the phone and tap Install.
    - **adb:** turn on USB debugging (Settings → About phone → tap Build number 7 times → Developer options → USB debugging), then run
-     `~/Library/Android/sdk/platform-tools/adb install -r Expensiarmus-1.4.1.apk`
+     `~/Library/Android/sdk/platform-tools/adb install -r Expensiarmus-1.5.0.apk`
 2. Open the APK on the phone. The first time, Android asks you to allow installing unknown apps from that source (Files, Drive or Chrome). Allow it, then tap Install.
 3. On Android 13+ the app asks once to allow notifications. Allow it to get the 21:30 reminder. If you missed it: Settings → Apps → Expensiarmus → Notifications.
 4. Check the reminder with ⋮ → 🦉 Send a test owl now. If the 21:30 owl still doesn't come, exempt the app from battery optimisation: Settings → Apps → Expensiarmus → Battery → Unrestricted.

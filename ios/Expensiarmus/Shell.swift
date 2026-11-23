@@ -62,6 +62,10 @@ final class Shell: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             owls.replace(with: reminders, enabled: enabled) { [weak self] status in
                 self?.report(owlStatus: status)
             }
+        case "notify":
+            if let id = body["id"] as? String, let title = body["title"] as? String, let text = body["body"] as? String {
+                owls.notifyNow(id: id, title: title, body: text)
+            }
         case "share":
             if let name = body["filename"] as? String, let text = body["text"] as? String { share(text: text, filename: name) }
         default:

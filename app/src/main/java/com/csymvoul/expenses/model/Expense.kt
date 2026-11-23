@@ -7,6 +7,7 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import java.time.LocalDate
+import java.time.YearMonth
 
 /**
  * One expense. [amountCents] is the full amount paid in euro cents; [myPercent] is the
@@ -36,17 +37,73 @@ data class Expense(
 }
 
 /**
- * Spending goals. They are not tied to a month: they apply to every month until changed.
- * A null or missing value means no goal.
+ * One goal for one category. [month] is "2026-11". With [onwards] it applies to that month and
+ * every later month (until a later "onwards" goal for the same category); without it, only to
+ * that month. [cents] of 0 means "no goal" and is used to switch an earlier goal off.
+ */
+@Serializable
+data class GoalEntry(
+    val category: Category,
+    val month: String,
+    val cents: Long,
+    val onwards: Boolean,
+)
+
+/**
+ * Spending goals per category and month. A goal for one specific month always wins over an
+ * "onwards" goal. [monthlyCents] and [perCategoryCents] are the pre-1.5 format (one amount for
+ * every month) and are only read to convert old data, see [migrated].
  */
 @Serializable
 data class Goals(
+    val entries: List<GoalEntry> = emptyList(),
     val monthlyCents: Long? = null,
     val perCategoryCents: Map<Category, Long> = emptyMap(),
 ) {
+    /** The goal that applies to [category] in [month], or null when there is none. */
+    fun goalFor(category: Category, month: YearMonth): GoalEntry? {
+        val key = month.toString()
+        val single = entries.firstOrNull { it.category == category && !it.onwards && it.month == key }
+        val effective = single ?: entries
+            .filter { it.category == category && it.onwards && it.month <= key }
+            .maxByOrNull { it.month }
+        return effective?.takeIf { it.cents > 0 }
+    }
+
+    /** Sets [cents] for [category] in [month] only, or from [month] onwards. */
+    fun set(category: Category, month: YearMonth, cents: Long, onwards: Boolean): Goals {
+        val key = month.toString()
+        val kept = entries.filterNot {
+            it.category == category && ((!it.onwards && it.month == key) || (onwards && it.onwards && it.month >= key))
+        }
+        return copy(entries = kept + GoalEntry(category, key, cents, onwards))
+    }
+
+    /** Removes the goal for [category] in [month] only, or from [month] onwards. */
+    fun remove(category: Category, month: YearMonth, onwards: Boolean): Goals {
+        val key = month.toString()
+        var kept = entries.filterNot { it.category == category && !it.onwards && it.month == key }
+        if (onwards) kept = kept.filterNot { it.category == category && it.month >= key }
+        // An earlier "onwards" goal may still reach this month: switch it off explicitly.
+        if (Goals(kept).goalFor(category, month) != null) kept = kept + GoalEntry(category, key, 0, onwards)
+        return copy(entries = kept)
+    }
+
+    /**
+     * Converts pre-1.5 goals: the Entertainment goal (the only one used since 1.4.0) becomes an
+     * "every month" goal; the monthly total and other categories are dropped.
+     */
+    fun migrated(): Goals {
+        if (monthlyCents == null && perCategoryCents.isEmpty()) return this
+        val legacy = perCategoryCents[Category.ENTERTAINMENT]?.takeIf { it > 0 }
+            ?.let { listOf(GoalEntry(Category.ENTERTAINMENT, LEGACY_START, it, onwards = true)) }
+            .orEmpty()
+        return Goals(entries = legacy + entries)
+    }
+
     companion object {
-        /** Categories that can have their own goal. Goals saved for others are ignored. */
-        val CATEGORIES_WITH_GOALS = listOf(Category.ENTERTAINMENT)
+        /** Start month given to converted goals, so they keep covering past months too. */
+        const val LEGACY_START = "2000-01"
     }
 }
 
@@ -55,6 +112,8 @@ data class Goals(
 data class AppData(
     val expenses: List<Expense> = emptyList(),
     val goals: Goals = Goals(),
+    /** Goal warnings already sent, as "CATEGORY|2026-11|80" (or 100), so each comes once. */
+    val alertsSent: Set<String> = emptySet(),
 ) {
     fun upsert(expense: Expense) = copy(expenses = expenses.filterNot { it.id == expense.id } + expense)
 

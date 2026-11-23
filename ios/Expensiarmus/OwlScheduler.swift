@@ -29,6 +29,20 @@ final class OwlScheduler {
     private let center = UNUserNotificationCenter.current()
     private let prefix = "owl-"
 
+    /// Shows a notification straight away, e.g. a goal warning. The same [id] replaces the earlier one,
+    /// so the over-the-goal warning replaces the 80% one for that category and month.
+    func notifyNow(id: String, title: String, body: String) {
+        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            guard granted else { return }
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
+            content.threadIdentifier = "goals"
+            self.center.add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
+        }
+    }
+
     /// `report` receives "granted" or "denied" so the web app can explain a refusal.
     func replace(with owls: [Owl], enabled: Bool, report: @escaping (String) -> Void) {
         center.getPendingNotificationRequests { pending in

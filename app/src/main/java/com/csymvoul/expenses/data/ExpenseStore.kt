@@ -16,7 +16,7 @@ class ExpenseStore(private val file: File) {
     fun load(): AppData {
         if (!file.exists()) return AppData()
         return try {
-            json.decodeFromString(AppData.serializer(), file.readText())
+            json.decodeFromString(AppData.serializer(), file.readText()).let { it.copy(goals = it.goals.migrated()) }
         } catch (e: Exception) {
             // Keep the unreadable file so the next save does not destroy it.
             file.copyTo(File(file.parentFile, "${file.name}.corrupt-${System.currentTimeMillis()}"), overwrite = true)

@@ -52,46 +52,30 @@ class MonthlySummaryTest {
     }
 
     @Test fun `no goals means no progress`() {
-        val s = MonthlySummary.of(data, nov)
-        assertNull(s.overall)
-        assertTrue(s.categories.all { it.goal == null })
+        assertTrue(MonthlySummary.of(data, nov).categories.all { it.goal == null })
     }
 
-    @Test fun `overall and category goals report progress`() {
-        val withGoals = data.copy(
-            goals = Goals(monthlyCents = 100_000, perCategoryCents = mapOf(Category.ENTERTAINMENT to 2_000)),
-        )
-        val s = MonthlySummary.of(withGoals, nov)
-        val overall = s.overall!!
-        assertEquals(76, overall.percent) // 755 of 1000
-        assertEquals(24_500L, overall.remainingCents)
-        assertFalse(overall.isOver)
-
+    @Test fun `category goals for the month report progress`() {
+        val goals = Goals().set(Category.ENTERTAINMENT, nov, 2_000, onwards = false).set(Category.RENT, nov, 100_000, onwards = true)
+        val s = MonthlySummary.of(data.copy(goals = goals), nov)
         val fun_ = s.categories.first { it.category == Category.ENTERTAINMENT }.goal!!
         assertEquals(150, fun_.percent)
         assertTrue(fun_.isOver)
         assertEquals(-1_000L, fun_.remainingCents)
-        assertNull(s.categories.first { it.category == Category.RENT }.goal)
+        assertEquals(60, s.categories.first { it.category == Category.RENT }.goal!!.percent)
+        assertNull(s.categories.first { it.category == Category.BILLS }.goal)
     }
 
-    @Test fun `only entertainment can have a category goal`() {
-        val goals = Goals(perCategoryCents = mapOf(Category.ENTERTAINMENT to 2_000, Category.RENT to 50_000, Category.BILLS to 1_000))
-        val s = MonthlySummary.of(data.copy(goals = goals), nov)
-        assertEquals(listOf(Category.ENTERTAINMENT), s.categories.filter { it.goal != null }.map { it.category })
-        assertEquals(listOf(Category.ENTERTAINMENT), Goals.CATEGORIES_WITH_GOALS)
+    @Test fun `a goal for one month does not show in another`() {
+        val goals = Goals().set(Category.ENTERTAINMENT, nov, 2_000, onwards = false)
+        assertTrue(MonthlySummary.of(data.copy(goals = goals), YearMonth.of(2026, 12)).categories.all { it.goal == null })
     }
 
     @Test fun `empty month`() {
-        val s = MonthlySummary.of(data.copy(goals = Goals(monthlyCents = 50_000)), YearMonth.of(2025, 1))
+        val s = MonthlySummary.of(data, YearMonth.of(2025, 1))
         assertEquals(0L, s.totalCents)
         assertTrue(s.expenses.isEmpty())
         assertTrue(s.categories.all { it.shareOfMonth == 0f })
-        assertEquals(0, s.overall!!.percent)
-    }
-
-    @Test fun `zero goal is treated as no goal`() {
-        val s = MonthlySummary.of(data.copy(goals = Goals(monthlyCents = 0)), nov)
-        assertNull(s.overall)
     }
 
     @Test fun `goal description under and over`() {

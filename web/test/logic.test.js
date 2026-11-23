@@ -85,7 +85,8 @@ const data = {
     e('2026-10-31', 99999, 'OTHER'),
     e('2026-12-01', 99999, 'OTHER'),
   ],
-  goals: { monthlyCents: 100000, perCategoryCents: { ENTERTAINMENT: 2000 } },
+  goals: { entries: [{ category: 'ENTERTAINMENT', month: '2026-11', cents: 2000, onwards: false }] },
+  alertsSent: [],
 };
 
 test('only the month counts, using my share', () => {
@@ -99,13 +100,12 @@ test('only the month counts, using my share', () => {
 
 test('goals report progress', () => {
   const s = monthlySummary(data, '2026-11');
-  assert.equal(s.overall.percent, 77);
-  assert.equal(s.overall.isOver, false);
+  assert.equal(s.overall, undefined); // the monthly total goal is gone
   const ent = s.categories.find((c) => c.category === 'ENTERTAINMENT').goal;
   assert.equal(ent.percent, 210);
   assert.equal(ent.isOver, true);
   assert.equal(s.categories.find((c) => c.category === 'RENT').goal, null);
-  assert.equal(monthlySummary({ ...data, goals: { monthlyCents: 0 } }, '2026-11').overall, null);
+  assert.equal(monthlySummary(data, '2026-12').categories.find((c) => c.category === 'ENTERTAINMENT').goal, null);
 });
 
 test('goal descriptions', () => {
@@ -213,10 +213,12 @@ test('corrupt storage is backed up, broken entries are skipped', () => {
 
 test('Android export JSON shape loads (foodType missing)', () => {
   const s = fakeStorage();
-  s.setItem(KEY, JSON.stringify({ expenses: [{ id: 'x', date: '2026-11-01', title: 'Cinema', amountCents: 900, category: 'ENTERTAINMENT', myPercent: 100 }], goals: { monthlyCents: 500, perCategoryCents: { RENT: 1 } } }));
+  s.setItem(KEY, JSON.stringify({ expenses: [{ id: 'x', date: '2026-11-01', title: 'Cinema', amountCents: 900, category: 'ENTERTAINMENT', myPercent: 100 }], goals: { monthlyCents: 500, perCategoryCents: { RENT: 1, ENTERTAINMENT: 6000 } } }));
   const d = load(s);
   assert.equal(d.expenses[0].foodType, null);
-  assert.equal(d.goals.perCategoryCents.RENT, 1);
+  // Pre-1.5 goals: Entertainment becomes an every-month goal, the rest is dropped.
+  assert.deepEqual(d.goals, { entries: [{ category: 'ENTERTAINMENT', month: '2000-01', cents: 6000, onwards: true }] });
+  assert.deepEqual(d.alertsSent, []);
 });
 
 // --- fuel and annals ---
@@ -333,16 +335,9 @@ test('upcoming reminders cross month and year ends', () => {
   assert.deepEqual(list.map((r) => r.date), ['2026-12-31', '2027-01-01', '2027-01-02']);
 });
 
-// --- goals only for entertainment, split wording ---
+// --- split wording ---
 
-import { CATEGORIES_WITH_GOALS, splitLine } from '../js/model.js';
-
-test('only entertainment can have a category goal', () => {
-  assert.deepEqual(CATEGORIES_WITH_GOALS, ['ENTERTAINMENT']);
-  const d = { ...data, goals: { monthlyCents: null, perCategoryCents: { ENTERTAINMENT: 2000, RENT: 50000, BILLS: 1000 } } };
-  const withGoals = monthlySummary(d, '2026-11').categories.filter((c) => c.goal).map((c) => c.category);
-  assert.deepEqual(withGoals, ['ENTERTAINMENT']);
-});
+import { splitLine } from '../js/model.js';
 
 test('split wording for the read-only view', () => {
   assert.equal(splitLine(e('2026-11-22', 3600, 'OTHER'), format), 'Not split · all yours');
@@ -362,4 +357,82 @@ test('page blocks zooming and keeps the top bar fixed', () => {
   assert.match(css, /html \{[^}]*touch-action: manipulation/);
   assert.match(css, /\.bar \{\s*position: fixed;/);
   assert.match(app, /'gesturestart', 'gesturechange', 'gestureend'/);
+});
+
+// --- per-month goals and warnings (same cases as the Android tests) ---
+
+import { goalFor, setGoal, removeGoal, migrateGoals, scopeText, alertsDue, markAlertsSent, LEGACY_START } from '../js/goals.js';
+
+const cents = (g, cat, m) => goalFor(g, cat, m)?.cents ?? null;
+const E = 'ENTERTAINMENT';
+
+test('goals for one month or from a month onwards', () => {
+  assert.equal(cents({ entries: [] }, E, '2026-11'), null);
+  const one = setGoal({ entries: [] }, E, '2026-11', 6000, false);
+  assert.deepEqual([cents(one, E, '2026-10'), cents(one, E, '2026-11'), cents(one, E, '2026-12')], [null, 6000, null]);
+  const on = setGoal({ entries: [] }, E, '2026-11', 6000, true);
+  assert.deepEqual([cents(on, E, '2026-10'), cents(on, E, '2026-11'), cents(on, E, '2027-01')], [null, 6000, 6000]);
+  assert.equal(cents(on, 'FUEL', '2026-11'), null);
+});
+
+test('single-month goals win; later onwards goals take over', () => {
+  let g = setGoal(setGoal({ entries: [] }, E, '2026-11', 6000, true), E, '2026-12', 9000, false);
+  assert.deepEqual([cents(g, E, '2026-11'), cents(g, E, '2026-12'), cents(g, E, '2027-01')], [6000, 9000, 6000]);
+  g = setGoal(setGoal({ entries: [] }, E, '2026-10', 5000, true), E, '2026-12', 7000, true);
+  assert.deepEqual([cents(g, E, '2026-11'), cents(g, E, '2026-12'), cents(g, E, '2027-01')], [5000, 7000, 7000]);
+  g = setGoal(setGoal(setGoal({ entries: [] }, E, '2026-12', 7000, true), E, '2026-11', 4000, false), E, '2026-11', 6000, true);
+  assert.deepEqual([cents(g, E, '2026-11'), cents(g, E, '2026-12')], [6000, 6000]);
+  assert.equal(g.entries.length, 1);
+});
+
+test('removing for one month or from a month onwards', () => {
+  const base = setGoal({ entries: [] }, E, '2026-10', 5000, true);
+  const one = removeGoal(base, E, '2026-11', false);
+  assert.deepEqual([cents(one, E, '2026-10'), cents(one, E, '2026-11'), cents(one, E, '2026-12')], [5000, null, 5000]);
+  const on = removeGoal(setGoal(base, E, '2027-01', 9000, false), E, '2026-11', true);
+  assert.deepEqual([cents(on, E, '2026-10'), cents(on, E, '2026-11'), cents(on, E, '2026-12'), cents(on, E, '2027-01')], [5000, null, null, null]);
+  assert.deepEqual(removeGoal(setGoal({ entries: [] }, E, '2026-11', 6000, false), E, '2026-11', false).entries, []);
+});
+
+test('old goals convert, new ones are kept', () => {
+  const g = migrateGoals({ monthlyCents: 120000, perCategoryCents: { ENTERTAINMENT: 6000, RENT: 50000 } });
+  assert.deepEqual([cents(g, E, '2024-03'), cents(g, 'RENT', '2026-11')], [6000, null]);
+  const fresh = setGoal({ entries: [] }, E, '2026-11', 6000, false);
+  assert.deepEqual(migrateGoals(fresh), fresh);
+  assert.deepEqual(migrateGoals(undefined), { entries: [] });
+});
+
+test('scope wording', () => {
+  assert.equal(scopeText({ month: '2026-11', onwards: false }, '2026-11'), 'Only November 2026');
+  assert.equal(scopeText({ month: '2026-11', onwards: true }, '2026-11'), 'From November 2026 onwards');
+  assert.equal(scopeText({ month: '2026-09', onwards: true }, '2026-11'), 'Every month since September 2026');
+  assert.equal(scopeText({ month: LEGACY_START, onwards: true }, '2026-11'), 'Every month');
+});
+
+const wardData = (...exps) => ({ expenses: exps, goals: setGoal({ entries: [] }, E, '2026-11', 6000, false), alertsSent: [] });
+const fun = (c, p = 100, date = '2026-11-10') => e(date, c, E, p);
+
+test('warnings at 80% and at the goal, with the Android wording', () => {
+  assert.deepEqual(alertsDue(wardData(fun(4700)), '2026-11'), []);
+  const at80 = alertsDue(wardData(fun(4800)), '2026-11');
+  assert.deepEqual(at80.map((a) => a.level), [80]);
+  assert.equal(at80[0].title, '🦉 80% of your Entertainment ward is spent');
+  assert.equal(at80[0].body, '€48.00 of €60.00 in November · €12.00 left. Time to slow down.');
+  assert.deepEqual(alertsDue(wardData(fun(9600, 50)), '2026-11').map((a) => a.level), [80]);
+  const exact = alertsDue(wardData(fun(6000)), '2026-11')[0];
+  assert.equal(exact.title, '⚡ Your Entertainment ward is broken');
+  assert.equal(exact.body, '€60.00 of €60.00 in November · nothing left.');
+  assert.equal(alertsDue(wardData(fun(6500)), '2026-11')[0].body, '€65.00 of €60.00 in November · €5.00 over.');
+  assert.deepEqual(alertsDue(wardData(e('2026-11-10', 99999, 'RENT')), '2026-11'), []);
+});
+
+test('each warning only once per month; a jump past the goal covers 80% too', () => {
+  const d = wardData(fun(5000));
+  const sent = markAlertsSent(d, alertsDue(d, '2026-11'));
+  assert.deepEqual(alertsDue({ ...sent, expenses: [...sent.expenses, fun(100)] }, '2026-11'), []);
+  const over = { ...sent, expenses: [...sent.expenses, fun(2000)] };
+  assert.deepEqual(alertsDue(over, '2026-11').map((a) => a.level), [100]);
+  assert.deepEqual(alertsDue(markAlertsSent(over, alertsDue(over, '2026-11')), '2026-11'), []);
+  const jump = wardData(fun(7000));
+  assert.deepEqual(markAlertsSent(jump, alertsDue(jump, '2026-11')).alertsSent.sort(), ['ENTERTAINMENT|2026-11|100', 'ENTERTAINMENT|2026-11|80']);
 });

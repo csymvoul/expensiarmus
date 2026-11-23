@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.5.0 (Android), web app 1.4.0 and iPhone app 1.2.0 – unreleased (2026-11-23)
+
+### Changed
+- **Goals per month.** Protego now shows the wards (category goals) of the month you're viewing. **🛡 Cast a new ward** lets you pick any category, set an amount, and choose **only this month** or **this month and every month after**. A goal for one specific month always wins over an "every month" one, and past months keep their own goals. Tap a ward to change it, or remove it for this month only or from this month on.
+- **The "Total per month" goal is gone.** The monthly total card now links to Protego for that month.
+- Goals saved before this version are converted: the Entertainment goal becomes an "every month" goal, and the old monthly total and other category goals are dropped (they were unused since 1.4.0).
+
+### Added
+- **Goal warnings** for the current month: at **80%** of a category's goal ("🦉 80% of your Entertainment ward is spent: €48.00 of €60.00 in November · €12.00 left") and when it's **reached or passed** ("⚡ Your Entertainment ward is broken: … €5.00 over"). Each comes at most once per category per month, and jumping straight past the goal sends only the second one.
+  - Android: a notification ("Goal warnings" channel), or a toast if notifications are off.
+  - iPhone app: a notification.
+  - github.io: a card at the top of the app, since web pages can't send notifications on iPhone.
+- Tests: 21 new Android tests (goal rules, conversion, warnings, wording), 128 in total. 7 new web tests with the same cases, 38 in total. All passing.
+- Checked in a browser at phone size: conversion of the old goal, casting, editing and removing wards, both warnings and no repeats, and the iPhone app's notification message.
+
+### Known issues
+- Warnings already sent for a month aren't sent again that month, even if you raise the goal and later pass 80% of the new amount.
+
 ## Web app 1.3.2 and iPhone app 1.1.2 – unreleased (2026-11-22)
 
 ### Changed

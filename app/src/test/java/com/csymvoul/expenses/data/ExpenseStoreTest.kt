@@ -22,7 +22,8 @@ class ExpenseStoreTest {
             Expense("b", LocalDate.of(2026, 11, 1), "Electricity", 8_000, Category.BILLS, 50),
             Expense("c", LocalDate.of(2026, 11, 2), "Souvlaki", 1_800, Category.ENTERTAINMENT, 50, FoodType.DELIVERY),
         ),
-        goals = Goals(monthlyCents = 120_000, perCategoryCents = mapOf(Category.ENTERTAINMENT to 20_000)),
+        goals = Goals().set(Category.ENTERTAINMENT, java.time.YearMonth.of(2026, 11), 20_000, onwards = true),
+        alertsSent = setOf("ENTERTAINMENT|2026-11|80"),
     )
 
     @Test fun `missing file loads as empty`() {
@@ -70,9 +71,18 @@ class ExpenseStoreTest {
         assertEquals(null, ExpenseStore(file).load().find("x")!!.foodType)
     }
 
+    @Test fun `goals saved before 1_5 are converted on load`() {
+        val file = File(tmp.root, "expenses.json")
+        file.writeText("""{"expenses":[],"goals":{"monthlyCents":120000,"perCategoryCents":{"ENTERTAINMENT":6000,"RENT":50000}}}""")
+        val goals = ExpenseStore(file).load().goals
+        assertEquals(6_000L, goals.goalFor(Category.ENTERTAINMENT, java.time.YearMonth.of(2026, 11))?.cents)
+        assertEquals(null, goals.goalFor(Category.RENT, java.time.YearMonth.of(2026, 11)))
+        assertEquals(null, goals.monthlyCents)
+    }
+
     @Test fun `unknown fields from a newer version are ignored`() {
         val file = File(tmp.root, "expenses.json")
-        file.writeText("""{"expenses":[],"goals":{"monthlyCents":500},"theme":"dark"}""")
-        assertEquals(500L, ExpenseStore(file).load().goals.monthlyCents)
+        file.writeText("""{"expenses":[],"goals":{"entries":[]},"theme":"dark"}""")
+        assertEquals(Goals(), ExpenseStore(file).load().goals)
     }
 }

@@ -310,15 +310,8 @@ private fun TotalCard(summary: MonthlySummary, onGoals: () -> Unit, onAnnals: ()
             )
         }
         Spacer(Modifier.height(8.dp))
-        val goal = summary.overall
-        if (goal != null) {
-            GoalBar(goal)
-            Spacer(Modifier.height(2.dp))
-            Text(goal.describe(), style = MaterialTheme.typography.bodyMedium)
-        } else {
-            TextButton(onClick = onGoals, contentPadding = PaddingValues(0.dp)) {
-                Text("🛡 Cast Protego: set a monthly goal")
-            }
+        TextButton(onClick = onGoals, contentPadding = PaddingValues(0.dp)) {
+            Text("🛡 Protego: wards for ${summary.month.format(DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH))}")
         }
         TextButton(onClick = onAnnals, contentPadding = PaddingValues(0.dp)) {
             Text("📊 See the whole year in the Annals")

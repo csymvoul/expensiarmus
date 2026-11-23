@@ -327,3 +327,17 @@ input[type='range'] { width: 100%; accent-color: var(--primary); }
 .gold-rule { border: 0; border-top: 3px double var(--gold-soft); margin: 4px 0; width: 100%; }
 .center-link { display: block; margin: 8px auto; color: var(--error); }
 main > .btn.wide { margin-top: 8px; }
+
+/* Protego wards */
+.ward { display: flex; flex-direction: column; gap: 6px; width: 100%; text-align: left; }
+.ward-editor { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 3px double var(--gold-soft); }
+.ward-actions { display: flex; align-items: center; gap: 14px; }
+.ward-actions .spacer { flex: 1; }
+.ward-actions .btn { padding: 10px 18px; }
+.danger-link { color: var(--error); }
+
+/* Goal warning card (web) */
+.toast.alert { display: flex; flex-direction: column; gap: 2px; width: calc(100% - 32px); max-width: 420px; text-align: left;
+  bottom: auto; top: calc(76px + env(safe-area-inset-top)); background: var(--paper-center); color: var(--ink);
+  border: 2px solid var(--gold); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); animation-duration: 6.5s; }
+.toast.alert b { color: var(--primary); font-family: 'Cinzel', serif; }

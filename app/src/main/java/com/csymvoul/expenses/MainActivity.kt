@@ -135,8 +135,13 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
     WizardBackdrop {
         when {
             route == GOALS -> GoalsScreen(
+                month = month,
                 goals = data.goals,
-                onSave = { vm.setGoals(it); pop() },
+                spent = remember(data, month) {
+                    MonthlySummary.of(data, month).categories.associate { it.category to it.spentCents }
+                },
+                onSet = { c, cents, onwards -> vm.setGoal(c, month, cents, onwards) },
+                onRemove = { c, onwards -> vm.removeGoal(c, month, onwards) },
                 onBack = ::pop,
             )
             route == ANNALS -> {

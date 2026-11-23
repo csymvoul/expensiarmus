@@ -17,9 +17,6 @@ export const FOOD_TYPES = [
   { id: 'DAY_TO_DAY', label: 'Day-to-day', hint: 'Coffee at work, snacks, quick bites', emoji: '☕', nickname: 'Daily potions', color: '#E6C878' },
 ];
 
-/** Categories that can have their own goal. Goals saved for others are ignored. */
-export const CATEGORIES_WITH_GOALS = ['ENTERTAINMENT'];
-
 export const category = (id) => CATEGORIES.find((c) => c.id === id);
 export const foodType = (id) => FOOD_TYPES.find((f) => f.id === id);
 
@@ -50,7 +47,7 @@ export function makeExpense({ id, date, title, amountCents, category: cat, myPer
   return { id, date, title, amountCents, category: cat, myPercent, foodType: food ?? null };
 }
 
-export const emptyData = () => ({ expenses: [], goals: { monthlyCents: null, perCategoryCents: {} } });
+export const emptyData = () => ({ expenses: [], goals: { entries: [] }, alertsSent: [] });
 
 export const upsert = (data, e) => ({ ...data, expenses: [...data.expenses.filter((x) => x.id !== e.id), e] });
 export const remove = (data, id) => ({ ...data, expenses: data.expenses.filter((x) => x.id !== id) });

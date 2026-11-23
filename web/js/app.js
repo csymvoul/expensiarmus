@@ -1,7 +1,8 @@
 // Expensiarmus web app: screens, navigation and event handling. Logic lives in the other modules.
-import { CATEGORIES, CATEGORIES_WITH_GOALS, FOOD_TYPES, category, foodType, makeExpense, myShareCents, isSplit, splitLine, upsert, remove, find, monthOf } from './model.js';
+import { CATEGORIES, FOOD_TYPES, category, foodType, makeExpense, myShareCents, isSplit, splitLine, upsert, remove, find, monthOf } from './model.js';
 import { parseToCents, format, forInput, compact } from './money.js';
-import { monthlySummary, describeGoal, yearSummary, allTimeSummary } from './summary.js';
+import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary } from './summary.js';
+import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
 import { dailyTotals, onDay, calendarCells, byCategory, search, shiftMonth } from './queries.js';
 import { toCsv } from './csv.js';
 import { load, save, KEY } from './store.js';
@@ -50,11 +51,27 @@ function scheduleOwls() {
 }
 
 function commit(next) {
-  data = next;
+  // Warn once when a category of the current month reaches 80% of its goal, or goes over.
+  const alerts = alertsDue(next, today().slice(0, 7));
+  data = alerts.length ? markAlertsSent(next, alerts) : next;
   save(storage, data);
   // The iPhone app keeps a copy outside the web view's storage, as a backup.
   post({ type: 'save', key: KEY, json: storage.getItem(KEY) });
   scheduleOwls();
+  alerts.forEach(showGoalAlert);
+}
+
+/** A real notification inside the iPhone app; on the web (no notifications on iPhone) an in-app card. */
+function showGoalAlert(a) {
+  if (nativeBridge) {
+    post({ type: 'notify', id: `goal-${a.category}-${a.month}`, title: a.title, body: a.body });
+    return;
+  }
+  const el = document.createElement('div');
+  el.className = 'toast alert';
+  el.innerHTML = `<b>${esc(a.title)}</b><span>${esc(a.body)}</span>`;
+  document.body.append(el);
+  setTimeout(() => el.remove(), 6500);
 }
 
 // ---------- navigation ----------
@@ -165,9 +182,7 @@ function donut(summary) {
 }
 
 function totalCard(s) {
-  const goal = s.overall
-    ? `${goalBar(s.overall)}<p class="goal-text">${esc(describeGoal(s.overall))}</p>`
-    : `<button class="link" data-action="go" data-to="#/goals">🛡 Cast Protego: set a monthly goal</button>`;
+  const goal = `<button class="link" data-action="go" data-to="#/goals">🛡 Protego: wards for ${fmt(`${s.month}-01`, { month: 'long' })}</button>`;
   return card(`
     <h3 class="h-small">Gold spent this month</h3>
     <p class="total">${format(s.totalCents)}</p>
@@ -469,56 +484,87 @@ function searchScreen() {
   </main>`;
 }
 
-// ---------- goals ----------
+// ---------- goals (Protego) ----------
 
-const goalValid = (text) => !text.trim() || parseToCents(text) > 0;
-const goalCents = (text) => (text.trim() ? parseToCents(text) : null);
+const monthName = (m) => fmt(`${m}-01`, { month: 'long' });
+
+function wardEditor(m, fixed, choices, ed) {
+  const name = monthName(m);
+  const picker = fixed ? '' : `<span class="h-small">Which vault?</span>
+    <div class="chips">${choices.map((c) => `<button class="chip ${ed.picked === c.id ? 'on' : ''}" data-action="ward-pick" data-cat="${c.id}">${c.emoji} ${c.label}</button>`).join('')}</div>`;
+  return `<div class="ward-editor">
+    ${picker}
+    <label class="field"><span class="label">Goal for ${name}</span>
+      <span class="money-input"><span>€</span><input type="text" inputmode="decimal" value="${esc(ed.amount)}" placeholder="e.g. 60" data-input="ward-amount"></span>
+      <span class="error" id="ward-error" hidden>Enter an amount, e.g. 60</span></label>
+    <label class="switch-row"><span><span class="h-small">Every month from ${name} on</span>
+      <span class="small soft" id="ward-scope">${ed.onwards ? `Also for the months after ${name}` : `Only ${monthTitle(m)}`}</span></span>
+      <input type="checkbox" class="switch" ${ed.onwards ? 'checked' : ''} data-input="ward-onwards"></label>
+    <div class="ward-actions">
+      ${fixed ? '<button class="link danger-link" data-action="ward-remove">Remove</button>' : ''}
+      <span class="spacer"></span>
+      <button class="link" data-action="ward-cancel">Cancel</button>
+      <button class="btn" data-action="ward-save">Save</button>
+    </div>
+  </div>`;
+}
 
 function goalsScreen() {
-  const g = data.goals;
-  const field = (key, label, cents) => `<label class="field"><span class="label">${label}</span>
-    <span class="money-input"><span>€</span><input type="text" inputmode="decimal" value="${cents ? forInput(cents) : ''}" data-input="goal" data-key="${key}"></span>
-    <span class="error" hidden>Enter an amount, or leave empty</span></label>`;
-  return `${header('Protego · Goals', { backBtn: true })}
-  <main class="form">
-    <p class="soft">Protego! Cast a ward on your spending. Goals apply to every month until you change them; leave a field empty for no goal.</p>
-    ${field('overall', 'Total per month', g.monthlyCents)}
-    ${ornament('A ward for Revelry & Feasts')}
-    ${CATEGORIES_WITH_GOALS.map(category).map((c) => field(c.id, `${c.emoji} ${c.label}`, g.perCategoryCents?.[c.id])).join('')}
-    <p class="error" id="goal-warning" hidden></p>
-    <button class="btn wide" data-action="save-goals">🛡 Cast the wards · Save</button>
-  </main>`;
+  const m = ui.month;
+  const s = monthlySummary(data, m);
+  const ed = ui.goalEdit;
+  const active = CATEGORIES.map((c) => ({ c, entry: goalFor(data.goals, c.id, m) })).filter((x) => x.entry);
+  const free = CATEGORIES.filter((c) => !active.some((a) => a.c.id === c.id));
+  const wards = active.map(({ c, entry }) => {
+    const g = goalProgress(entry.cents, s.categories.find((x) => x.category === c.id).spentCents);
+    return card(`<button class="ward" data-action="ward-edit" data-cat="${c.id}">
+        <span class="legend-row">${emblem(c.emoji, c.color, 36)}
+          <span class="row-main"><span class="h-small">${c.label}</span><span class="row-sub italic">${esc(scopeText(entry, m))}</span></span>
+          <b class="h-medium">${format(entry.cents)}</b></span>
+        ${goalBar(g)}<span class="small">${esc(describeGoal(g))}</span>
+      </button>
+      ${ed && ed.cat === c.id ? wardEditor(m, true, [], ed) : ''}`);
+  });
+  const adding = ed && ed.adding
+    ? card(`<h3 class="h-medium">A new ward</h3>${wardEditor(m, false, free, ed)}`)
+    : free.length ? '<button class="btn wide" data-action="ward-add">🛡 Cast a new ward</button>' : '';
+  const name = monthName(m);
+  const modal = ed && ed.confirmRemove
+    ? `<div class="modal-backdrop"><div class="card modal"><div class="paper">
+        <h3 class="h-medium">Remove this ward?</h3>
+        <p>Remove it for ${name} only, or for ${name} and every month after?</p>
+        <div class="modal-actions"><button class="link" data-action="ward-remove-cancel">Keep it</button>
+          <button class="link" data-action="ward-remove-one">Only ${name}</button>
+          <button class="btn danger" data-action="ward-remove-on">From ${name} on</button></div>
+      </div></div></div>`
+    : '';
+  return `${header(`Protego · ${name}`, { backBtn: true })}
+  <main>
+    <p class="soft">Cast a ward on the vaults you want to watch in ${monthTitle(m)}. An owl warns you at 80% and when a ward breaks.</p>
+    ${active.length || (ed && ed.adding) ? '' : hint('No wards for this month yet.')}
+    ${wards.join('')}
+    ${adding}
+  </main>${modal}`;
 }
 
-function checkGoals() {
-  const inputs = [...app.querySelectorAll('[data-input="goal"]')];
-  let ok = true;
-  for (const i of inputs) {
-    const valid = goalValid(i.value);
-    i.closest('.money-input').classList.toggle('bad', !valid);
-    i.closest('.field').querySelector('.error').hidden = valid;
-    ok &&= valid;
+function saveWard() {
+  const ed = ui.goalEdit;
+  const cents = parseToCents(ed.amount);
+  const cat = ed.cat ?? ed.picked;
+  if (!(cents > 0) || !cat) {
+    app.querySelector('#ward-error').hidden = false;
+    return;
   }
-  const overall = goalCents(inputs.find((i) => i.dataset.key === 'overall').value);
-  const sum = inputs.filter((i) => i.dataset.key !== 'overall').reduce((a, i) => a + (goalCents(i.value) ?? 0), 0);
-  const warn = app.querySelector('#goal-warning');
-  warn.hidden = !(ok && overall && sum > overall);
-  warn.textContent = `The Entertainment goal (${format(sum)}) is more than the monthly total.`;
-  app.querySelector('[data-action="save-goals"]').disabled = !ok;
-  return ok;
+  ui.goalEdit = null;
+  commit({ ...data, goals: setGoal(data.goals, cat, ui.month, cents, ed.onwards) });
+  render();
 }
 
-function saveGoals() {
-  if (!checkGoals()) return;
-  const per = {};
-  let monthly = null;
-  for (const i of app.querySelectorAll('[data-input="goal"]')) {
-    const v = goalCents(i.value);
-    if (i.dataset.key === 'overall') monthly = v;
-    else if (v) per[i.dataset.key] = v;
-  }
-  commit({ ...data, goals: { monthlyCents: monthly, perCategoryCents: per } });
-  back();
+function removeWard(onwards) {
+  const cat = ui.goalEdit.cat;
+  ui.goalEdit = null;
+  commit({ ...data, goals: removeGoal(data.goals, cat, ui.month, onwards) });
+  render();
 }
 
 // ---------- owl reminder ----------
@@ -653,6 +699,7 @@ function render() {
   if (r.name !== ui.modalScreen) ui.modal = false;
   ui.modalScreen = r.name;
   if (r.name !== 'month') ui.menu = false;
+  if (r.name !== 'goals') ui.goalEdit = null;
   if (r.name !== ui.lastScreen && (r.name === 'month' || r.name === 'annals')) ui.highlighted = null;
   ui.lastScreen = r.name;
   switch (r.name) {
@@ -665,7 +712,6 @@ function render() {
     case 'annals': app.innerHTML = annalsScreen(); break;
     default: app.innerHTML = monthScreen();
   }
-  if (r.name === 'goals') checkGoals();
 }
 
 const actions = {
@@ -718,7 +764,23 @@ const actions = {
     el.classList.toggle('on');
     app.querySelector('#results').innerHTML = searchResults();
   },
-  'save-goals': saveGoals,
+  'ward-edit': (el) => {
+    const entry = goalFor(data.goals, el.dataset.cat, ui.month);
+    ui.goalEdit = { cat: el.dataset.cat, amount: forInput(entry.cents), onwards: entry.onwards };
+    render();
+  },
+  'ward-add': () => {
+    const free = CATEGORIES.filter((c) => !goalFor(data.goals, c.id, ui.month));
+    ui.goalEdit = { cat: null, adding: true, picked: free[0]?.id, amount: '', onwards: false };
+    render();
+  },
+  'ward-pick': (el) => { ui.goalEdit.picked = el.dataset.cat; render(); },
+  'ward-cancel': () => { ui.goalEdit = null; render(); },
+  'ward-save': saveWard,
+  'ward-remove': () => { ui.goalEdit.confirmRemove = true; render(); },
+  'ward-remove-cancel': () => { ui.goalEdit.confirmRemove = false; render(); },
+  'ward-remove-one': () => removeWard(false),
+  'ward-remove-on': () => removeWard(true),
   'dismiss-install': () => { storage.setItem('expensiarmus.installHintSeen', '1'); render(); },
 };
 
@@ -733,7 +795,11 @@ const inputs = {
     app.querySelector('#share-line').textContent = shareLine();
   },
   'search-q': (el) => { finder.q = el.value; app.querySelector('#results').innerHTML = searchResults(); },
-  goal: () => checkGoals(),
+  'ward-amount': (el) => { ui.goalEdit.amount = el.value; app.querySelector('#ward-error').hidden = true; },
+  'ward-onwards': (el) => {
+    ui.goalEdit.onwards = el.checked;
+    app.querySelector('#ward-scope').textContent = el.checked ? `Also for the months after ${monthName(ui.month)}` : `Only ${monthTitle(ui.month)}`;
+  },
   'owl-toggle': (el) => { storage.setItem(REMINDER_KEY, el.checked ? 'on' : 'off'); scheduleOwls(); },
 };
 
@@ -753,7 +819,7 @@ const onInput = (ev) => {
 app.addEventListener('input', onInput);
 app.addEventListener('change', (ev) => {
   // Checkboxes and date pickers report through "change" on some browsers.
-  if (ev.target.matches('[data-input="edit-split"], [data-input="edit-date"], [data-input="owl-toggle"]')) onInput(ev);
+  if (ev.target.matches('[data-input="edit-split"], [data-input="edit-date"], [data-input="owl-toggle"], [data-input="ward-onwards"]')) onInput(ev);
 });
 window.addEventListener('hashchange', render);
 

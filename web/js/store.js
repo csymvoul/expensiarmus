@@ -1,4 +1,5 @@
 import { emptyData, makeExpense } from './model.js';
+import { migrateGoals } from './goals.js';
 
 const KEY = 'expensiarmus.data.v1';
 
@@ -19,10 +20,10 @@ export function load(storage) {
         // skip a broken entry rather than losing everything
       }
     }
-    const g = parsed.goals ?? {};
     return {
       expenses,
-      goals: { monthlyCents: g.monthlyCents ?? null, perCategoryCents: { ...(g.perCategoryCents ?? {}) } },
+      goals: migrateGoals(parsed.goals),
+      alertsSent: Array.isArray(parsed.alertsSent) ? parsed.alertsSent : [],
     };
   } catch {
     storage.setItem(`${KEY}.corrupt-${Date.now()}`, raw);
