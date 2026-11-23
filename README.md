@@ -9,9 +9,9 @@ A personal, wizard-themed app for tracking monthly spending in euros: a native A
 - **Food subgroups.** An Entertainment expense can be marked as food: *Delivery*, *Dine out* or *Day-to-day* (e.g. a coffee at work).
 - **Split expenses.** Mark an expense as shared and set your percentage (50-50 by default). Only your share counts toward totals, charts and goals; the full amount is still shown.
 - **Expense view.** Tapping an expense shows it read-only (amounts, date, category, food type, split); Amend opens the edit form.
-- **Monthly overview.** Total spent, a donut chart and table per category (tap a slice to highlight that category), a food breakdown and the month's ledger. Browse month by month.
+- **Monthly overview.** Total spent, a donut chart and table per category (tap a slice to highlight that category), a food breakdown and the month's latest 5 expenses (Show all lists the rest). Browse month by month.
 - **Annals.** Totals per year and for all time: a month-by-month or year-by-year bar chart, monthly average, comparison with the previous year, biggest expense, and the category and food breakdowns for the period.
-- **Calendar.** A month grid showing what you spent each day, with busier days in deeper ink. Move through months with the month switcher at the top. Tap a day to see its expenses.
+- **Calendar.** The month at a glance (total, change from the month before up to the same day, number of expenses, average a day, busiest day), then a month grid showing what you spent each day, with busier days in deeper ink. Move through months with the month switcher at the top. Tap a day to see its expenses.
 - **Category pages.** Tap a category, or a food subgroup, to see all its expenses, grouped by month with monthly totals.
 - **Search.** Find expenses by part of the title, by category or food-type name, and/or by picking categories. Case and Greek accents are ignored.
 - **Goals (Protego).** Pick the categories you want to watch and set a goal for the month you're viewing, or for that month and every month after. Progress bars turn amber at 80% and red when over, and the app warns you at 80% and when a goal is passed (a notification on Android and in the iPhone app, a card on github.io).

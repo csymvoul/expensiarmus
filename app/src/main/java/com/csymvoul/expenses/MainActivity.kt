@@ -274,6 +274,7 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                 val day = selectedDay?.takeIf { YearMonth.from(it) == month }
                 val days = remember(data, month, day) {
                     DayDetails(
+                        glance = ExpenseQueries.monthGlance(data.expenses, month, LocalDate.now()),
                         totals = ExpenseQueries.dailyTotals(data.expenses, month),
                         selected = day,
                         expenses = day?.let { ExpenseQueries.onDay(data.expenses, it) }.orEmpty(),

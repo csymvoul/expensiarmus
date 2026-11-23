@@ -64,6 +64,12 @@ import com.csymvoul.expenses.ui.components.WizardFab
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.components.DonutChart
 import com.csymvoul.expenses.ui.components.ExpenseRow
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.RowScope
+import java.time.format.TextStyle
+import java.time.YearMonth
+import com.csymvoul.expenses.domain.ExpenseQueries
+import com.csymvoul.expenses.domain.MonthGlance
 import com.csymvoul.expenses.ui.components.GoalBar
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.OrnamentHeading
@@ -83,6 +89,7 @@ enum class MonthView { OVERVIEW, CALENDAR }
 
 /** What the calendar shows below the grid. */
 data class DayDetails(
+    val glance: MonthGlance,
     val totals: Map<LocalDate, Long>,
     val selected: LocalDate?,
     val expenses: List<Expense>,
@@ -108,6 +115,8 @@ fun MonthScreen(
     bottomBar: @Composable () -> Unit,
 ) {
     val w = LocalWords.current
+    // The Ledger lists the latest few expenses; "Show all" opens the whole month until the month changes.
+    var showAll by remember(summary.month) { mutableStateOf(false) }
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = bottomBar,
@@ -154,12 +163,25 @@ fun MonthScreen(
                     if (summary.expenses.isEmpty()) {
                         item { Hint(w.ledgerEmpty) }
                     }
-                    items(summary.expenses, key = { it.id }) { expense ->
+                    items(ExpenseQueries.ledgerPreview(summary.expenses, showAll), key = { it.id }) { expense ->
                         ExpenseRow(expense, onClick = { onOpen(expense.id) })
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
+                    if (summary.expenses.size > ExpenseQueries.LATEST_COUNT) {
+                        item {
+                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                TextButton(onClick = { showAll = !showAll }) {
+                                    Text(
+                                        if (showAll) "Show only the latest ${ExpenseQueries.LATEST_COUNT}"
+                                        else "Show all ${summary.expenses.size} ›",
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
                 MonthView.CALENDAR -> {
+                    item { GlanceCard(days.glance, summary.month) }
                     item {
                         ParchmentCard {
                             CalendarGrid(summary.month, days.totals, days.selected, onSelectDay)
@@ -242,6 +264,57 @@ private fun MonthSwitcher(summary: MonthlySummary, onPrevious: () -> Unit, onNex
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
+    }
+}
+
+private val shortDayFormat = DateTimeFormatter.ofPattern("EEE d", Locale.ENGLISH)
+
+/** Above the calendar: the month's total, how it compares with the month before, and three small facts. */
+@Composable
+private fun GlanceCard(g: MonthGlance, month: YearMonth) {
+    val w = LocalWords.current
+    ParchmentCard(spacing = Arrangement.spacedBy(4.dp)) {
+        Text("${w.spentInPrefix} ${month.month.getDisplayName(TextStyle.FULL, Locale.ENGLISH)}", style = MaterialTheme.typography.titleSmall)
+        Text(Money.format(g.totalCents), style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
+        val before = g.upToDay?.let { "${g.previousMonth.month.getDisplayName(TextStyle.SHORT, Locale.ENGLISH)} 1–$it" }
+            ?: g.previousMonth.month.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
+        g.changePercent?.takeIf { g.totalCents > 0 }?.let { change ->
+            Text(
+                when {
+                    change > 0 -> "▲ $change% more than $before"
+                    change < 0 -> "▼ ${-change}% less than $before"
+                    else -> "Same as $before"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = when {
+                    change > 0 -> MaterialTheme.colorScheme.error
+                    change < 0 -> MaterialTheme.colorScheme.tertiary
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GlanceTile("${g.count}", if (g.count == 1) "expense" else "expenses")
+            GlanceTile(Money.format(g.dailyAverageCents), if (g.upToDay != null) "a day so far" else "a day")
+            GlanceTile(
+                g.busiestDay?.format(shortDayFormat) ?: "–",
+                if (g.busiestDay != null) "busiest · ${Money.format(g.busiestCents)}" else "busiest day",
+            )
+        }
+    }
+}
+
+@Composable
+private fun RowScope.GlanceTile(value: String, label: String) {
+    Column(
+        Modifier
+            .weight(1f)
+            .border(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.55f), RoundedCornerShape(8.dp))
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(value, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
     }
 }
 

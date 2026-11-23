@@ -103,7 +103,7 @@ data class Words(
             wizard = false,
             ledgerTab = "📜 Expenses", calendarTab = "📅 Calendar", annalsTab = "📊 Totals", goalsTab = "🎯 Goals",
             annals = "📊 Totals", goals = "Goals", search = "Search",
-            fab = "＋ Add expense", newExpense = "New expense", editExpense = "Edit expense", entry = "Expense",
+            fab = "✒️ Add expense", newExpense = "New expense", editExpense = "Edit expense", entry = "Expense",
             amend = "✏️ Edit expense", amount = "Amount", spentThisMonth = "Spent this month", spentInPrefix = "Spent in",
             spentAllTime = "Spent, all time", whereWent = "By category", food = "Food", ledger = "Expenses",
             ledgerEmpty = "No expenses this month yet.",

@@ -3,7 +3,7 @@ import { CATEGORIES, FOOD_TYPES, TAB_ICONS, EMBLEMS, withoutEmoji, category, foo
 import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
 import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
-import { dailyTotals, onDay, calendarCells, byCategory, search, shiftMonth, suggestions, defaultTitle } from './queries.js';
+import { dailyTotals, onDay, calendarCells, byCategory, search, shiftMonth, suggestions, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
 import { toCsv } from './csv.js';
 import { load, save, KEY } from './store.js';
 import { upcomingReminders } from './reminder.js';
@@ -37,6 +37,7 @@ const ui = {
   highlighted: null,
   modal: false,
   quick: null, // the Quick add sheet, when open
+  ledgerAll: null, // the month whose whole ledger is shown; otherwise only the latest few
   annals: { view: 'year', year: Number(today().slice(0, 4)), bar: null },
 };
 let draft = null; // the expense being added or edited
@@ -291,6 +292,36 @@ function calendarCard() {
   return card(`<div class="cal">${['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((w) => `<span class="wd">${w}</span>`).join('')}${cells.join('')}</div>`);
 }
 
+/** The newest few expenses of the month, with a link to show them all (or only the latest again). */
+function ledgerList(expenses) {
+  const showAll = ui.ledgerAll === ui.month;
+  const more = expenses.length > LATEST_COUNT
+    ? `<button class="link more-link" data-action="ledger-all">${showAll ? `Show only the latest ${LATEST_COUNT}` : `Show all ${expenses.length} ›`}</button>`
+    : '';
+  return `<div class="list">${ledgerPreview(expenses, showAll).map((e) => expenseRow(e)).join('')}</div>${more}`;
+}
+
+/** Above the calendar: the month's total, how it compares with the month before, and three small facts. */
+function glanceCard(g) {
+  const monthName = fmt(`${ui.month}-01`, { month: 'long' });
+  const before = g.upToDay != null
+    ? `${fmt(`${g.previousMonth}-01`, { month: 'short' })} 1–${g.upToDay}`
+    : fmt(`${g.previousMonth}-01`, { month: 'long' });
+  const change = g.changePercent == null || g.totalCents === 0 ? ''
+    : g.changePercent > 0 ? `<p class="up small">▲ ${g.changePercent}% more than ${before}</p>`
+      : g.changePercent < 0 ? `<p class="down small">▼ ${-g.changePercent}% less than ${before}</p>`
+        : `<p class="small soft">Same as ${before}</p>`;
+  const tile = (value, label) => `<div class="glance-tile"><b>${value}</b><small>${label}</small></div>`;
+  return card(`<h3 class="h-small">${esc(W.spentIn(monthName))}</h3>
+    <p class="total">${format(g.totalCents)}</p>
+    ${change}
+    <div class="glance">
+      ${tile(g.count, g.count === 1 ? 'expense' : 'expenses')}
+      ${tile(format(g.dailyAverageCents), g.upToDay != null ? 'a day so far' : 'a day')}
+      ${tile(g.busiest ? fmt(g.busiest.date, { weekday: 'short', day: 'numeric' }) : '–', g.busiest ? `busiest · ${format(g.busiest.cents)}` : 'busiest day')}
+    </div>`);
+}
+
 /** On the web (no notifications), a banner after the reminder time when nothing was recorded today. */
 function owlBanner() {
   if (nativeBridge || !settings.reminderOn || ui.month !== today().slice(0, 7)) return '';
@@ -326,11 +357,12 @@ function monthScreen(calendar) {
       ${breakdownCard(s)}
       ${s.food.totalCents > 0 ? foodCard(s.food) : ''}
       ${ornament(W.ledger)}
-      ${s.expenses.length ? `<div class="list">${s.expenses.map((e) => expenseRow(e)).join('')}</div>` : hint(W.ledgerEmpty)}`;
+      ${s.expenses.length ? ledgerList(s.expenses) : hint(W.ledgerEmpty)}`;
   } else {
     const day = ui.day && monthOf(ui.day) === ui.month ? ui.day : null;
     const list = day ? onDay(data.expenses, day) : [];
-    body = `${calendarCard()}
+    body = `${glanceCard(monthGlance(data.expenses, ui.month, today()))}
+      ${calendarCard()}
       ${day
         ? `${ornament(fmt(day, { weekday: 'long', day: 'numeric', month: 'long' }))}
            <p class="center h-small">Spent: ${format(list.reduce((a, e) => a + myShareCents(e), 0))}</p>
@@ -855,6 +887,7 @@ const actions = {
   back,
   go: (el) => go(el.dataset.to),
   tab: (el) => { navDepth = 0; location.replace(el.dataset.to); },
+  'ledger-all': () => { ui.ledgerAll = ui.ledgerAll === ui.month ? null : ui.month; render(); },
   'prev-month': () => { ui.month = shiftMonth(ui.month, -1); ui.highlighted = null; ui.goalEdit = null; render(); },
   'next-month': () => { ui.month = shiftMonth(ui.month, 1); ui.highlighted = null; ui.goalEdit = null; render(); },
   slice: (el) => {

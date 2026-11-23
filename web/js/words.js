@@ -29,7 +29,7 @@ const PLAIN = {
   wizard: false,
   ledgerTab: '📜 Expenses', calendarTab: '📅 Calendar', annalsTab: '📊 Totals', goalsTab: '🎯 Goals',
   annals: '📊 Totals', goals: 'Goals', search: 'Search', settings: '⚙️ Settings',
-  fab: '＋ Add expense', newExpense: 'New expense', editExpense: 'Edit expense', entry: 'Expense',
+  fab: '✒️ Add expense', newExpense: 'New expense', editExpense: 'Edit expense', entry: 'Expense',
   amend: '✏️ Edit expense', amount: 'Amount', spentThisMonth: 'Spent this month', spentIn: (y) => `Spent in ${y}`,
   spentAllTime: 'Spent, all time', whereWent: 'By category', food: 'Food', ledger: 'Expenses',
   ledgerEmpty: 'No expenses this month yet.',

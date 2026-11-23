@@ -103,3 +103,33 @@ export function suggestions(expenses, typed, limit = 4) {
 export const defaultTitle = (cat, food) => (food ? foodType(food).label : category(cat).label);
 
 export { CATEGORIES };
+
+/** How many of the month's expenses the Ledger lists before "Show all". */
+export const LATEST_COUNT = 5;
+
+/** The Ledger's list: the newest few, or all of them once "Show all" is tapped. Expects newest first. */
+export const ledgerPreview = (expenses, showAll, n = LATEST_COUNT) => (showAll ? expenses : expenses.slice(0, n));
+
+/**
+ * The calendar's month at a glance: my-share total, number of expenses, average per day, the busiest day
+ * and the change from the month before. While [month] is still running (it holds [today]) the average is
+ * over the days so far, and the previous month is counted only up to the same day so the comparison is fair.
+ */
+export function monthGlance(expenses, month, today) {
+  const mine = expenses.filter((e) => monthOf(e.date) === month);
+  const totalCents = mine.reduce((s, e) => s + myShareCents(e), 0);
+  const running = monthOf(today) === month;
+  const daysCounted = running ? Number(today.slice(8, 10)) : daysInMonth(month);
+  const dailyAverageCents = Math.floor((totalCents * 2 + daysCounted) / (daysCounted * 2)); // half up
+  let busiest = null;
+  for (const [date, cents] of Object.entries(dailyTotals(expenses, month))) {
+    if (!busiest || cents > busiest.cents || (cents === busiest.cents && date < busiest.date)) busiest = { date, cents };
+  }
+  const previousMonth = shiftMonth(month, -1);
+  const upToDay = running ? Math.min(daysCounted, daysInMonth(previousMonth)) : null;
+  const previousCents = expenses
+    .filter((e) => monthOf(e.date) === previousMonth && (upToDay == null || Number(e.date.slice(8, 10)) <= upToDay))
+    .reduce((s, e) => s + myShareCents(e), 0);
+  const changePercent = previousCents > 0 ? Math.round(((totalCents - previousCents) * 100) / previousCents) : null;
+  return { totalCents, count: mine.length, daysCounted, dailyAverageCents, busiest, previousMonth, previousCents, upToDay, changePercent };
+}

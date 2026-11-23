@@ -9,10 +9,65 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.util.Locale
 
+/**
+ * The calendar's month at a glance. [busiestDay] is the day with the most spent (the earlier one on a tie).
+ * [upToDay] is set while the month is still running: the month before is then counted only up to that day.
+ */
+data class MonthGlance(
+    val totalCents: Long,
+    val count: Int,
+    val daysCounted: Int,
+    val dailyAverageCents: Long,
+    val busiestDay: LocalDate?,
+    val busiestCents: Long,
+    val previousMonth: YearMonth,
+    val previousCents: Long,
+    val upToDay: Int?,
+    val changePercent: Int?,
+)
+
 /** Expenses of one month, with my-share total. */
 data class MonthGroup(val month: YearMonth, val totalCents: Long, val expenses: List<Expense>)
 
 object ExpenseQueries {
+    /** How many of the month's expenses the Ledger lists before "Show all". */
+    const val LATEST_COUNT = 5
+
+    /** The Ledger's list: the newest few, or all of them once "Show all" is tapped. Expects newest first. */
+    fun ledgerPreview(expenses: List<Expense>, showAll: Boolean, n: Int = LATEST_COUNT): List<Expense> =
+        if (showAll) expenses else expenses.take(n)
+
+    /**
+     * Total, count, average per day (over the days so far while [month] is running), busiest day and the
+     * change from the month before (counted up to the same day while [month] is running, so it is fair).
+     */
+    fun monthGlance(expenses: List<Expense>, month: YearMonth, today: LocalDate): MonthGlance {
+        val mine = expenses.filter { YearMonth.from(it.date) == month }
+        val total = mine.sumOf { it.myShareCents }
+        val running = YearMonth.from(today) == month
+        val daysCounted = if (running) today.dayOfMonth else month.lengthOfMonth()
+        val busiest = dailyTotals(expenses, month).entries
+            .sortedWith(compareByDescending<Map.Entry<LocalDate, Long>> { it.value }.thenBy { it.key })
+            .firstOrNull()
+        val previousMonth = month.minusMonths(1)
+        val upToDay = if (running) minOf(daysCounted, previousMonth.lengthOfMonth()) else null
+        val previous = expenses
+            .filter { YearMonth.from(it.date) == previousMonth && (upToDay == null || it.date.dayOfMonth <= upToDay) }
+            .sumOf { it.myShareCents }
+        return MonthGlance(
+            totalCents = total,
+            count = mine.size,
+            daysCounted = daysCounted,
+            dailyAverageCents = (total * 2 + daysCounted) / (daysCounted * 2L), // half up
+            busiestDay = busiest?.key,
+            busiestCents = busiest?.value ?: 0,
+            previousMonth = previousMonth,
+            previousCents = previous,
+            upToDay = upToDay,
+            changePercent = if (previous > 0) Math.round((total - previous) * 100.0 / previous).toInt() else null,
+        )
+    }
+
     private val newestFirst = compareByDescending<Expense> { it.date }.thenBy { it.title.lowercase() }
 
     /** My share spent on each day of [month] that has expenses. */

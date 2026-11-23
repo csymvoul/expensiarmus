@@ -1,6 +1,6 @@
 // Offline support: serve the app from the cache, refresh the cache in the background.
 // Bump VERSION when files change so old caches are cleared.
-const VERSION = 'expensiarmus-web-1.8.5';
+const VERSION = 'expensiarmus-web-1.9.0';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css', 'fonts/cinzel.ttf',
   'js/app.js', 'js/model.js', 'js/money.js', 'js/summary.js', 'js/queries.js', 'js/csv.js', 'js/store.js', 'js/reminder.js', 'js/goals.js', 'js/words.js', 'js/settings.js',

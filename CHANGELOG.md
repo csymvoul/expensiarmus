@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.10.0 (Android), web app 1.9.0 and iPhone app 1.7.0 – unreleased (2026-11-23)
+
+### Added
+- **Calendar: the month at a glance.** A card above the grid shows the month's total; the change from the month before (while the month is running, compared with the same days of the previous month, e.g. "▲ 12% more than Oct 1–23"); and three tiles: number of expenses, average a day (so far), and the busiest day with its total. Worked out by `monthGlance` (web `queries.js`, Android `ExpenseQueries`).
+
+### Changed
+- **Ledger:** the list at the end of the Ledger tab shows the latest 5 expenses of the month. "Show all N ›" lists the rest; "Show only the latest 5" folds it again. It folds back when you change month.
+- **Record expense / Add expense:** both wordings now start with the same ✒️ pen (plain words used ＋ before).
+- Tests: 5 new Android tests (156 in all) and 5 new web tests (63 in all) cover the latest-5 list, the month card's sums, averages, busiest day, fair comparison, ties, rounding and empty months, and the shared pen. All passing. Checked in a browser: Ledger with Show all / Show only the latest 5, and the Calendar card in light and dark.
+
+### Known issues
+- Not yet checked on an Android phone or in the iPhone app.
+
 ## 1.9.5 (Android), web app 1.8.5 and iPhone app 1.6.5 – unreleased (2026-11-23)
 
 ### Changed

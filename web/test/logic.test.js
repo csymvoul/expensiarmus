@@ -656,3 +656,64 @@ test('the header and tab-bar rules have no sparkle clusters at their ends', () =
   const css = readFileSync(webFile('css/style.css'), 'utf8');
   assert.doesNotMatch(css, /\.bar::before|\.tabs::before/);
 });
+
+// --- latest expenses on the Ledger, month at a glance on the Calendar ---
+import { ledgerPreview, monthGlance, LATEST_COUNT } from '../js/queries.js';
+
+test('the Ledger lists the latest 5 expenses until Show all is tapped', () => {
+  const list = Array.from({ length: 8 }, (_, i) => e(`2026-11-${String(20 - i).padStart(2, '0')}`, 100, 'OTHER'));
+  assert.equal(LATEST_COUNT, 5);
+  assert.deepEqual(ledgerPreview(list, false).map((x) => x.date), ['2026-11-20', '2026-11-19', '2026-11-18', '2026-11-17', '2026-11-16']);
+  assert.equal(ledgerPreview(list, true).length, 8);
+  assert.equal(ledgerPreview(list.slice(0, 3), false).length, 3);
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  assert.match(app, /Show all \$\{expenses\.length\} ›/);
+});
+
+test('month at a glance: total, count, average a day so far, busiest day, fair comparison', () => {
+  const list = [
+    e('2026-11-01', 45000, 'RENT'), e('2026-11-03', 1000, 'OTHER'), e('2026-11-03', 2000, 'OTHER', 50),
+    e('2026-11-20', 9000, 'SHOPPING'), // after "today": still in the month total
+    e('2026-10-02', 30000, 'RENT'), e('2026-10-05', 500, 'OTHER'), e('2026-10-25', 99999, 'OTHER'),
+    e('2026-12-01', 7000, 'OTHER'),
+  ];
+  const g = monthGlance(list, '2026-11', '2026-11-10');
+  assert.equal(g.totalCents, 45000 + 1000 + 1000 + 9000);
+  assert.equal(g.count, 4);
+  assert.equal(g.daysCounted, 10);
+  assert.equal(g.dailyAverageCents, 5600);
+  assert.deepEqual(g.busiest, { date: '2026-11-01', cents: 45000 });
+  // October only up to the 10th: the 25th is left out.
+  assert.equal(g.upToDay, 10);
+  assert.equal(g.previousMonth, '2026-10');
+  assert.equal(g.previousCents, 30500);
+  assert.equal(g.changePercent, Math.round((56000 - 30500) * 100 / 30500));
+});
+
+test('a finished month averages over all its days and compares with the whole month before', () => {
+  const list = [e('2026-10-02', 3100, 'OTHER'), e('2026-09-30', 6200, 'OTHER'), e('2026-09-01', 0, 'OTHER')];
+  const g = monthGlance(list, '2026-10', '2026-11-23');
+  assert.equal(g.daysCounted, 31);
+  assert.equal(g.dailyAverageCents, 100);
+  assert.equal(g.upToDay, null);
+  assert.equal(g.changePercent, -50);
+});
+
+test('an empty month, or one with nothing the month before, has no comparison', () => {
+  const empty = monthGlance([], '2026-11', '2026-11-05');
+  assert.deepEqual([empty.totalCents, empty.count, empty.dailyAverageCents, empty.busiest, empty.changePercent], [0, 0, 0, null, null]);
+  const first = monthGlance([e('2026-11-02', 500, 'OTHER')], '2026-11', '2026-11-05');
+  assert.equal(first.changePercent, null);
+  // Ties for the busiest day go to the earlier date; half a cent rounds up.
+  const tie = monthGlance([e('2026-02-09', 300, 'OTHER'), e('2026-02-04', 300, 'OTHER'), e('2026-02-28', 14, 'OTHER')], '2026-02', '2026-03-01');
+  assert.equal(tie.busiest.date, '2026-02-04');
+  assert.equal(tie.dailyAverageCents, 22); // 614 / 28 = 21.93
+  // March 31st running month: February has only 28 days, so it is counted in full.
+  assert.equal(monthGlance([], '2026-03', '2026-03-31').upToDay, 28);
+});
+
+test('Record expense and Add expense carry the same pen', () => {
+  assert.equal(wordsFor(true).fab.split(' ')[0], '✒️');
+  assert.equal(wordsFor(false).fab.split(' ')[0], '✒️');
+  assert.equal(wordsFor(false).fab, '✒️ Add expense');
+});
