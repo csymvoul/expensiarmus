@@ -210,5 +210,8 @@ val Burgundy = Color(0xFF7B1E1E)
 /** Line colour for the framed main buttons: gold by day; burgundy at night, where the buttons themselves are gold. */
 fun frameLine(night: Boolean, gold: Color): Color = if (night) Burgundy else gold
 
+/** Accio's magnifying glass, drawn without a badge: gold on the dark theme, bronze on parchment. */
+fun searchGlyph(night: Boolean): Int = if (night) R.drawable.emblem_search_dark else R.drawable.emblem_search_light
+
 /** Amber used once 80% of a goal is spent. */
 val WarningColor = Color(0xFFE08A00)

@@ -29,13 +29,15 @@ export const TAB_ICONS = {
 /** Painted emblems for the app's own title and the Settings cards. */
 export const EMBLEMS = {
   logo: 'icons/emblems/logo_pouch.png',
-  search: 'icons/emblems/tab_search.png',
   geminio: 'icons/emblems/set_geminio.png',
   reminder: 'icons/emblems/set_reminder.png',
   themeSystem: 'icons/emblems/set_theme_system.png',
   themeLight: 'icons/emblems/set_theme_light.png',
   themeDark: 'icons/emblems/set_theme_dark.png',
 };
+
+/** Accio's magnifying glass, drawn without a badge: bronze on parchment, gold on the dark theme. CSS picks one. */
+export const SEARCH_GLYPH = { light: 'icons/emblems/search_light.png', dark: 'icons/emblems/search_dark.png' };
 
 /** A label without its leading emoji ("⚙️ Settings" → "Settings"), for places that show a painted emblem instead. */
 export const withoutEmoji = (label) => label.replace(/^[^\p{L}\p{N}]+\s*/u, '');

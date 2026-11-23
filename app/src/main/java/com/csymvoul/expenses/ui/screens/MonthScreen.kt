@@ -59,6 +59,7 @@ import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.ui.components.CalendarGrid
 import com.csymvoul.expenses.ui.components.EmblemBadge
+import com.csymvoul.expenses.ui.components.SearchGlyph
 import com.csymvoul.expenses.ui.components.WizardFab
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.components.DonutChart
@@ -118,7 +119,7 @@ fun MonthScreen(
                 icon = R.drawable.emblem_logo_pouch,
                 actions = {
                     IconButton(onClick = onSearch) {
-                        EmblemBadge(R.drawable.emblem_tab_search, size = 32.dp)
+                        SearchGlyph()
                     }
                 },
             )

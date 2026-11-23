@@ -28,6 +28,7 @@
   --frame-line: #A87A1E;
   --frame-line-soft: rgba(168, 122, 30, 0.55);
   --frame-sparkle: var(--sparkle);
+  --search-glyph: url('../icons/emblems/search_light.png');
   --cut: 14px;
   color-scheme: light;
 }
@@ -53,6 +54,7 @@
     color-scheme: dark;
     /* Gold buttons get burgundy lines, which gold lines would vanish into. */
     --frame-line: #7B1E1E;
+    --search-glyph: url('../icons/emblems/search_dark.png');
     --frame-line-soft: rgba(123, 30, 30, 0.7);
     --frame-sparkle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 0L6 4 10 5 6 6 5 10 4 6 0 5 4 4Z' fill='%237B1E1E'/%3E%3C/svg%3E");
   }
@@ -78,6 +80,7 @@
   --sparkle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 0L6 4 10 5 6 6 5 10 4 6 0 5 4 4Z' fill='%23D9A441'/%3E%3C/svg%3E");
   color-scheme: dark;
   --frame-line: #7B1E1E;
+  --search-glyph: url('../icons/emblems/search_dark.png');
   --frame-line-soft: rgba(123, 30, 30, 0.7);
   --frame-sparkle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 0L6 4 10 5 6 6 5 10 4 6 0 5 4 4Z' fill='%237B1E1E'/%3E%3C/svg%3E");
 }
@@ -139,6 +142,7 @@ p { margin: 4px 0; }
 .bar h1 { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
 .bar h1 span { overflow: hidden; text-overflow: ellipsis; }
 .bar-icon { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--gold); object-fit: cover; }
+.search-glyph { flex: none; display: block; width: 30px; height: 30px; background: var(--search-glyph) center / contain no-repeat; }
 .card-title { display: flex; align-items: center; gap: 10px; }
 .bar-actions { display: flex; position: relative; }
 .icon-btn { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; }

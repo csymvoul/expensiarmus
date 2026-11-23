@@ -34,7 +34,7 @@ The same app also runs as a web app at **https://csymvoul.github.io/expensiarmus
 
 A gold coin pouch with a sparkling wand on burgundy (`art/logo.jpg`). `art/make-icons.swift` turns it into every app icon: the Android launcher icon, the iPhone app icon and the web app's icons.
 
-The category, food, tab and Settings emblems are painted pictures (`art/emblems-categories.jpg`, `art/emblems-tabs.jpg`, `art/emblems-settings.jpg`, `art/emblem-search.jpg`), cut into 192-pixel squares by `art/cut-emblems.swift`. The top bar of the Ledger shows the coin pouch cut from the logo.
+The category, food, tab and Settings emblems are painted pictures (`art/emblems-categories.jpg`, `art/emblems-tabs.jpg`, `art/emblems-settings.jpg`, `art/emblem-search.jpg`), cut into 192-pixel squares by `art/cut-emblems.swift`. The top bar of the Ledger shows the coin pouch cut from the logo. Accio's magnifying glass has no badge: `art/cut-glyph.swift` lifts it off its background in a bronze shade for the light theme and a gold one for the dark theme.
 
 ## How it works
 

@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import com.csymvoul.expenses.domain.Words
 import com.csymvoul.expenses.ui.theme.Burgundy
 import com.csymvoul.expenses.ui.theme.frameLine
+import com.csymvoul.expenses.ui.theme.searchGlyph
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -66,7 +67,7 @@ class EmblemsTest {
 
     @Test fun `logo and settings emblems are their own pictures`() {
         val icons = listOf(
-            R.drawable.emblem_logo_pouch, R.drawable.emblem_tab_search, R.drawable.emblem_set_geminio, R.drawable.emblem_set_reminder,
+            R.drawable.emblem_logo_pouch, R.drawable.emblem_search_light, R.drawable.emblem_search_dark, R.drawable.emblem_set_geminio, R.drawable.emblem_set_reminder,
             R.drawable.emblem_set_theme_system, R.drawable.emblem_set_theme_light, R.drawable.emblem_set_theme_dark,
         )
         assertEquals(icons.size, icons.toSet().size)
@@ -78,5 +79,10 @@ class EmblemsTest {
         assertEquals(gold, frameLine(night = false, gold = gold))
         assertEquals(Burgundy, frameLine(night = true, gold = gold))
         assertEquals(Color(0xFF7B1E1E), Burgundy)
+    }
+
+    @Test fun `the magnifier is gold at night and bronze by day`() {
+        assertEquals(R.drawable.emblem_search_dark, searchGlyph(night = true))
+        assertEquals(R.drawable.emblem_search_light, searchGlyph(night = false))
     }
 }

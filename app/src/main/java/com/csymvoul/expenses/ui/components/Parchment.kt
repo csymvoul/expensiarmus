@@ -51,11 +51,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.csymvoul.expenses.domain.Words
 import com.csymvoul.expenses.R
 import com.csymvoul.expenses.ui.theme.frameLine
+import com.csymvoul.expenses.ui.theme.searchGlyph
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/** True on the dark (candle-lit) theme. */
 @Composable
-private fun isNight() = MaterialTheme.colorScheme.background.luminance() < 0.5f
+fun isNight() = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
+/** Accio's magnifying glass on its own, with no badge: bronze by day, gold at night. */
+@Composable
+fun SearchGlyph(size: Dp = 30.dp) {
+    Image(painterResource(searchGlyph(isNight())), contentDescription = null, modifier = Modifier.size(size))
+}
 
 /**
  * A sheet of old parchment in an ornate frame: cut corners, a double gold border, a star in
@@ -156,6 +164,7 @@ fun GoldRule(modifier: Modifier = Modifier) {
 fun WizardTopBar(
     title: String,
     @DrawableRes icon: Int? = null,
+    glyph: (@Composable () -> Unit)? = null,
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
 ) {
@@ -163,11 +172,11 @@ fun WizardTopBar(
         TopAppBar(
             title = {
                 // With an icon, the title's own emoji gives way to the painted emblem.
-                if (icon == null) {
+                if (icon == null && glyph == null) {
                     Text(title)
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        EmblemBadge(icon, size = 32.dp)
+                        if (glyph != null) glyph() else EmblemBadge(icon!!, size = 32.dp)
                         Spacer(Modifier.width(10.dp))
                         Text(Words.withoutEmoji(title), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }

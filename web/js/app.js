@@ -129,10 +129,10 @@ const ICON = {
 };
 
 /** Top bar. With an icon, the title's own emoji gives way to the painted emblem. */
-function header(title, { backBtn = false, actions = '', icon = '' } = {}) {
+function header(title, { backBtn = false, actions = '', icon = '', glyph = '' } = {}) {
   return `<header class="bar"><div class="bar-row">
     ${backBtn ? `<button class="icon-btn" data-action="back" aria-label="Back">${ICON.back}</button>` : ''}
-    <h1>${icon ? `<img class="bar-icon" src="${icon}" alt="">` : ''}<span>${esc(icon ? withoutEmoji(title) : title)}</span></h1>
+    <h1>${glyph || (icon ? `<img class="bar-icon" src="${icon}" alt="">` : '')}<span>${esc(icon ? withoutEmoji(title) : title)}</span></h1>
     <div class="bar-actions">${actions}</div>
   </div></header>`;
 }
@@ -319,7 +319,7 @@ function monthSwitch(prev = 'prev-month', next = 'next-month', title = monthTitl
 /** The Ledger tab (overview of the month) and the Calendar tab. */
 function monthScreen(calendar) {
   const s = monthlySummary(data, ui.month);
-  const actions = `<button class="icon-btn" data-action="go" data-to="#/search" aria-label="${W.search}">${emblem(EMBLEMS.search, 32)}</button>`;
+  const actions = `<button class="icon-btn" data-action="go" data-to="#/search" aria-label="${W.search}"><span class="search-glyph"></span></button>`;
   let body;
   if (!calendar) {
     body = `${totalCard(s)}
@@ -609,7 +609,7 @@ function searchResults() {
 }
 
 function searchScreen() {
-  return `${header(W.search, { backBtn: true, icon: EMBLEMS.search })}
+  return `${header(W.search, { backBtn: true, glyph: '<span class="search-glyph"></span>' })}
   <main>
     <label class="search-box">${ICON.search}<input type="search" value="${esc(finder.q)}" placeholder="${esc(W.searchPlaceholder)}" data-input="search-q" enterkeyhint="search"></label>
     <div class="chips">${CATEGORIES.map((c) => `<button class="chip ${finder.cats.includes(c.id) ? 'on' : ''}" data-action="search-cat" data-cat="${c.id}">${chipIcon(c)}${c.label}</button>`).join('')}</div>

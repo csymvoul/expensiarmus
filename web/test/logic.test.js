@@ -588,7 +588,7 @@ test('the service worker caches every emblem for offline use', () => {
 });
 
 // --- emblems in headers and Settings, dark button lines ---
-import { EMBLEMS, withoutEmoji } from '../js/model.js';
+import { EMBLEMS, SEARCH_GLYPH, withoutEmoji } from '../js/model.js';
 
 test('withoutEmoji drops a leading emoji and keeps plain labels', () => {
   assert.equal(withoutEmoji('⚙️ Settings'), 'Settings');
@@ -600,7 +600,7 @@ test('withoutEmoji drops a leading emoji and keeps plain labels', () => {
 
 test('logo and Settings emblems exist on disk and are cached offline', () => {
   const sw = readFileSync(webFile('sw.js'), 'utf8');
-  assert.deepEqual(Object.keys(EMBLEMS), ['logo', 'search', 'geminio', 'reminder', 'themeSystem', 'themeLight', 'themeDark']);
+  assert.deepEqual(Object.keys(EMBLEMS), ['logo', 'geminio', 'reminder', 'themeSystem', 'themeLight', 'themeDark']);
   for (const path of Object.values(EMBLEMS)) {
     assert.ok(existsSync(webFile(path)), `${path} is missing`);
     assert.ok(sw.includes(`'${path}'`), `${path} is not cached`);
@@ -627,10 +627,20 @@ test('in dark mode the gold buttons get burgundy frame lines', () => {
   assert.match(css, /\.frame \{[^}]*background: var\(--frame-line\)/);
 });
 
-test('Quick add date and Accio use the painted calendar and magnifier emblems', () => {
+test('Quick add date uses the calendar emblem; Accio uses a magnifier with no badge, per theme', () => {
   const app = readFileSync(webFile('js/app.js'), 'utf8');
+  const css = readFileSync(webFile('css/style.css'), 'utf8');
+  const sw = readFileSync(webFile('sw.js'), 'utf8');
   assert.match(app, /<label class="quick-date">\$\{emblem\(TAB_ICONS\.calendar, 28\)\}<input/);
   assert.doesNotMatch(app, /quick-date">📅/);
-  assert.match(app, /data-to="#\/search"[^`]*\$\{emblem\(EMBLEMS\.search, 32\)\}/);
-  assert.match(app, /header\(W\.search, \{ backBtn: true, icon: EMBLEMS\.search \}\)/);
+  assert.match(app, /data-to="#\/search"[^`]*<span class="search-glyph"><\/span>/);
+  assert.match(app, /header\(W\.search, \{ backBtn: true, glyph: '<span class="search-glyph"><\/span>' \}\)/);
+  assert.doesNotMatch(app, /emblem\([^)]*search/i);
+  for (const path of Object.values(SEARCH_GLYPH)) {
+    assert.ok(existsSync(webFile(path)), `${path} is missing`);
+    assert.ok(sw.includes(`'${path}'`), `${path} is not cached`);
+  }
+  // Bronze glass on the light theme, gold glass in both dark-theme blocks.
+  assert.equal(css.match(/--search-glyph: url\('\.\.\/icons\/emblems\/search_light\.png'\)/g).length, 1);
+  assert.equal(css.match(/--search-glyph: url\('\.\.\/icons\/emblems\/search_dark\.png'\)/g).length, 2);
 });

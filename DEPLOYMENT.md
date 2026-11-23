@@ -144,6 +144,16 @@ The 15 emblems are cut from `art/emblems-categories.jpg` and `art/emblems-tabs.j
 swiftc -O -o /tmp/cut-emblems art/cut-emblems.swift && /tmp/cut-emblems art/emblems-tabs.jpg /tmp/emblems tab_ledger:80:277:213 tab_calendar:339:277:213 tab_annals:597:277:213 tab_goals:856:277:213 tab_settings:1114:277:213
 ```
 
-The Settings emblems come from `art/emblems-settings.jpg` (`set_geminio:86:262:246 set_reminder:384:282:200 set_theme_system:595:267:232 set_theme_light:867:267:232 set_theme_dark:1115:267:232`) the top-bar pouch from `art/logo.jpg` (`logo_pouch:540:280:330`) and the Accio magnifying glass from `art/emblem-search.jpg` (`tab_search:164:158:700`).
+The Settings emblems come from `art/emblems-settings.jpg` (`set_geminio:86:262:246 set_reminder:384:282:200 set_theme_system:595:267:232 set_theme_light:867:267:232 set_theme_dark:1115:267:232`) the top-bar pouch from `art/logo.jpg` (`logo_pouch:540:280:330`). The Accio magnifying glass has no badge, so it is lifted off its background instead of cut:
+
+```bash
+swiftc -O -o /tmp/cut-glyph art/cut-glyph.swift
+```
+
+```bash
+/tmp/cut-glyph art/emblem-search.jpg 164 158 700 /tmp/search_dark.png 1.0 && /tmp/cut-glyph art/emblem-search.jpg 164 158 700 /tmp/search_light.png 0.62
+```
+
+Copy both to `web/icons/emblems/` and as `emblem_search_dark.png` / `emblem_search_light.png` to `app/src/main/res/drawable-nodpi/`.
 
 Copy each `<name>.png` to `web/icons/emblems/<name>.png` and to `app/src/main/res/drawable-nodpi/emblem_<name>.png`. A new emblem also needs a line in `web/sw.js` so it works offline.

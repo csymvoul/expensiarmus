@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.9.3 (Android), web app 1.8.3 and iPhone app 1.6.3 – unreleased (2026-11-23)
+
+### Changed
+- **Accio's magnifying glass stands on its own,** without the round badge, on the Ledger's search button and the Accio top bar. It comes in two shades: bronze on the light parchment, bright gold on the dark theme, picked automatically. `art/cut-glyph.swift` lifts the glass off its burgundy background into see-through pictures (`search_light.png`, `search_dark.png`); the badge version is gone.
+- Tests: a new Android test checks the right shade per theme (150 in all); the web test checks the glass has no badge, both shades exist and are cached offline, and the CSS uses bronze by day and gold in both dark-theme rules (56 in all). All passing. Checked in a browser in light and dark.
+
+### Known issues
+- Not yet checked on an Android phone or in the iPhone app.
+
 ## 1.9.2 (Android), web app 1.8.2 and iPhone app 1.6.2 – unreleased (2026-11-23)
 
 ### Changed
