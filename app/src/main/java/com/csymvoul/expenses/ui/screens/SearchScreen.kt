@@ -1,5 +1,7 @@
 package com.csymvoul.expenses.ui.screens
 
+import com.csymvoul.expenses.ui.components.ChipEmblem
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -43,7 +45,7 @@ import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.components.ExpenseRow
 import com.csymvoul.expenses.ui.components.LocalWords
-import com.csymvoul.expenses.ui.theme.emoji
+import com.csymvoul.expenses.ui.theme.icon
 
 /** Search all expenses by title, category or food type, optionally narrowed to some categories. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -110,7 +112,7 @@ fun SearchScreen(expenses: List<Expense>, onOpen: (String) -> Unit, onBack: () -
                                     .joinToString(",") { it.name }
                             },
                             label = { Text(c.label) },
-                            leadingIcon = { Text(c.emoji) },
+                            leadingIcon = { ChipEmblem(c.icon) },
                         )
                     }
                 }

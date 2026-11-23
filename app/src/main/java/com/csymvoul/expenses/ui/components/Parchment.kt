@@ -1,6 +1,11 @@
 package com.csymvoul.expenses.ui.components
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.alpha
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.foundation.layout.PaddingValues
@@ -181,19 +186,23 @@ fun WizardBackdrop(content: @Composable BoxScope.() -> Unit) {
     )
 }
 
-/** A gem-coloured round badge with an emoji emblem inside. */
+/** A round, gold-rimmed badge with a painted emblem inside. */
 @Composable
-fun EmblemBadge(emoji: String, color: Color, modifier: Modifier = Modifier, size: Dp = 30.dp) {
-    Box(
-        modifier
+fun EmblemBadge(@DrawableRes icon: Int, modifier: Modifier = Modifier, size: Dp = 30.dp) {
+    Image(
+        painterResource(icon),
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = modifier
             .size(size)
-            .background(color.copy(alpha = 0.22f), CircleShape)
-            .border(1.5.dp, color, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(emoji, fontSize = (size.value * 0.5f).sp, textAlign = TextAlign.Center)
-    }
+            .clip(CircleShape)
+            .border(1.5.dp, MaterialTheme.colorScheme.secondary, CircleShape),
+    )
 }
+
+/** A small emblem for the front of a filter chip. */
+@Composable
+fun ChipEmblem(@DrawableRes icon: Int) = EmblemBadge(icon, size = 20.dp)
 
 /** A section heading flanked by gold rules:  ——— ✦ The Ledger ✦ ——— */
 @Composable

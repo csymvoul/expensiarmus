@@ -1,5 +1,7 @@
 package com.csymvoul.expenses.ui.screens
 
+import com.csymvoul.expenses.ui.components.ChipEmblem
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -57,7 +59,7 @@ import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.ui.components.WizardButton
 import com.csymvoul.expenses.ui.components.WizardTopBar
-import com.csymvoul.expenses.ui.theme.emoji
+import com.csymvoul.expenses.ui.theme.icon
 import com.csymvoul.expenses.ui.theme.nickname
 import java.time.Instant
 import java.time.LocalDate
@@ -191,7 +193,7 @@ fun EditExpenseScreen(
                             selected = category == c,
                             onClick = { category = c },
                             label = { Text(c.label) },
-                            leadingIcon = { Text(c.emoji) },
+                            leadingIcon = { ChipEmblem(c.icon) },
                         )
                     }
                 }
@@ -216,7 +218,7 @@ fun EditExpenseScreen(
                                 selected = foodType == t,
                                 onClick = { foodType = t },
                                 label = { Text(t.label) },
-                                leadingIcon = { Text(t.emoji) },
+                                leadingIcon = { ChipEmblem(t.icon) },
                             )
                         }
                     }

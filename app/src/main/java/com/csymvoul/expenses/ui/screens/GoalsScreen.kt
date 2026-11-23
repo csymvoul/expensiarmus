@@ -1,5 +1,7 @@
 package com.csymvoul.expenses.ui.screens
 
+import com.csymvoul.expenses.ui.components.ChipEmblem
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -58,7 +60,7 @@ import com.csymvoul.expenses.ui.components.ParchmentCard
 import com.csymvoul.expenses.ui.components.WizardButton
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.theme.color
-import com.csymvoul.expenses.ui.theme.emoji
+import com.csymvoul.expenses.ui.theme.icon
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -175,7 +177,7 @@ fun GoalsScreen(
 private fun WardSummary(category: Category, entry: GoalEntry, spentCents: Long, month: YearMonth) {
     val progress = GoalProgress(entry.cents, spentCents)
     Row(verticalAlignment = Alignment.CenterVertically) {
-        EmblemBadge(category.emoji, category.color, size = 36.dp)
+        EmblemBadge(category.icon, size = 36.dp)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
             Text(category.label, style = MaterialTheme.typography.titleSmall)
@@ -217,7 +219,7 @@ private fun WardEditor(
             Text(LocalWords.current.whichCategory, style = MaterialTheme.typography.titleSmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 choices.forEach { c ->
-                    FilterChip(selected = picked == c, onClick = { picked = c }, label = { Text("${c.emoji} ${c.label}") })
+                    FilterChip(selected = picked == c, onClick = { picked = c }, label = { Text(c.label) }, leadingIcon = { ChipEmblem(c.icon) })
                 }
             }
         }

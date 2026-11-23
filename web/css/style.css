@@ -207,7 +207,6 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
   pointer-events: none; text-align: center; line-height: 1.25;
 }
 .donut-center small { color: var(--ink-soft); }
-.big-emoji { font-size: 24px; }
 
 /* Category legend rows */
 .legend { display: block; width: 100%; padding: 6px; border-radius: 6px; }
@@ -222,13 +221,12 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
 .stack-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; border: 1px solid var(--gold-soft); }
 
 .emblem {
-  flex: none; display: grid; place-items: center;
+  flex: none; display: block;
   width: var(--s); height: var(--s); border-radius: 50%;
-  border: 1.5px solid var(--c);
-  background: color-mix(in srgb, var(--c) 22%, transparent);
-  font-size: calc(var(--s) * 0.5);
-  line-height: 1;
+  border: 1.5px solid var(--gold);
+  object-fit: cover;
 }
+.chip-icon { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--gold); object-fit: cover; vertical-align: middle; margin: -3px 6px -2px -4px; }
 
 /* Lists */
 .ornament { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; margin: 20px 0 6px; }
@@ -391,7 +389,7 @@ main > .btn.wide { margin-top: 8px; }
   padding-bottom: env(safe-area-inset-bottom);
 }
 .tab { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 1px 6px; font-size: 11px; color: var(--ink-soft); white-space: nowrap; }
-.tab-icon { font-size: 20px; line-height: 1; filter: grayscale(0.6); opacity: 0.75; }
+.tab-icon { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--gold); object-fit: cover; filter: saturate(0.4); opacity: 0.75; }
 .tab.on { color: var(--primary); font-weight: 700; }
 .tab.on .tab-icon { filter: none; opacity: 1; }
 main.with-tabs { padding-bottom: calc(170px + env(safe-area-inset-bottom)); }

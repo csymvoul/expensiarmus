@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.9.0 (Android), web app 1.8.0 and iPhone app 1.6.0 – unreleased (2026-11-23)
+
+### Changed
+- **Painted emblems instead of emoji:** every category, food type and tab now has a hand-painted gold-on-burgundy emblem (made with Gemini). They appear as round gold-rimmed badges in the ledger, the category table, Quick add tiles, suggestions, the expense view, category pages and Protego; as small badges at the front of category and food chips; and as rounded squares in the bottom tab bar, faded for the tabs you're not on.
+  - Android: the 15 pictures are in `res/drawable-nodpi/emblem_*.png`; `Category.icon`, `FoodType.icon` and `Tab.icon` point to them, and `EmblemBadge` now draws a picture.
+  - Web (and so the iPhone app): the pictures are in `web/icons/emblems/`, each category and food type has an `icon`, `TAB_ICONS` covers the tabs, and the service worker caches them all for offline use.
+  - The source pictures are `art/emblems-tabs.jpg` and `art/emblems-categories.jpg`; `art/cut-emblems.swift` cuts them out.
+- Emoji stay where the category is written out as text: the Category and Food lines on the expense view, the category page title and the Android home-screen widget.
+- Tests: 2 new Android tests (every category, food type and tab has its own picture; 146 in all) and 2 new web tests (every emblem exists on disk and is cached offline; 51 in all), all passing. Checked in a browser in light and dark: ledger, tab bar, Quick add and search chips.
+
+### Known issues
+- Not yet checked on an Android phone or in the iPhone app.
+
 ## 1.8.0 (Android), web app 1.7.0 and iPhone app 1.5.0 – unreleased (2026-11-23)
 
 ### Changed

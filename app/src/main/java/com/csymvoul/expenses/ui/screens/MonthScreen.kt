@@ -69,7 +69,7 @@ import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.OrnamentHeading
 import com.csymvoul.expenses.ui.components.ParchmentCard
 import com.csymvoul.expenses.ui.theme.color
-import com.csymvoul.expenses.ui.theme.emoji
+import com.csymvoul.expenses.ui.theme.icon
 import com.csymvoul.expenses.ui.theme.nickname
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -292,7 +292,7 @@ internal fun BreakdownCard(
                             fontWeight = FontWeight.Bold,
                         )
                     } else {
-                        Text(pick.category.emoji, fontSize = 22.sp)
+                        EmblemBadge(pick.category.icon, size = 30.dp)
                         Text(pick.category.label, style = MaterialTheme.typography.titleSmall)
                         Text(Money.format(pick.spentCents), fontWeight = FontWeight.Bold)
                         Text(
@@ -316,7 +316,7 @@ internal fun BreakdownCard(
                     .padding(vertical = 4.dp, horizontal = 4.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    EmblemBadge(c.category.emoji, c.category.color, size = 30.dp)
+                    EmblemBadge(c.category.icon, size = 30.dp)
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
                         Text(c.category.label, style = MaterialTheme.typography.titleSmall)
@@ -394,7 +394,7 @@ internal fun FoodCard(food: FoodSummary, onFoodType: (FoodType) -> Unit) {
                     .padding(vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                EmblemBadge(t.type.emoji, t.type.color, size = 30.dp)
+                EmblemBadge(t.type.icon, size = 30.dp)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(t.type.label, style = MaterialTheme.typography.titleSmall)

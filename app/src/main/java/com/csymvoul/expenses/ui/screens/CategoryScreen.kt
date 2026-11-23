@@ -1,5 +1,7 @@
 package com.csymvoul.expenses.ui.screens
 
+import com.csymvoul.expenses.ui.components.ChipEmblem
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -41,6 +43,7 @@ import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.ParchmentCard
 import com.csymvoul.expenses.ui.theme.color
 import com.csymvoul.expenses.ui.theme.emoji
+import com.csymvoul.expenses.ui.theme.icon
 import com.csymvoul.expenses.ui.theme.nickname
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -84,7 +87,7 @@ fun CategoryScreen(
             item {
                 ParchmentCard(spacing = Arrangement.spacedBy(4.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        EmblemBadge(category.emoji, category.color, size = 44.dp)
+                        EmblemBadge(category.icon, size = 44.dp)
                         Spacer(Modifier.width(12.dp))
                         Column {
                             if (LocalWords.current.nicknames) {
@@ -124,7 +127,7 @@ fun CategoryScreen(
                                 selected = foodType == t,
                                 onClick = { onFoodType(t) },
                                 label = { Text(t.label) },
-                                leadingIcon = { Text(t.emoji) },
+                                leadingIcon = { ChipEmblem(t.icon) },
                             )
                         }
                     }

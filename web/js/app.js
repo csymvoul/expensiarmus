@@ -1,5 +1,5 @@
 // Expensiarmus web app: screens, navigation and event handling. Logic lives in the other modules.
-import { CATEGORIES, FOOD_TYPES, category, foodType, makeExpense, myShareCents, isSplit, splitLine, upsert, remove, find, monthOf } from './model.js';
+import { CATEGORIES, FOOD_TYPES, TAB_ICONS, category, foodType, makeExpense, myShareCents, isSplit, splitLine, upsert, remove, find, monthOf } from './model.js';
 import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
 import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
@@ -140,14 +140,16 @@ function header(title, { backBtn = false, actions = '' } = {}) {
 function tabBar(active) {
   const tabs = [['month', '#/', W.ledgerTab], ['calendar', '#/calendar', W.calendarTab], ['annals', '#/annals', W.annalsTab], ['goals', '#/goals', W.goalsTab], ['settings', '#/settings', W.settings]];
   return `<nav class="tabs">${tabs.map(([key, to, label]) => {
-    const [icon, ...words] = label.split(' ');
-    return `<button class="tab ${active === key ? 'on' : ''}" data-action="tab" data-to="${to}"><span class="tab-icon">${icon}</span><span>${esc(words.join(' '))}</span></button>`;
+    const [, ...words] = label.split(' ');
+    return `<button class="tab ${active === key ? 'on' : ''}" data-action="tab" data-to="${to}"><img class="tab-icon" src="${TAB_ICONS[key]}" alt=""><span>${esc(words.join(' '))}</span></button>`;
   }).join('')}</nav>`;
 }
 
 const card = (inner, cls = '') => `<section class="card ${cls}"><div class="paper">${inner}</div></section>`;
-const emblem = (emoji, color, size = 30) =>
-  `<span class="emblem" style="--c:${color};--s:${size}px">${emoji}</span>`;
+/** Round gold-rimmed badge with a painted emblem. */
+const emblem = (icon, size = 30) => `<img class="emblem" src="${icon}" alt="" style="--s:${size}px">`;
+/** Small emblem at the front of a chip. */
+const chipIcon = (thing) => `<img class="chip-icon" src="${thing.icon}" alt="">`;
 const ornament = (text) => `<h2 class="ornament"><span>${esc(text)}</span></h2>`;
 const hint = (text) => `<p class="hint">${esc(text)}</p>`;
 /** Category hint, with its wizard nickname in front when wizard words are on. */
@@ -164,7 +166,7 @@ function expenseRow(e, showYear = false) {
   const when = fmt(e.date, showYear ? { day: 'numeric', month: 'short', year: 'numeric' } : { weekday: 'short', day: 'numeric', month: 'short' });
   const details = [when, c.label + (f ? ` › ${f.label}` : ''), isSplit(e) ? `my share ${e.myPercent}%` : ''].filter(Boolean).join(' · ');
   return `<button class="row" data-action="open" data-id="${esc(e.id)}">
-    ${emblem(f ? f.emoji : c.emoji, c.color)}
+    ${emblem(f ? f.icon : c.icon)}
     <span class="row-main"><span class="row-title">${esc(e.title)}</span><span class="row-sub">${esc(details)}</span></span>
     <span class="row-amount"><b>${format(myShareCents(e))}</b>${isSplit(e) ? `<small>of ${format(e.amountCents)}</small>` : ''}</span>
   </button>`;
@@ -178,7 +180,7 @@ function suggestionList(typed, action) {
     const c = category(s.category);
     const f = s.foodType ? foodType(s.foodType) : null;
     return `<button class="suggestion" data-action="${action}" data-i="${i}">
-      ${emblem(f ? f.emoji : c.emoji, c.color, 26)}
+      ${emblem(f ? f.icon : c.icon, 26)}
       <span class="row-main"><span class="row-title">${esc(s.title)}</span><span class="row-sub">${esc((f ? f.label : c.label) + (s.myPercent < 100 ? ` · split ${s.myPercent}%` : ''))}</span></span>
       <b>${format(s.amountCents)}</b></button>`;
   }).join('')}</div>`;
@@ -217,7 +219,7 @@ function donut(summary) {
   });
   const pick = summary.categories.find((c) => c.category === ui.highlighted);
   const center = pick
-    ? `<span class="big-emoji">${category(pick.category).emoji}</span><span class="h-small">${esc(category(pick.category).label)}</span><b>${format(pick.spentCents)}</b><small>${Math.round(pick.shareOfMonth * 100)}%</small>`
+    ? `${emblem(category(pick.category).icon, 30)}<span class="h-small">${esc(category(pick.category).label)}</span><b>${format(pick.spentCents)}</b><small>${Math.round(pick.shareOfMonth * 100)}%</small>`
     : `<span class="label gold">✦ Total ✦</span><b class="h-medium">${format(total)}</b>`;
   return `<div class="donut">
     <svg viewBox="0 0 ${size} ${size}" aria-label="Spending by category">
@@ -241,7 +243,7 @@ function breakdownCard(s) {
     const dim = (c.spentCents === 0 && !c.goal) || (ui.highlighted && ui.highlighted !== c.category);
     return `<button class="legend ${ui.highlighted === c.category ? 'glow' : ''} ${dim ? 'dim' : ''}" data-action="category" data-cat="${cat.id}">
       <span class="legend-row">
-        ${emblem(cat.emoji, cat.color)}
+        ${emblem(cat.icon)}
         <span class="row-main"><span class="h-small">${esc(cat.label)}</span>${W.nicknames ? `<span class="row-sub italic">${esc(cat.nickname)}</span>` : ''}</span>
         <span class="row-amount"><b>${format(c.spentCents)}</b><small>${Math.round(c.shareOfMonth * 100)}%</small></span><span class="chev">${ICON.right}</span>
       </span>
@@ -262,7 +264,7 @@ function foodCard(food) {
     const f = foodType(t.type);
     const times = t.count === 1 ? '1 time' : `${t.count} times`;
     return `<button class="legend" data-action="category" data-cat="ENTERTAINMENT" data-food="${f.id}"><span class="legend-row">
-      ${emblem(f.emoji, f.color)}
+      ${emblem(f.icon)}
       <span class="row-main"><span class="h-small">${f.label}</span><span class="row-sub">${W.nicknames ? `${f.nickname} · ` : ''}${times}</span></span>
       <span class="row-amount"><b>${format(t.spentCents)}</b><small>${Math.round(t.shareOfFood * 100)}%</small></span><span class="chev">${ICON.right}</span>
     </span></button>`;
@@ -363,8 +365,8 @@ function quickSheet() {
   const q = ui.quick;
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', decimalKey(), '0', '⌫'];
   const tiles = [
-    ...CATEGORIES.map((c) => ({ cat: c.id, food: '', emoji: c.emoji, label: c.label, color: c.color })),
-    ...FOOD_TYPES.map((f) => ({ cat: 'ENTERTAINMENT', food: f.id, emoji: f.emoji, label: f.label, color: f.color })),
+    ...CATEGORIES.map((c) => ({ cat: c.id, food: '', icon: c.icon, label: c.label })),
+    ...FOOD_TYPES.map((f) => ({ cat: 'ENTERTAINMENT', food: f.id, icon: f.icon, label: f.label })),
   ];
   return `<div class="sheet-backdrop" data-action="quick-close"></div>
   <div class="sheet" role="dialog" aria-label="${esc(W.newExpense)}">
@@ -380,7 +382,7 @@ function quickSheet() {
     <div class="numpad">${keys.map((k) => `<button data-action="quick-key" data-key="${k}">${k}</button>`).join('')}</div>
     <p class="small center ${q.error ? 'error' : 'soft'}" id="quick-help">${q.error ? 'Type an amount first' : 'Tap a category to save'}</p>
     <div class="tiles">${tiles.map((t) => `<button class="tile" data-action="quick-save" data-cat="${t.cat}" data-food="${t.food}">
-      ${emblem(t.emoji, t.color, 38)}<span>${esc(t.label)}</span></button>`).join('')}</div>
+      ${emblem(t.icon, 38)}<span>${esc(t.label)}</span></button>`).join('')}</div>
   </div>`;
 }
 
@@ -469,11 +471,11 @@ function editScreen(id) {
   const amountBad = d.showErrors && !(cents > 0);
   const cat = category(d.category);
   const catChips = CATEGORIES.map((c) =>
-    `<button class="chip ${d.category === c.id ? 'on' : ''}" data-action="edit-cat" data-cat="${c.id}">${c.emoji} ${c.label}</button>`).join('');
+    `<button class="chip ${d.category === c.id ? 'on' : ''}" data-action="edit-cat" data-cat="${c.id}">${chipIcon(c)}${c.label}</button>`).join('');
   const foodChips = d.category === 'ENTERTAINMENT'
     ? `<div class="field"><span class="h-small">Is it food?</span><div class="chips">
         <button class="chip ${!d.foodType ? 'on' : ''}" data-action="edit-food" data-food="">Not food</button>
-        ${FOOD_TYPES.map((f) => `<button class="chip ${d.foodType === f.id ? 'on' : ''}" data-action="edit-food" data-food="${f.id}">${f.emoji} ${f.label}</button>`).join('')}
+        ${FOOD_TYPES.map((f) => `<button class="chip ${d.foodType === f.id ? 'on' : ''}" data-action="edit-food" data-food="${f.id}">${chipIcon(f)}${f.label}</button>`).join('')}
       </div><p class="small soft">${esc(d.foodType ? withNickname(foodType(d.foodType)) : 'Cinema, theatre, concerts, etc.')}</p></div>`
     : '';
   const split = d.split
@@ -556,7 +558,7 @@ function viewScreen(id) {
   // Amend and delete are the labelled buttons at the bottom; the top bar only has Back.
   return `${header(W.entry, { backBtn: true })}
   <main>
-    ${card(`<div class="legend-row">${emblem(f ? f.emoji : c.emoji, c.color, 52)}
+    ${card(`<div class="legend-row">${emblem(f ? f.icon : c.icon, 52)}
         <span class="row-main"><span class="h-large">${esc(e.title)}</span>
           <span class="total">${format(myShareCents(e))}</span>
           ${isSplit(e) ? `<span class="small soft">of ${format(e.amountCents)} in full</span>` : ''}</span></div>
@@ -579,12 +581,12 @@ function categoryScreen(catId, foodId) {
   const foodChips = cat.id === 'ENTERTAINMENT'
     ? `<div class="chips">
         <button class="chip ${!foodId ? 'on' : ''}" data-action="cat-food" data-food="">All</button>
-        ${FOOD_TYPES.map((f) => `<button class="chip ${foodId === f.id ? 'on' : ''}" data-action="cat-food" data-food="${f.id}">${f.emoji} ${f.label}</button>`).join('')}
+        ${FOOD_TYPES.map((f) => `<button class="chip ${foodId === f.id ? 'on' : ''}" data-action="cat-food" data-food="${f.id}">${chipIcon(f)}${f.label}</button>`).join('')}
       </div>`
     : '';
   return `${header(`${cat.emoji} ${cat.label}`, { backBtn: true })}
   <main>
-    ${card(`<div class="legend-row">${emblem(cat.emoji, cat.color, 44)}
+    ${card(`<div class="legend-row">${emblem(cat.icon, 44)}
         <span class="row-main">${W.nicknames ? `<span class="h-small italic">${esc(cat.nickname)}</span>` : ''}<span>${esc(cat.hint)}</span></span></div>
       <span class="label">All time${foodId ? ` · ${foodType(foodId).label}` : ''}</span>
       <p class="total">${format(groups.reduce((a, g) => a + g.totalCents, 0))}</p>
@@ -609,7 +611,7 @@ function searchScreen() {
   return `${header(W.search, { backBtn: true })}
   <main>
     <label class="search-box">${ICON.search}<input type="search" value="${esc(finder.q)}" placeholder="${esc(W.searchPlaceholder)}" data-input="search-q" enterkeyhint="search"></label>
-    <div class="chips">${CATEGORIES.map((c) => `<button class="chip ${finder.cats.includes(c.id) ? 'on' : ''}" data-action="search-cat" data-cat="${c.id}">${c.emoji} ${c.label}</button>`).join('')}</div>
+    <div class="chips">${CATEGORIES.map((c) => `<button class="chip ${finder.cats.includes(c.id) ? 'on' : ''}" data-action="search-cat" data-cat="${c.id}">${chipIcon(c)}${c.label}</button>`).join('')}</div>
     <div id="results">${searchResults()}</div>
   </main>`;
 }
@@ -619,7 +621,7 @@ function searchScreen() {
 function wardEditor(m, fixed, choices, ed) {
   const name = monthName(m);
   const picker = fixed ? '' : `<span class="h-small">${esc(W.whichCategory)}</span>
-    <div class="chips">${choices.map((c) => `<button class="chip ${ed.picked === c.id ? 'on' : ''}" data-action="ward-pick" data-cat="${c.id}">${c.emoji} ${c.label}</button>`).join('')}</div>`;
+    <div class="chips">${choices.map((c) => `<button class="chip ${ed.picked === c.id ? 'on' : ''}" data-action="ward-pick" data-cat="${c.id}">${chipIcon(c)}${c.label}</button>`).join('')}</div>`;
   return `<div class="ward-editor">
     ${picker}
     <label class="field"><span class="label">Goal for ${name}</span>
@@ -646,7 +648,7 @@ function goalsScreen() {
   const wards = active.map(({ c, entry }) => {
     const g = goalProgress(entry.cents, s.categories.find((x) => x.category === c.id).spentCents);
     return card(`<button class="ward" data-action="ward-edit" data-cat="${c.id}">
-        <span class="legend-row">${emblem(c.emoji, c.color, 36)}
+        <span class="legend-row">${emblem(c.icon, 36)}
           <span class="row-main"><span class="h-small">${c.label}</span><span class="row-sub italic">${esc(scopeText(entry, m))}</span></span>
           <b class="h-medium">${format(entry.cents)}</b></span>
         ${goalBar(g)}<span class="small">${esc(describeGoal(g, W))}</span>

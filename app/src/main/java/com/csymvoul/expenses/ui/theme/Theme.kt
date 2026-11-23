@@ -151,6 +151,25 @@ val Category.emoji: String
         Category.OTHER -> "🎁"
     }
 
+/** Painted emblem (drawable) shown in badges, tiles and chips. */
+val Category.icon: Int
+    get() = when (this) {
+        Category.RENT -> R.drawable.emblem_cat_rent
+        Category.SUPERMARKET -> R.drawable.emblem_cat_supermarket
+        Category.ENTERTAINMENT -> R.drawable.emblem_cat_entertainment
+        Category.BILLS -> R.drawable.emblem_cat_bills
+        Category.SHOPPING -> R.drawable.emblem_cat_shopping
+        Category.FUEL -> R.drawable.emblem_cat_fuel
+        Category.OTHER -> R.drawable.emblem_cat_other
+    }
+
+val FoodType.icon: Int
+    get() = when (this) {
+        FoodType.DELIVERY -> R.drawable.emblem_food_delivery
+        FoodType.DINE_OUT -> R.drawable.emblem_food_dine_out
+        FoodType.DAY_TO_DAY -> R.drawable.emblem_food_day_to_day
+    }
+
 /** Wizarding nickname shown next to the plain category name. */
 val Category.nickname: String
     get() = when (this) {

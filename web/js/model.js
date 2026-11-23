@@ -1,21 +1,30 @@
 // Categories, food types and expense helpers. Same data shape as the Android app.
 
 export const CATEGORIES = [
-  { id: 'RENT', label: 'Rent', hint: 'Monthly rent', emoji: '🏰', nickname: 'The Castle Keep', color: '#A33A3A' },
-  { id: 'SUPERMARKET', label: 'Super market', hint: 'Groceries and household items', emoji: '🛒', nickname: 'Potion Ingredients', color: '#2F7D4E' },
-  { id: 'ENTERTAINMENT', label: 'Entertainment', hint: 'Food, cinema, theatre, etc.', emoji: '🍽️', nickname: 'Revelry & Feasts', color: '#C8962E' },
-  { id: 'BILLS', label: 'Bills', hint: 'Water, electricity, gas, etc.', emoji: '⚡', nickname: 'Lumos, Aguamenti, Incendio', color: '#3A63A8' },
-  { id: 'SHOPPING', label: 'Shopping', hint: 'Shoes, clothes, jewellery, etc.', emoji: '🛍️', nickname: 'Diagon Alley', color: '#B5487A' },
-  { id: 'FUEL', label: 'Fuel', hint: 'Petrol (gas), diesel, LPG', emoji: '⛽', nickname: 'Floo Powder', color: '#2E8B8B' },
-  { id: 'OTHER', label: 'Other', hint: 'Presents and anything else', emoji: '🎁', nickname: 'Curiosities', color: '#7E5AA6' },
+  { id: 'RENT', label: 'Rent', hint: 'Monthly rent', emoji: '🏰', nickname: 'The Castle Keep', color: '#A33A3A', icon: 'icons/emblems/cat_rent.png' },
+  { id: 'SUPERMARKET', label: 'Super market', hint: 'Groceries and household items', emoji: '🛒', nickname: 'Potion Ingredients', color: '#2F7D4E', icon: 'icons/emblems/cat_supermarket.png' },
+  { id: 'ENTERTAINMENT', label: 'Entertainment', hint: 'Food, cinema, theatre, etc.', emoji: '🍽️', nickname: 'Revelry & Feasts', color: '#C8962E', icon: 'icons/emblems/cat_entertainment.png' },
+  { id: 'BILLS', label: 'Bills', hint: 'Water, electricity, gas, etc.', emoji: '⚡', nickname: 'Lumos, Aguamenti, Incendio', color: '#3A63A8', icon: 'icons/emblems/cat_bills.png' },
+  { id: 'SHOPPING', label: 'Shopping', hint: 'Shoes, clothes, jewellery, etc.', emoji: '🛍️', nickname: 'Diagon Alley', color: '#B5487A', icon: 'icons/emblems/cat_shopping.png' },
+  { id: 'FUEL', label: 'Fuel', hint: 'Petrol (gas), diesel, LPG', emoji: '⛽', nickname: 'Floo Powder', color: '#2E8B8B', icon: 'icons/emblems/cat_fuel.png' },
+  { id: 'OTHER', label: 'Other', hint: 'Presents and anything else', emoji: '🎁', nickname: 'Curiosities', color: '#7E5AA6', icon: 'icons/emblems/cat_other.png' },
 ];
 
 /** Optional subgroup for food expenses, which belong to Entertainment. */
 export const FOOD_TYPES = [
-  { id: 'DELIVERY', label: 'Delivery', hint: 'Food ordered in', emoji: '🦉', nickname: 'Brought by owl', color: '#8C6416' },
-  { id: 'DINE_OUT', label: 'Dine out', hint: 'Restaurants, tavernas, bars', emoji: '🍷', nickname: 'Feasting out', color: '#C8962E' },
-  { id: 'DAY_TO_DAY', label: 'Day-to-day', hint: 'Coffee at work, snacks, quick bites', emoji: '☕', nickname: 'Daily potions', color: '#E6C878' },
+  { id: 'DELIVERY', label: 'Delivery', hint: 'Food ordered in', emoji: '🦉', nickname: 'Brought by owl', color: '#8C6416', icon: 'icons/emblems/food_delivery.png' },
+  { id: 'DINE_OUT', label: 'Dine out', hint: 'Restaurants, tavernas, bars', emoji: '🍷', nickname: 'Feasting out', color: '#C8962E', icon: 'icons/emblems/food_dine_out.png' },
+  { id: 'DAY_TO_DAY', label: 'Day-to-day', hint: 'Coffee at work, snacks, quick bites', emoji: '☕', nickname: 'Daily potions', color: '#E6C878', icon: 'icons/emblems/food_day_to_day.png' },
 ];
+
+/** Painted emblem for each bottom tab. */
+export const TAB_ICONS = {
+  month: 'icons/emblems/tab_ledger.png',
+  calendar: 'icons/emblems/tab_calendar.png',
+  annals: 'icons/emblems/tab_annals.png',
+  goals: 'icons/emblems/tab_goals.png',
+  settings: 'icons/emblems/tab_settings.png',
+};
 
 export const category = (id) => CATEGORIES.find((c) => c.id === id);
 export const foodType = (id) => FOOD_TYPES.find((f) => f.id === id);

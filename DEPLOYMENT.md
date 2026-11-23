@@ -135,3 +135,13 @@ swiftc -O -o /tmp/make-icons art/make-icons.swift && /tmp/make-icons art/logo.jp
 ```
 
 Then copy `icon-512.png`, `icon-192.png`, `icon-maskable-512.png`, `apple-touch-icon.png` and `favicon-64.png` to `web/icons/`, `icon-1024.png` to `ios/Expensiarmus/Assets.xcassets/AppIcon.appiconset/`, and each `ic_launcher_foreground-<density>.png` to `app/src/main/res/mipmap-<density>/ic_launcher_foreground.png`.
+
+## Category and tab emblems
+
+The 15 emblems are cut from `art/emblems-categories.jpg` and `art/emblems-tabs.jpg` with `art/cut-emblems.swift` (the crop positions are listed at the top of the script):
+
+```bash
+swiftc -O -o /tmp/cut-emblems art/cut-emblems.swift && /tmp/cut-emblems art/emblems-tabs.jpg /tmp/emblems tab_ledger:80:277:213 tab_calendar:339:277:213 tab_annals:597:277:213 tab_goals:856:277:213 tab_settings:1114:277:213
+```
+
+Copy each `<name>.png` to `web/icons/emblems/<name>.png` and to `app/src/main/res/drawable-nodpi/emblem_<name>.png`. A new emblem also needs a line in `web/sw.js` so it works offline.

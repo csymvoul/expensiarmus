@@ -50,7 +50,7 @@ import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.ui.components.EmblemBadge
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.theme.color
-import com.csymvoul.expenses.ui.theme.emoji
+import com.csymvoul.expenses.ui.theme.icon
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -175,8 +175,8 @@ fun QuickAddSheet(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
-            val tiles = Category.entries.map { Triple(it, null as FoodType?, it.emoji to it.label) } +
-                FoodType.entries.map { Triple(Category.ENTERTAINMENT, it as FoodType?, it.emoji to it.label) }
+            val tiles = Category.entries.map { Triple(it, null as FoodType?, it.icon to it.label) } +
+                FoodType.entries.map { Triple(Category.ENTERTAINMENT, it as FoodType?, it.icon to it.label) }
             tiles.chunked(5).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     row.forEach { (category, food, look) ->
@@ -184,7 +184,7 @@ fun QuickAddSheet(
                             Modifier.weight(1f).clickable { save(category, food) }.padding(vertical = 4.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            EmblemBadge(look.first, food?.color ?: category.color, size = 40.dp)
+                            EmblemBadge(look.first, size = 40.dp)
                             Spacer(Modifier.height(4.dp))
                             Text(look.second, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2)
                         }
@@ -218,7 +218,7 @@ internal fun SuggestionList(suggestions: List<Suggestion>, onPick: (Suggestion) 
                 Modifier.fillMaxWidth().clickable { onPick(s) }.padding(vertical = 6.dp, horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                EmblemBadge(s.foodType?.emoji ?: s.category.emoji, s.category.color, size = 28.dp)
+                EmblemBadge(s.foodType?.icon ?: s.category.icon, size = 28.dp)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(s.title, maxLines = 1, overflow = TextOverflow.Ellipsis)

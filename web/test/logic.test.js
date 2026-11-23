@@ -563,3 +563,26 @@ test('quick add default titles', () => {
   assert.equal(defaultTitle('ENTERTAINMENT', 'DAY_TO_DAY'), 'Day-to-day');
   assert.equal(defaultTitle('FUEL', null), 'Fuel');
 });
+
+// --- painted emblems ---
+import { existsSync } from 'node:fs';
+import { TAB_ICONS } from '../js/model.js';
+
+const webFile = (path) => new URL(`../${path}`, import.meta.url);
+
+test('every category, food type and tab has its own emblem image on disk', () => {
+  const icons = [...CATEGORIES, ...FOOD_TYPES].map((t) => t.icon);
+  const tabs = Object.values(TAB_ICONS);
+  assert.equal(new Set([...icons, ...tabs]).size, CATEGORIES.length + FOOD_TYPES.length + 5);
+  assert.deepEqual(Object.keys(TAB_ICONS), ['month', 'calendar', 'annals', 'goals', 'settings']);
+  for (const path of [...icons, ...tabs]) assert.ok(existsSync(webFile(path)), `${path} is missing`);
+  assert.equal(CATEGORIES.find((c) => c.id === 'FUEL').icon, 'icons/emblems/cat_fuel.png');
+  assert.equal(FOOD_TYPES.find((f) => f.id === 'DELIVERY').icon, 'icons/emblems/food_delivery.png');
+});
+
+test('the service worker caches every emblem for offline use', () => {
+  const sw = readFileSync(webFile('sw.js'), 'utf8');
+  for (const path of [...CATEGORIES, ...FOOD_TYPES].map((t) => t.icon).concat(Object.values(TAB_ICONS))) {
+    assert.ok(sw.includes(`'${path}'`), `${path} is not cached`);
+  }
+});

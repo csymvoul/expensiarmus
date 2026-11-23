@@ -43,6 +43,7 @@ import com.csymvoul.expenses.ui.components.WizardButton
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.theme.color
 import com.csymvoul.expenses.ui.theme.emoji
+import com.csymvoul.expenses.ui.theme.icon
 import com.csymvoul.expenses.ui.theme.nickname
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -88,7 +89,7 @@ fun ExpenseDetailScreen(
         ) {
             ParchmentCard(spacing = Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    EmblemBadge(expense.foodType?.emoji ?: expense.category.emoji, expense.category.color, size = 52.dp)
+                    EmblemBadge(expense.foodType?.icon ?: expense.category.icon, size = 52.dp)
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
                         Text(expense.title, style = MaterialTheme.typography.titleLarge)
