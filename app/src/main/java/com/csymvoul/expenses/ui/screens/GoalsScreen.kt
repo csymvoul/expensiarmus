@@ -62,6 +62,7 @@ import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.theme.color
 import com.csymvoul.expenses.ui.theme.icon
 import com.csymvoul.expenses.ui.components.Tab
+import com.csymvoul.expenses.domain.Words
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -167,7 +168,9 @@ fun GoalsScreen(
                 }
             } else if (free.isNotEmpty()) {
                 WizardButton(onClick = { adding = true; editing = null }, modifier = Modifier.fillMaxWidth()) {
-                    Text(w.newWard)
+                    EmblemBadge(Tab.GOALS.icon, size = 26.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text(Words.withoutEmoji(w.newWard))
                 }
             }
         }

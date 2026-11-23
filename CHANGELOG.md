@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.9.4 (Android), web app 1.8.4 and iPhone app 1.6.4 – unreleased (2026-11-23)
+
+### Changed
+- **Sparkle clusters on the gold rules:** the double gold line under the top bar and above the tab bar now ends at each side in a big four-point star, a small one and two specks; the tab bar's face downwards. They take the theme's gold. Section headings inside pages keep their plain rules.
+  - Web: one masked pseudo-element per bar (`.bar::before`, `.tabs::before`) over `var(--gold)`.
+  - Android: `GoldRule(sparkleEnds = true)`, with the positions worked out in `ruleEndSparks` (`ui/components/RuleEnds.kt`).
+- **Cast a new ward** shows the painted Protego shield instead of the 🛡 emoji (Add a goal in plain words).
+- Tests: 4 new Android tests (cluster shape, mirroring, flipping, the ward label; 154 in all) and 2 new web tests (the sparkle rule, with a guard against unescaped quotes in its pictures, and the ward button; 58 in all). One older web test now allows an extra class on a button's frame. All passing. Checked in a browser in light and dark on Protego.
+
+### Known issues
+- Not yet checked on an Android phone or in the iPhone app.
+
 ## 1.9.3 (Android), web app 1.8.3 and iPhone app 1.6.3 – unreleased (2026-11-23)
 
 ### Changed

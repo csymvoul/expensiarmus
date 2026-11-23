@@ -658,7 +658,7 @@ function goalsScreen() {
   });
   const adding = ed && ed.adding
     ? card(`<h3 class="h-medium">${esc(W.aNewWard)}</h3>${wardEditor(m, false, free, ed)}`)
-    : free.length ? `<button class="btn wide" data-action="ward-add"><span class="frame"><span class="frame-inner">${esc(W.newWard)}</span></span></button>` : '';
+    : free.length ? `<button class="btn wide" data-action="ward-add"><span class="frame"><span class="frame-inner with-emblem">${emblem(TAB_ICONS.goals, 26)}${esc(withoutEmoji(W.newWard))}</span></span></button>` : '';
   const name = monthName(m);
   const modal = ed && ed.confirmRemove
     ? `<div class="modal-backdrop"><div class="card modal"><div class="paper">

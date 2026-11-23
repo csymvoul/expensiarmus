@@ -366,7 +366,7 @@ test('record button is framed and floats on a shadow; settings is a tab', () => 
   assert.match(css, /\.frame \{[^}]*background: var\(--frame-line\)/);
   // Every main button carries the same frame as the Record button.
   const buttons = app.match(/<button class="(btn|fab)[^"]*"[^>]*>/g);
-  const framed = app.match(/<button class="(btn|fab)[^"]*"[^>]*><span class="frame"><span class="frame-inner">/g);
+  const framed = app.match(/<button class="(btn|fab)[^"]*"[^>]*><span class="frame"><span class="frame-inner[^"]*">/g);
   assert.ok(buttons.length >= 8);
   assert.equal(framed.length, buttons.length);
   assert.match(app, /\['settings', '#\/settings', W\.settings\]/);
@@ -643,4 +643,24 @@ test('Quick add date uses the calendar emblem; Accio uses a magnifier with no ba
   // Bronze glass on the light theme, gold glass in both dark-theme blocks.
   assert.equal(css.match(/--search-glyph: url\('\.\.\/icons\/emblems\/search_light\.png'\)/g).length, 1);
   assert.equal(css.match(/--search-glyph: url\('\.\.\/icons\/emblems\/search_dark\.png'\)/g).length, 2);
+});
+
+test('header and tab-bar rules end in sparkle clusters that follow the theme gold', () => {
+  const css = readFileSync(webFile('css/style.css'), 'utf8');
+  const rule = css.slice(css.indexOf('.bar::before, .tabs::before {'));
+  const block = rule.slice(0, rule.indexOf('}'));
+  assert.match(block, /background: var\(--gold\)/);
+  assert.match(block, /-webkit-mask: url\("data:image\/svg\+xml,[^"]+"\) left top[^,]*, url\("data:image\/svg\+xml,[^"]+"\) right top/);
+  // Quotes inside the SVG must be escaped, or the url("…") would end early and the rule would be dropped.
+  for (const svg of block.match(/data:image\/svg\+xml,[^)]*/g)) assert.ok(!svg.slice(0, -1).includes('"'), 'unescaped quote in sparkle SVG');
+  assert.match(block, /[^-]mask: url\(/);
+  assert.match(css, /\.tabs::before \{ top: -13px; transform: scaleY\(-1\); \}/);
+  assert.match(css, /\.bar::before \{ bottom: -13px; \}/);
+});
+
+test('Cast a new ward shows the painted Protego shield, not the emoji', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  assert.match(app, /data-action="ward-add"><span class="frame"><span class="frame-inner with-emblem">\$\{emblem\(TAB_ICONS\.goals, 26\)\}\$\{esc\(withoutEmoji\(W\.newWard\)\)\}/);
+  assert.equal(withoutEmoji('🛡 Cast a new ward'), 'Cast a new ward');
+  assert.equal(withoutEmoji('🎯 Add a goal'), 'Add a goal');
 });
