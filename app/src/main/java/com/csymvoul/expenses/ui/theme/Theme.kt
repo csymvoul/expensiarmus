@@ -204,5 +204,11 @@ val FoodType.color: Color
         FoodType.DAY_TO_DAY -> Color(0xFFE6C878)
     }
 
+/** The app's burgundy ink. */
+val Burgundy = Color(0xFF7B1E1E)
+
+/** Line colour for the framed main buttons: gold by day; burgundy at night, where the buttons themselves are gold. */
+fun frameLine(night: Boolean, gold: Color): Color = if (night) Burgundy else gold
+
 /** Amber used once 80% of a goal is spent. */
 val WarningColor = Color(0xFFE08A00)

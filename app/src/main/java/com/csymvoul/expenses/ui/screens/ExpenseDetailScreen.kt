@@ -44,6 +44,7 @@ import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.theme.color
 import com.csymvoul.expenses.ui.theme.emoji
 import com.csymvoul.expenses.ui.theme.icon
+import com.csymvoul.expenses.ui.components.Tab
 import com.csymvoul.expenses.ui.theme.nickname
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -71,6 +72,7 @@ fun ExpenseDetailScreen(
         topBar = {
             WizardTopBar(
                 title = w.entry,
+                icon = Tab.LEDGER.icon,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

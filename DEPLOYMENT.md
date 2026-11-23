@@ -144,4 +144,6 @@ The 15 emblems are cut from `art/emblems-categories.jpg` and `art/emblems-tabs.j
 swiftc -O -o /tmp/cut-emblems art/cut-emblems.swift && /tmp/cut-emblems art/emblems-tabs.jpg /tmp/emblems tab_ledger:80:277:213 tab_calendar:339:277:213 tab_annals:597:277:213 tab_goals:856:277:213 tab_settings:1114:277:213
 ```
 
+The Settings emblems come from `art/emblems-settings.jpg` (`set_geminio:86:262:246 set_reminder:379:290:184 set_theme_system:595:267:232 set_theme_light:867:267:232 set_theme_dark:1115:267:232`) and the top-bar pouch from `art/logo.jpg` (`logo_pouch:540:280:330`).
+
 Copy each `<name>.png` to `web/icons/emblems/<name>.png` and to `app/src/main/res/drawable-nodpi/emblem_<name>.png`. A new emblem also needs a line in `web/sw.js` so it works offline.

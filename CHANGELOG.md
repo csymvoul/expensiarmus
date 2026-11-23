@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.9.1 (Android), web app 1.8.1 and iPhone app 1.6.1 – unreleased (2026-11-23)
+
+### Changed
+- **Painted emblems in every top bar:** the Ledger shows the gold coin pouch from the logo next to "Expensiarmus"; Ledger entry, Annals, Protego and Settings show their tab emblem; a category page shows the category's emblem (or the food type's, when one is picked) instead of the old emoji.
+- **Annals:** "By year" carries the calendar emblem and "All time" the Annals emblem.
+- **Settings:** new painted emblems for Owl reminder (owl on an alarm clock), Geminio (two scrolls) and the theme choices (compass for Like the phone, sun for Light, moon for Dark). The source picture is `art/emblems-settings.jpg`.
+- **Dark theme buttons:** the gold main buttons (Record expense, Amend, Geminio, Cast a new ward, Save…) now have burgundy frame lines and sparkles, so the border stands out instead of blending into the gold.
+- Tests: 3 new Android tests (labels without emoji, the new pictures, burgundy button lines at night; 149 in all) and 4 new web tests (55 in all), all passing. Two older web tests were updated to the new header and frame markup. Checked in a browser: Ledger and Settings in dark, Annals and a category page in light.
+
+### Known issues
+- Not yet checked on an Android phone or in the iPhone app.
+
 ## 1.9.0 (Android), web app 1.8.0 and iPhone app 1.6.0 – unreleased (2026-11-23)
 
 ### Changed

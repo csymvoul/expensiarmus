@@ -47,6 +47,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.style.TextOverflow
+import com.csymvoul.expenses.domain.Words
+import com.csymvoul.expenses.R
+import com.csymvoul.expenses.ui.theme.frameLine
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -151,12 +155,24 @@ fun GoldRule(modifier: Modifier = Modifier) {
 @Composable
 fun WizardTopBar(
     title: String,
+    @DrawableRes icon: Int? = null,
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     Column(Modifier.background(MaterialTheme.colorScheme.surfaceContainer)) {
         TopAppBar(
-            title = { Text(title) },
+            title = {
+                // With an icon, the title's own emoji gives way to the painted emblem.
+                if (icon == null) {
+                    Text(title)
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        EmblemBadge(icon, size = 32.dp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(Words.withoutEmoji(title), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            },
             navigationIcon = navigationIcon,
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -232,7 +248,7 @@ fun WizardButton(
     contentPadding: PaddingValues = PaddingValues(horizontal = 22.dp, vertical = 14.dp),
     content: @Composable RowScope.() -> Unit,
 ) {
-    val gold = MaterialTheme.colorScheme.secondary
+    val gold = frameLine(isNight(), MaterialTheme.colorScheme.secondary)
     Surface(
         onClick = onClick,
         enabled = enabled,

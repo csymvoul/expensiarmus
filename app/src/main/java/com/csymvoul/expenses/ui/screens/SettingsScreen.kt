@@ -35,6 +35,14 @@ import com.csymvoul.expenses.data.Settings
 import com.csymvoul.expenses.data.ThemeMode
 import com.csymvoul.expenses.domain.MoneyStyle
 import com.csymvoul.expenses.ui.components.LocalWords
+import com.csymvoul.expenses.domain.Words
+import com.csymvoul.expenses.R
+import com.csymvoul.expenses.ui.components.Tab
+import com.csymvoul.expenses.ui.components.ChipEmblem
+import com.csymvoul.expenses.ui.components.EmblemBadge
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
 import com.csymvoul.expenses.ui.components.ParchmentCard
 import com.csymvoul.expenses.ui.components.WizardButton
 import com.csymvoul.expenses.ui.components.WizardTopBar
@@ -57,7 +65,7 @@ fun SettingsScreen(
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
-        topBar = { WizardTopBar(title = w.settingsTab) },
+        topBar = { WizardTopBar(title = w.settingsTab, icon = Tab.SETTINGS.icon) },
         bottomBar = bottomBar,
     ) { padding ->
         Column(
@@ -65,7 +73,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             ParchmentCard {
-                Text(w.reminder, style = MaterialTheme.typography.titleMedium)
+                CardTitle(R.drawable.emblem_set_reminder, w.reminder)
                 SwitchRow(w.reminderSwitch, "A daily nudge to record the day's expenses", settings.reminderOn) { on ->
                     onChange { it.copy(reminderOn = on) }
                 }
@@ -93,7 +101,7 @@ fun SettingsScreen(
                 }
             }
             ParchmentCard {
-                Text(w.exportTitle, style = MaterialTheme.typography.titleMedium)
+                CardTitle(R.drawable.emblem_set_geminio, w.exportTitle)
                 Text(
                     "All your expenses as a CSV file, for a backup or a spreadsheet.",
                     style = MaterialTheme.typography.bodySmall,
@@ -104,8 +112,17 @@ fun SettingsScreen(
             ParchmentCard {
                 Text("Theme", style = MaterialTheme.typography.titleMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(ThemeMode.SYSTEM to "📱 Like the phone", ThemeMode.LIGHT to "☀️ Light", ThemeMode.DARK to "🌙 Dark").forEach { (mode, label) ->
-                        FilterChip(settings.theme == mode, { onChange { it.copy(theme = mode) } }, { Text(label) })
+                    listOf(
+                        Triple(ThemeMode.SYSTEM, "Like the phone", R.drawable.emblem_set_theme_system),
+                        Triple(ThemeMode.LIGHT, "Light", R.drawable.emblem_set_theme_light),
+                        Triple(ThemeMode.DARK, "Dark", R.drawable.emblem_set_theme_dark),
+                    ).forEach { (mode, label, icon) ->
+                        FilterChip(
+                            settings.theme == mode,
+                            { onChange { it.copy(theme = mode) } },
+                            { Text(label) },
+                            leadingIcon = { ChipEmblem(icon) },
+                        )
                     }
                 }
             }
@@ -126,6 +143,15 @@ fun SettingsScreen(
             },
             dismissButton = { TextButton(onClick = { pickingTime = false }) { Text("Cancel") } },
         )
+    }
+}
+
+@Composable
+private fun CardTitle(@DrawableRes icon: Int, title: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        EmblemBadge(icon, size = 36.dp)
+        Spacer(Modifier.width(10.dp))
+        Text(Words.withoutEmoji(title), style = MaterialTheme.typography.titleMedium)
     }
 }
 

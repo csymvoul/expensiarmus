@@ -7,6 +7,10 @@ import com.csymvoul.expenses.ui.components.Tab
 import com.csymvoul.expenses.ui.theme.emoji
 import com.csymvoul.expenses.ui.theme.icon
 import com.csymvoul.expenses.ui.theme.nickname
+import androidx.compose.ui.graphics.Color
+import com.csymvoul.expenses.domain.Words
+import com.csymvoul.expenses.ui.theme.Burgundy
+import com.csymvoul.expenses.ui.theme.frameLine
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -49,5 +53,30 @@ class EmblemsTest {
         assertEquals(Tab.entries.size, tabs.size)
         assertTrue(tabs.none { it in Category.entries.map { c -> c.icon } + FoodType.entries.map { f -> f.icon } })
         assertEquals(R.drawable.emblem_tab_goals, Tab.GOALS.icon)
+    }
+
+    @Test fun `labels lose their leading emoji where a painted emblem stands in`() {
+        assertEquals("Settings", Words.withoutEmoji("⚙️ Settings"))
+        assertEquals("Annals", Words.withoutEmoji(Words.WIZARD.annals))
+        assertEquals("Owl reminder", Words.withoutEmoji(Words.WIZARD.reminder))
+        assertEquals("Geminio", Words.withoutEmoji(Words.WIZARD.exportTitle))
+        assertEquals("Daily reminder", Words.withoutEmoji("Daily reminder"))
+        assertEquals("Protego · November", Words.withoutEmoji("Protego · November"))
+    }
+
+    @Test fun `logo and settings emblems are their own pictures`() {
+        val icons = listOf(
+            R.drawable.emblem_logo_pouch, R.drawable.emblem_set_geminio, R.drawable.emblem_set_reminder,
+            R.drawable.emblem_set_theme_system, R.drawable.emblem_set_theme_light, R.drawable.emblem_set_theme_dark,
+        )
+        assertEquals(icons.size, icons.toSet().size)
+        assertTrue(icons.none { it in Tab.entries.map { t -> t.icon } + Category.entries.map { c -> c.icon } })
+    }
+
+    @Test fun `framed buttons have gold lines by day and burgundy lines at night`() {
+        val gold = Color(0xFFD9A441)
+        assertEquals(gold, frameLine(night = false, gold = gold))
+        assertEquals(Burgundy, frameLine(night = true, gold = gold))
+        assertEquals(Color(0xFF7B1E1E), Burgundy)
     }
 }

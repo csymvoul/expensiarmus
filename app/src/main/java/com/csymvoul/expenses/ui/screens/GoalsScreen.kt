@@ -61,6 +61,7 @@ import com.csymvoul.expenses.ui.components.WizardButton
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.theme.color
 import com.csymvoul.expenses.ui.theme.icon
+import com.csymvoul.expenses.ui.components.Tab
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -92,7 +93,7 @@ fun GoalsScreen(
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
-        topBar = { WizardTopBar(title = "${w.goals} · ${month.format(monthName)}") },
+        topBar = { WizardTopBar(title = "${w.goals} · ${month.format(monthName)}", icon = Tab.GOALS.icon) },
         bottomBar = bottomBar,
     ) { padding ->
         Column(

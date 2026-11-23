@@ -66,7 +66,8 @@ fun CategoryScreen(
         contentColor = MaterialTheme.colorScheme.onBackground, // a transparent scaffold would otherwise default to black text
         topBar = {
             WizardTopBar(
-                title = "${category.emoji} ${category.label}",
+                title = category.label,
+                icon = foodType?.icon ?: category.icon,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

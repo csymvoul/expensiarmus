@@ -363,7 +363,7 @@ test('record button is framed and floats on a shadow; settings is a tab', () => 
   const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
   const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
   assert.match(css, /\.fab \{[^}]*filter: drop-shadow/);
-  assert.match(css, /\.frame \{[^}]*background: var\(--gold\)/);
+  assert.match(css, /\.frame \{[^}]*background: var\(--frame-line\)/);
   // Every main button carries the same frame as the Record button.
   const buttons = app.match(/<button class="(btn|fab)[^"]*"[^>]*>/g);
   const framed = app.match(/<button class="(btn|fab)[^"]*"[^>]*><span class="frame"><span class="frame-inner">/g);
@@ -380,7 +380,7 @@ test('ledger entry page has one way to amend and one to delete', () => {
   const view = app.slice(app.indexOf('function viewScreen('), app.indexOf('// ---------- category ----------'));
   assert.equal(view.match(/data-action="amend"/g).length, 1);
   assert.equal(view.match(/data-action="ask-delete"/g).length, 1);
-  assert.match(view, /header\(W\.entry, \{ backBtn: true \}\)/);
+  assert.match(view, /header\(W\.entry, \{ backBtn: true, icon: TAB_ICONS\.month \}\)/);
 });
 
 test('edit screen saves only with the Save button and has no delete', () => {
@@ -585,4 +585,44 @@ test('the service worker caches every emblem for offline use', () => {
   for (const path of [...CATEGORIES, ...FOOD_TYPES].map((t) => t.icon).concat(Object.values(TAB_ICONS))) {
     assert.ok(sw.includes(`'${path}'`), `${path} is not cached`);
   }
+});
+
+// --- emblems in headers and Settings, dark button lines ---
+import { EMBLEMS, withoutEmoji } from '../js/model.js';
+
+test('withoutEmoji drops a leading emoji and keeps plain labels', () => {
+  assert.equal(withoutEmoji('⚙️ Settings'), 'Settings');
+  assert.equal(withoutEmoji('📊 Annals'), 'Annals');
+  assert.equal(withoutEmoji('🦉 Owl reminder'), 'Owl reminder');
+  assert.equal(withoutEmoji('Daily reminder'), 'Daily reminder');
+  assert.equal(withoutEmoji('Protego · November'), 'Protego · November');
+});
+
+test('logo and Settings emblems exist on disk and are cached offline', () => {
+  const sw = readFileSync(webFile('sw.js'), 'utf8');
+  assert.deepEqual(Object.keys(EMBLEMS), ['logo', 'geminio', 'reminder', 'themeSystem', 'themeLight', 'themeDark']);
+  for (const path of Object.values(EMBLEMS)) {
+    assert.ok(existsSync(webFile(path)), `${path} is missing`);
+    assert.ok(sw.includes(`'${path}'`), `${path} is not cached`);
+  }
+});
+
+test('headers, Settings and Annals use the painted emblems, not emoji', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  assert.match(app, /header\('Expensiarmus', \{ actions, icon: EMBLEMS\.logo \}\)/);
+  for (const tab of ['settings', 'annals', 'goals']) assert.match(app, new RegExp(`icon: TAB_ICONS\\.${tab} \\}`));
+  assert.match(app, /header\(cat\.label, \{ backBtn: true, icon: /);
+  assert.doesNotMatch(app, /\$\{cat\.emoji\} \$\{cat\.label\}`, \{ backBtn/);
+  assert.match(app, /TAB_ICONS\.calendar \}\)\}By year/);
+  for (const e of ['themeSystem', 'themeLight', 'themeDark', 'geminio', 'reminder']) assert.match(app, new RegExp(`EMBLEMS\\.${e}`));
+  assert.doesNotMatch(app, /📱 Like the phone|☀️ Light|🌙 Dark|📅 By year/);
+});
+
+test('in dark mode the gold buttons get burgundy frame lines', () => {
+  const css = readFileSync(webFile('css/style.css'), 'utf8');
+  const dark = css.slice(css.indexOf(":root[data-theme='dark']"));
+  assert.match(dark.slice(0, dark.indexOf('}')), /--frame-line: #7B1E1E;/);
+  const media = css.slice(css.indexOf('@media (prefers-color-scheme: dark)'));
+  assert.match(media.slice(0, media.indexOf('}\n}')), /--frame-line: #7B1E1E;/);
+  assert.match(css, /\.frame \{[^}]*background: var\(--frame-line\)/);
 });

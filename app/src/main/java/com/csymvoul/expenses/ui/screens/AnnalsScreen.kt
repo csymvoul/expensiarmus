@@ -15,6 +15,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
+import com.csymvoul.expenses.ui.components.ChipEmblem
+import com.csymvoul.expenses.ui.components.Tab
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
@@ -69,7 +71,7 @@ fun AnnalsScreen(
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
-        topBar = { WizardTopBar(title = w.annals) },
+        topBar = { WizardTopBar(title = w.annals, icon = Tab.ANNALS.icon) },
         bottomBar = bottomBar,
     ) { padding ->
         LazyColumn(
@@ -88,7 +90,8 @@ fun AnnalsScreen(
                             selected = view == v,
                             onClick = { onViewChange(v) },
                             shape = SegmentedButtonDefaults.itemShape(i, AnnalsView.entries.size),
-                        ) { Text(if (v == AnnalsView.YEAR) "📅 By year" else "✦ All time") }
+                            icon = { ChipEmblem(if (v == AnnalsView.YEAR) Tab.CALENDAR.icon else Tab.ANNALS.icon) },
+                        ) { Text(if (v == AnnalsView.YEAR) "By year" else "All time") }
                     }
                 }
             }

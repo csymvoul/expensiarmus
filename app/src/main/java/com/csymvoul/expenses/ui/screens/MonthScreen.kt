@@ -70,6 +70,7 @@ import com.csymvoul.expenses.ui.components.OrnamentHeading
 import com.csymvoul.expenses.ui.components.ParchmentCard
 import com.csymvoul.expenses.ui.theme.color
 import com.csymvoul.expenses.ui.theme.icon
+import com.csymvoul.expenses.R
 import com.csymvoul.expenses.ui.theme.nickname
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -115,6 +116,7 @@ fun MonthScreen(
         topBar = {
             WizardTopBar(
                 title = "Expensiarmus",
+                icon = R.drawable.emblem_logo_pouch,
                 actions = {
                     IconButton(onClick = onSearch) {
                         Icon(Icons.Default.Search, contentDescription = w.search)

@@ -128,5 +128,8 @@ data class Words(
         )
 
         fun of(wizard: Boolean) = if (wizard) WIZARD else PLAIN
+
+        /** A label without its leading emoji ("⚙️ Settings" → "Settings"), for places that show a painted emblem instead. */
+        fun withoutEmoji(label: String): String = label.replace(Regex("^[^\\p{L}\\p{N}]+\\s*"), "")
     }
 }

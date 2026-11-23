@@ -1,5 +1,5 @@
 // Expensiarmus web app: screens, navigation and event handling. Logic lives in the other modules.
-import { CATEGORIES, FOOD_TYPES, TAB_ICONS, category, foodType, makeExpense, myShareCents, isSplit, splitLine, upsert, remove, find, monthOf } from './model.js';
+import { CATEGORIES, FOOD_TYPES, TAB_ICONS, EMBLEMS, withoutEmoji, category, foodType, makeExpense, myShareCents, isSplit, splitLine, upsert, remove, find, monthOf } from './model.js';
 import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
 import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
@@ -128,10 +128,11 @@ const ICON = {
   search: '<svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>',
 };
 
-function header(title, { backBtn = false, actions = '' } = {}) {
+/** Top bar. With an icon, the title's own emoji gives way to the painted emblem. */
+function header(title, { backBtn = false, actions = '', icon = '' } = {}) {
   return `<header class="bar"><div class="bar-row">
     ${backBtn ? `<button class="icon-btn" data-action="back" aria-label="Back">${ICON.back}</button>` : ''}
-    <h1>${esc(title)}</h1>
+    <h1>${icon ? `<img class="bar-icon" src="${icon}" alt="">` : ''}<span>${esc(icon ? withoutEmoji(title) : title)}</span></h1>
     <div class="bar-actions">${actions}</div>
   </div></header>`;
 }
@@ -336,7 +337,7 @@ function monthScreen(calendar) {
            ${list.length ? `<div class="list">${list.map((e) => expenseRow(e)).join('')}</div>` : hint(W.dayEmpty)}`
         : hint(W.dayHint)}`;
   }
-  return `${header('Expensiarmus', { actions })}
+  return `${header('Expensiarmus', { actions, icon: EMBLEMS.logo })}
   <main class="with-tabs">
     ${installBanner()}${owlBanner()}
     ${monthSwitch()}
@@ -550,13 +551,13 @@ function viewScreen(id) {
   const e = find(data, id);
   if (!e) {
     setTimeout(back, 0); // deleted from the edit screen: nothing to show
-    return header(W.entry, { backBtn: true });
+    return header(W.entry, { backBtn: true, icon: TAB_ICONS.month });
   }
   const c = category(e.category);
   const f = e.foodType ? foodType(e.foodType) : null;
   const row = (label, value, note = '') => `<div class="detail"><span class="h-small">${label}</span><span>${esc(value)}</span>${note ? `<span class="small soft italic">${esc(note)}</span>` : ''}</div>`;
   // Amend and delete are the labelled buttons at the bottom; the top bar only has Back.
-  return `${header(W.entry, { backBtn: true })}
+  return `${header(W.entry, { backBtn: true, icon: TAB_ICONS.month })}
   <main>
     ${card(`<div class="legend-row">${emblem(f ? f.icon : c.icon, 52)}
         <span class="row-main"><span class="h-large">${esc(e.title)}</span>
@@ -584,7 +585,7 @@ function categoryScreen(catId, foodId) {
         ${FOOD_TYPES.map((f) => `<button class="chip ${foodId === f.id ? 'on' : ''}" data-action="cat-food" data-food="${f.id}">${chipIcon(f)}${f.label}</button>`).join('')}
       </div>`
     : '';
-  return `${header(`${cat.emoji} ${cat.label}`, { backBtn: true })}
+  return `${header(cat.label, { backBtn: true, icon: (foodId ? foodType(foodId) : cat).icon })}
   <main>
     ${card(`<div class="legend-row">${emblem(cat.icon, 44)}
         <span class="row-main">${W.nicknames ? `<span class="h-small italic">${esc(cat.nickname)}</span>` : ''}<span>${esc(cat.hint)}</span></span></div>
@@ -668,7 +669,7 @@ function goalsScreen() {
           <button class="btn danger" data-action="ward-remove-on"><span class="frame"><span class="frame-inner">From ${name} on</span></span></button></div>
       </div></div></div>`
     : '';
-  return `${header(`${W.goals} · ${name}`)}
+  return `${header(`${W.goals} · ${name}`, { icon: TAB_ICONS.goals })}
   <main class="with-tabs">
     ${monthSwitch()}
     <p class="soft">${esc(W.goalsIntro(monthTitle(m)))}</p>
@@ -711,9 +712,9 @@ function settingsScreen() {
     ? `${denied ? '<p class="error">Notifications are switched off for Expensiarmus. Turn them on in iPhone Settings → Notifications → Expensiarmus.</p>' : ''}
        <p class="small soft">Every day at ${t}: <i>"${esc(W.owlNothing)}"</i>, or the day's count and total. Tap it to record an expense.</p>`
     : `<p class="small soft">A web app can't send scheduled notifications on iPhone, so let the <b>Reminders</b> app do it: add a reminder <i>"Record today's expenses in Expensiarmus"</i>, tap <b>ⓘ</b>, turn on <b>Date</b> and <b>Time</b>, set <b>${t}</b>, <b>Repeat: Daily</b>. After ${t} the app also shows a banner if nothing was recorded that day.</p>`;
-  return `${header(W.settings)}
+  return `${header(W.settings, { icon: TAB_ICONS.settings })}
   <main class="with-tabs">
-    ${card(`<h3 class="h-medium">${esc(W.reminder)}</h3>
+    ${card(`<h3 class="h-medium card-title">${emblem(EMBLEMS.reminder, 36)}${esc(withoutEmoji(W.reminder))}</h3>
       <label class="switch-row"><span><span class="h-small">${esc(W.reminderSwitch)}</span><span class="small soft">A daily nudge to record the day's expenses</span></span>
         <input type="checkbox" class="switch" ${settings.reminderOn ? 'checked' : ''} data-input="set-reminder"></label>
       <label class="field"><span class="label">Time</span><input type="time" value="${t}" data-input="set-time"></label>
@@ -725,8 +726,8 @@ function settingsScreen() {
     ${card(`<h3 class="h-medium">Number format</h3>
       <div class="chips">${choice('set-money', 'en', settings.money, '€1,234.56')}${choice('set-money', 'el', settings.money, '1.234,56 €')}</div>`)}
     ${card(`<h3 class="h-medium">Theme</h3>
-      <div class="chips">${choice('set-theme', 'system', settings.theme, '📱 Like the phone')}${choice('set-theme', 'light', settings.theme, '☀️ Light')}${choice('set-theme', 'dark', settings.theme, '🌙 Dark')}</div>`)}
-    ${card(`<h3 class="h-medium">${esc(W.exportTitle)}</h3>
+      <div class="chips">${choice('set-theme', 'system', settings.theme, `${chipIcon({ icon: EMBLEMS.themeSystem })}Like the phone`)}${choice('set-theme', 'light', settings.theme, `${chipIcon({ icon: EMBLEMS.themeLight })}Light`)}${choice('set-theme', 'dark', settings.theme, `${chipIcon({ icon: EMBLEMS.themeDark })}Dark`)}</div>`)}
+    ${card(`<h3 class="h-medium card-title">${emblem(EMBLEMS.geminio, 36)}${esc(withoutEmoji(W.exportTitle))}</h3>
       <p class="small soft">All your expenses as a CSV file, for a backup or a spreadsheet.</p>
       <button class="btn" data-action="export"><span class="frame"><span class="frame-inner">${esc(W.exportButton)}</span></span></button>`)}
   </main>${tabBar('settings')}`;
@@ -773,11 +774,11 @@ function annalsScreen() {
   }
   const facts = [s.expenseCount === 1 ? '1 expense' : `${s.expenseCount} expenses`,
     s.biggest ? `biggest: ${s.biggest.title}, ${format(myShareCents(s.biggest))}` : ''].filter(Boolean).join(' · ');
-  return `${header(W.annals)}
+  return `${header(W.annals, { icon: TAB_ICONS.annals })}
   <main class="with-tabs">
     <div class="segmented">
-      <button class="${a.view === 'year' ? 'on' : ''}" data-action="annals-view" data-view="year">📅 By year</button>
-      <button class="${a.view === 'all' ? 'on' : ''}" data-action="annals-view" data-view="all">✦ All time</button>
+      <button class="${a.view === 'year' ? 'on' : ''}" data-action="annals-view" data-view="year">${chipIcon({ icon: TAB_ICONS.calendar })}By year</button>
+      <button class="${a.view === 'all' ? 'on' : ''}" data-action="annals-view" data-view="all">${chipIcon({ icon: TAB_ICONS.annals })}All time</button>
     </div>
     ${a.view === 'year' ? monthSwitch('prev-year', 'next-year', String(a.year)) : ''}
     ${card(`
