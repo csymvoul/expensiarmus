@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.7.0 (Android), web app 1.6.0 and iPhone app 1.4.0 – unreleased (2026-11-23)
+
+### Changed
+- **Record expense button:** framed like the cards (cut corners, double gold border, corner sparkles) and floating above the page on a shadow. On the web the shadow is a drop-shadow filter, because the cut-corner clip would cut off an ordinary shadow.
+- **Settings is the fifth tab:** 📜 Ledger · 📅 Calendar · 📊 Annals · 🛡 Protego · ⚙️ Settings, with no back button.
+- **Geminio (CSV export) moved into Settings,** as its own card. The ⋮ menu is gone; the top bar keeps search.
+
+### Removed
+- **"Send a test owl now"** from the menu and from Settings. The evening owl has been checked on both phones.
+
+### Tests
+- 1 new Android test (144 in total) and 1 new web test (47 in total), all passing. Checked in a browser at phone size: the framed button and its shadow (also enlarged), five tabs, Settings without a back button, the Geminio card, and no test owl left anywhere.
+
 ## iPhone app 1.3.1 and web app 1.5.1 – unreleased (2026-11-23)
 
 ### Fixed

@@ -273,7 +273,7 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
 .share-glyph { display: inline-block; padding: 0 2px; }
 
 /* Buttons */
-.btn, .fab {
+.btn {
   --cut: 10px;
   clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)),
     calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut));
@@ -284,10 +284,32 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
 .btn.wide { width: 100%; }
 .btn.danger { background: var(--error); color: #fff; }
 .btn:disabled { opacity: 0.45; }
+/* Record expense: a framed parchment-and-gold seal floating above the page. The shadow is a
+   drop-shadow filter on the button, because the cut-corner clip would cut off a box-shadow. */
 .fab {
   position: fixed; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 20;
-  --cut: 14px; padding: 16px 22px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  padding: 0; font-weight: 700; letter-spacing: 0.5px;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.45)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
 }
+.fab-frame, .fab-inner, .fab-inner::before {
+  clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)),
+    calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut));
+}
+.fab-frame { --cut: 14px; display: block; padding: 2px; background: var(--gold); }
+.fab-inner {
+  --cut: 13px; position: relative; display: block; padding: 15px 24px; color: var(--on-primary);
+  background:
+    var(--sparkle) left 6px top 6px / 8px 8px no-repeat,
+    var(--sparkle) right 6px top 6px / 8px 8px no-repeat,
+    var(--sparkle) left 6px bottom 6px / 8px 8px no-repeat,
+    var(--sparkle) right 6px bottom 6px / 8px 8px no-repeat,
+    var(--primary);
+}
+.fab-inner::before {
+  --cut: 10px; content: ''; position: absolute; inset: 4px;
+  border: 1px solid var(--gold-soft); pointer-events: none;
+}
+.fab:active { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.4)); transform: translateY(2px); }
 
 /* Forms */
 .field { display: flex; flex-direction: column; gap: 6px; }
@@ -369,7 +391,7 @@ main > .btn.wide { margin-top: 8px; }
   display: flex; background: var(--band); border-top: 4px double var(--gold);
   padding-bottom: env(safe-area-inset-bottom);
 }
-.tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px 6px; font-size: 12px; color: var(--ink-soft); }
+.tab { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 1px 6px; font-size: 11px; color: var(--ink-soft); white-space: nowrap; }
 .tab-icon { font-size: 20px; line-height: 1; filter: grayscale(0.6); opacity: 0.75; }
 .tab.on { color: var(--primary); font-weight: 700; }
 .tab.on .tab-icon { filter: none; opacity: 1; }

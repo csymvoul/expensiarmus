@@ -50,6 +50,15 @@ class WordsTest {
         assertEquals("Spent in 2026", p.spentIn(2026))
     }
 
+    @Test fun `settings tab and export labels`() {
+        assertEquals("⚙️ Settings", Words.WIZARD.settingsTab)
+        assertEquals("⚙️ Settings", Words.PLAIN.settingsTab)
+        assertEquals("📜 Geminio", Words.WIZARD.exportTitle)
+        assertEquals("Geminio · export CSV", Words.WIZARD.exportButton)
+        assertEquals("Export CSV", Words.PLAIN.exportButton)
+        assertEquals(5, com.csymvoul.expenses.ui.components.Tab.entries.size)
+    }
+
     @Test fun `wizard words match the earlier wording`() {
         val w = Words.WIZARD
         assertEquals("🦉 80% of your Entertainment ward is spent", w.alert80("Entertainment"))

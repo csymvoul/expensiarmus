@@ -17,13 +17,16 @@ import com.csymvoul.expenses.domain.Words
 /** The wording chosen in Settings (wizard or plain), available to every screen. */
 val LocalWords = staticCompositionLocalOf { Words.WIZARD }
 
-enum class Tab { LEDGER, CALENDAR, ANNALS, GOALS }
+enum class Tab { LEDGER, CALENDAR, ANNALS, GOALS, SETTINGS }
 
-/** Bottom tab bar on a parchment band: Ledger · Calendar · Annals · Protego (or the plain names). */
+/** Bottom tab bar on a parchment band: Ledger · Calendar · Annals · Protego · Settings (or the plain names). */
 @Composable
 fun WizardTabBar(selected: Tab, onSelect: (Tab) -> Unit) {
     val w = LocalWords.current
-    val labels = mapOf(Tab.LEDGER to w.ledgerTab, Tab.CALENDAR to w.calendarTab, Tab.ANNALS to w.annalsTab, Tab.GOALS to w.goalsTab)
+    val labels = mapOf(
+        Tab.LEDGER to w.ledgerTab, Tab.CALENDAR to w.calendarTab, Tab.ANNALS to w.annalsTab,
+        Tab.GOALS to w.goalsTab, Tab.SETTINGS to w.settingsTab,
+    )
     Column {
         GoldRule()
         NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {

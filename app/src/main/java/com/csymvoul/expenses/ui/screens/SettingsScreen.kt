@@ -8,14 +8,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -49,8 +47,8 @@ fun SettingsScreen(
     owlsBlocked: Boolean,
     onChange: ((Settings) -> Settings) -> Unit,
     onFixOwls: () -> Unit,
-    onTestOwl: () -> Unit,
-    onBack: () -> Unit,
+    onExport: () -> Unit,
+    bottomBar: @Composable () -> Unit,
 ) {
     val w = LocalWords.current
     var pickingTime by remember { mutableStateOf(false) }
@@ -58,14 +56,8 @@ fun SettingsScreen(
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
-        topBar = {
-            WizardTopBar(
-                title = "⚙️ Settings",
-                navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
-                },
-            )
-        },
+        topBar = { WizardTopBar(title = w.settingsTab) },
+        bottomBar = bottomBar,
     ) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -85,7 +77,6 @@ fun SettingsScreen(
                         Text("Notifications are off for the app: tap to allow them", color = MaterialTheme.colorScheme.error)
                     }
                 }
-                TextButton(onClick = onTestOwl) { Text(w.testOwl) }
             }
             ParchmentCard {
                 Text("Wizard words", style = MaterialTheme.typography.titleMedium)
@@ -99,6 +90,15 @@ fun SettingsScreen(
                     FilterChip(settings.moneyStyle == MoneyStyle.ENGLISH, { onChange { it.copy(moneyStyle = MoneyStyle.ENGLISH) } }, { Text("€1,234.56") })
                     FilterChip(settings.moneyStyle == MoneyStyle.GREEK, { onChange { it.copy(moneyStyle = MoneyStyle.GREEK) } }, { Text("1.234,56 €") })
                 }
+            }
+            ParchmentCard {
+                Text(w.exportTitle, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "All your expenses as a CSV file, for a backup or a spreadsheet.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(onClick = onExport, shape = CutCornerShape(10.dp)) { Text(w.exportButton) }
             }
             ParchmentCard {
                 Text("Theme", style = MaterialTheme.typography.titleMedium)

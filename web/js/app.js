@@ -35,7 +35,6 @@ const ui = {
   month: today().slice(0, 7),
   day: today(),
   highlighted: null,
-  menu: false,
   modal: false,
   quick: null, // the Quick add sheet, when open
   annals: { view: 'year', year: Number(today().slice(0, 4)), bar: null },
@@ -101,7 +100,7 @@ function showGoalAlert(a) {
 
 // ---------- navigation ----------
 
-const TABS = ['month', 'calendar', 'annals', 'goals'];
+const TABS = ['month', 'calendar', 'annals', 'goals', 'settings'];
 
 function route() {
   const [name, a, b] = location.hash.replace(/^#\/?/, '').split('/');
@@ -127,7 +126,6 @@ const ICON = {
   left: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
   right: '<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
   search: '<svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>',
-  more: '<svg viewBox="0 0 24 24" class="filled"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>',
   check: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg>',
   pen: '<svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4zM14 6l3 3"/></svg>',
@@ -143,7 +141,7 @@ function header(title, { backBtn = false, actions = '' } = {}) {
 
 /** The bottom tab bar: Ledger · Calendar · Annals · Protego (or the plain names). */
 function tabBar(active) {
-  const tabs = [['month', '#/', W.ledgerTab], ['calendar', '#/calendar', W.calendarTab], ['annals', '#/annals', W.annalsTab], ['goals', '#/goals', W.goalsTab]];
+  const tabs = [['month', '#/', W.ledgerTab], ['calendar', '#/calendar', W.calendarTab], ['annals', '#/annals', W.annalsTab], ['goals', '#/goals', W.goalsTab], ['settings', '#/settings', W.settings]];
   return `<nav class="tabs">${tabs.map(([key, to, label]) => {
     const [icon, ...words] = label.split(' ');
     return `<button class="tab ${active === key ? 'on' : ''}" data-action="tab" data-to="${to}"><span class="tab-icon">${icon}</span><span>${esc(words.join(' '))}</span></button>`;
@@ -321,15 +319,7 @@ function monthSwitch(prev = 'prev-month', next = 'next-month', title = monthTitl
 /** The Ledger tab (overview of the month) and the Calendar tab. */
 function monthScreen(calendar) {
   const s = monthlySummary(data, ui.month);
-  const menu = ui.menu
-    ? `<div class="menu">
-        <button data-action="go" data-to="#/settings">${W.settings}</button>
-        ${nativeBridge ? `<button data-action="test-owl">${W.testOwl}</button>` : ''}
-        <button data-action="export">${W.exportMenu}</button>
-      </div>`
-    : '';
-  const actions = `<button class="icon-btn" data-action="go" data-to="#/search" aria-label="${W.search}">${ICON.search}</button>
-    <button class="icon-btn" data-action="menu" aria-label="More">${ICON.more}</button>${menu}`;
+  const actions = `<button class="icon-btn" data-action="go" data-to="#/search" aria-label="${W.search}">${ICON.search}</button>`;
   let body;
   if (!calendar) {
     body = `${totalCard(s)}
@@ -353,7 +343,7 @@ function monthScreen(calendar) {
     ${monthSwitch()}
     ${body}
   </main>
-  <button class="fab" data-action="quick">${esc(W.fab)}</button>
+  <button class="fab" data-action="quick"><span class="fab-frame"><span class="fab-inner">${esc(W.fab)}</span></span></button>
   ${tabBar(calendar ? 'calendar' : 'month')}
   ${ui.quick ? quickSheet() : ''}`;
 }
@@ -724,14 +714,13 @@ function settingsScreen() {
     ? `${denied ? '<p class="error">Notifications are switched off for Expensiarmus. Turn them on in iPhone Settings → Notifications → Expensiarmus.</p>' : ''}
        <p class="small soft">Every day at ${t}: <i>"${esc(W.owlNothing)}"</i>, or the day's count and total. Tap it to record an expense.</p>`
     : `<p class="small soft">A web app can't send scheduled notifications on iPhone, so let the <b>Reminders</b> app do it: add a reminder <i>"Record today's expenses in Expensiarmus"</i>, tap <b>ⓘ</b>, turn on <b>Date</b> and <b>Time</b>, set <b>${t}</b>, <b>Repeat: Daily</b>. After ${t} the app also shows a banner if nothing was recorded that day.</p>`;
-  return `${header(W.settings, { backBtn: true })}
-  <main>
+  return `${header(W.settings)}
+  <main class="with-tabs">
     ${card(`<h3 class="h-medium">${esc(W.reminder)}</h3>
       <label class="switch-row"><span><span class="h-small">${esc(W.reminderSwitch)}</span><span class="small soft">A daily nudge to record the day's expenses</span></span>
         <input type="checkbox" class="switch" ${settings.reminderOn ? 'checked' : ''} data-input="set-reminder"></label>
       <label class="field"><span class="label">Time</span><input type="time" value="${t}" data-input="set-time"></label>
-      ${reminderHelp}
-      ${nativeBridge ? `<button class="link" data-action="test-owl">${esc(W.testOwl)}</button>` : ''}`)}
+      ${reminderHelp}`)}
     ${card(`<h3 class="h-medium">Wizard words</h3>
       <label class="switch-row"><span><span class="h-small">Use wizard words</span>
         <span class="small soft">Protego, Accio, Evanesco… Off: Goals, Search, Delete.</span></span>
@@ -740,7 +729,10 @@ function settingsScreen() {
       <div class="chips">${choice('set-money', 'en', settings.money, '€1,234.56')}${choice('set-money', 'el', settings.money, '1.234,56 €')}</div>`)}
     ${card(`<h3 class="h-medium">Theme</h3>
       <div class="chips">${choice('set-theme', 'system', settings.theme, '📱 Like the phone')}${choice('set-theme', 'light', settings.theme, '☀️ Light')}${choice('set-theme', 'dark', settings.theme, '🌙 Dark')}</div>`)}
-  </main>`;
+    ${card(`<h3 class="h-medium">${esc(W.exportTitle)}</h3>
+      <p class="small soft">All your expenses as a CSV file, for a backup or a spreadsheet.</p>
+      <button class="btn" data-action="export">${esc(W.exportButton)}</button>`)}
+  </main>${tabBar('settings')}`;
 }
 
 // ---------- annals (tab) ----------
@@ -843,10 +835,7 @@ function render() {
   if (r.name !== 'edit') draft = null;
   if (r.name !== ui.modalScreen) ui.modal = false;
   ui.modalScreen = r.name;
-  if (r.name !== 'month' && r.name !== 'calendar') {
-    ui.menu = false;
-    ui.quick = null;
-  }
+  if (r.name !== 'month' && r.name !== 'calendar') ui.quick = null;
   if (r.name !== 'goals') ui.goalEdit = null;
   if (r.name !== ui.lastScreen && TABS.includes(r.name)) ui.highlighted = null;
   ui.lastScreen = r.name;
@@ -868,7 +857,6 @@ const actions = {
   back,
   go: (el) => go(el.dataset.to),
   tab: (el) => { navDepth = 0; location.replace(el.dataset.to); },
-  menu: () => { ui.menu = !ui.menu; render(); },
   'prev-month': () => { ui.month = shiftMonth(ui.month, -1); ui.highlighted = null; ui.goalEdit = null; render(); },
   'next-month': () => { ui.month = shiftMonth(ui.month, 1); ui.highlighted = null; ui.goalEdit = null; render(); },
   slice: (el) => {
@@ -888,13 +876,7 @@ const actions = {
   'cat-food': (el) => location.replace(`#/category/${route().a}${el.dataset.food ? `/${el.dataset.food}` : ''}`),
   open: (el) => go(`#/view/${encodeURIComponent(el.dataset.id)}`),
   amend: (el) => go(`#/edit/${encodeURIComponent(el.dataset.id)}`),
-  export: () => { ui.menu = false; render(); exportCsv(); },
-  'test-owl': () => {
-    ui.menu = false;
-    const [first] = upcomingReminders(data.expenses, new Date(new Date().setHours(0, 0, 0, 0)), 1, '23:59', W);
-    post({ type: 'notify', id: 'owl-test', title: first.title, body: first.body });
-    render();
-  },
+  export: () => exportCsv(),
   quick: () => { ui.quick = { title: '', amount: '', date: newExpenseDate(), error: false }; render(); },
   'quick-close': () => { ui.quick = null; render(); },
   'quick-key': (el) => quickKey(el.dataset.key),
@@ -995,12 +977,7 @@ const ON_CHANGE = ['edit-split', 'edit-date', 'quick-date', 'ward-onwards', 'set
 
 app.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-action]');
-  if (!el) {
-    if (ui.menu) { ui.menu = false; render(); }
-    return;
-  }
-  if (ui.menu && el.dataset.action !== 'menu' && !el.closest('.menu')) ui.menu = false;
-  actions[el.dataset.action]?.(el, ev);
+  if (el) actions[el.dataset.action]?.(el, ev);
 });
 app.addEventListener('input', (ev) => {
   const el = ev.target.closest('[data-input]');

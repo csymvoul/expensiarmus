@@ -1,6 +1,11 @@
 package com.csymvoul.expenses.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -64,7 +69,7 @@ fun ParchmentCard(
     )
 }
 
-private fun DrawScope.chamfered(inset: Float, cut: Float): Path = Path().apply {
+internal fun DrawScope.chamfered(inset: Float, cut: Float): Path = Path().apply {
     val l = inset
     val t = inset
     val r = size.width - inset
@@ -198,5 +203,38 @@ fun OrnamentHeading(text: String, modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.primary,
         )
         GoldRule(Modifier.weight(1f))
+    }
+}
+
+/**
+ * The "Record expense" button: a burgundy seal in the same frame as the cards (cut corners,
+ * double gold border, corner sparkles), floating above the page on a shadow.
+ */
+@Composable
+fun WizardFab(text: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
+    val gold = MaterialTheme.colorScheme.secondary
+    Surface(
+        onClick = onClick,
+        shape = CutCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        border = BorderStroke(2.dp, gold),
+        shadowElevation = 12.dp,
+    ) {
+        Row(
+            Modifier
+                .drawBehind {
+                    drawPath(chamfered(5.dp.toPx(), 14.dp.toPx()), gold.copy(alpha = 0.6f), style = Stroke(1.dp.toPx()))
+                    val s = 9.dp.toPx()
+                    listOf(Offset(s, s), Offset(size.width - s, s), Offset(s, size.height - s), Offset(size.width - s, size.height - s))
+                        .forEach { drawSparkle(it, 3.5.dp.toPx(), gold) }
+                }
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            icon()
+            Spacer(Modifier.width(10.dp))
+            Text(text, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onPrimary)
+        }
     }
 }

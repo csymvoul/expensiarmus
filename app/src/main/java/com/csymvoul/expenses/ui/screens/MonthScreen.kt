@@ -23,14 +23,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -64,6 +60,7 @@ import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.ui.components.CalendarGrid
 import com.csymvoul.expenses.ui.components.EmblemBadge
+import com.csymvoul.expenses.ui.components.WizardFab
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.components.DonutChart
 import com.csymvoul.expenses.ui.components.ExpenseRow
@@ -103,17 +100,13 @@ fun MonthScreen(
     onOpen: (String) -> Unit,
     onCategory: (Category, FoodType?) -> Unit,
     onSearch: () -> Unit,
-    onSettings: () -> Unit,
     reminderOn: Boolean,
     owlsBlocked: Boolean,
     onFixOwls: () -> Unit,
-    onTestOwl: () -> Unit,
-    onExport: () -> Unit,
     snackbar: SnackbarHostState,
     bottomBar: @Composable () -> Unit,
 ) {
     val w = LocalWords.current
-    var menuOpen by remember { mutableStateOf(false) }
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = bottomBar,
@@ -126,37 +119,13 @@ fun MonthScreen(
                     IconButton(onClick = onSearch) {
                         Icon(Icons.Default.Search, contentDescription = w.search)
                     }
-                    Box {
-                        IconButton(onClick = { menuOpen = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More")
-                        }
-                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                            DropdownMenuItem(
-                                text = { Text("⚙️ Settings") },
-                                onClick = { menuOpen = false; onSettings() },
-                            )
-                            DropdownMenuItem(
-                                text = { Text(w.testOwl) },
-                                onClick = { menuOpen = false; onTestOwl() },
-                            )
-                            DropdownMenuItem(
-                                text = { Text(w.exportMenu) },
-                                onClick = { menuOpen = false; onExport() },
-                            )
-                        }
-                    }
                 },
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onAdd,
-                shape = CutCornerShape(14.dp),
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                icon = { Icon(Icons.Default.Create, contentDescription = null) },
-                text = { Text(w.fab.substringAfter(' ')) },
-            )
+            WizardFab(text = w.fab.substringAfter(' '), onClick = onAdd) {
+                Icon(Icons.Default.Create, contentDescription = null)
+            }
         },
     ) { padding ->
         LazyColumn(

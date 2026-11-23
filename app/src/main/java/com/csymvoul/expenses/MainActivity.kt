@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity() {
 private val LocalSettingsVersion = staticCompositionLocalOf<Any> { Unit }
 
 // Routes. The back stack is kept as routes joined by '|' so it survives rotation.
-// The four tabs (Ledger, Calendar, Annals, Protego) are top-level routes.
+// The five tabs (Ledger, Calendar, Annals, Protego, Settings) are top-level routes.
 private const val MONTH = "month"
 private const val CALENDAR = "calendar"
 private const val ANNALS = "annals"
@@ -103,7 +103,7 @@ private const val EDIT = "edit:" // + expense id, empty for a new expense
 private const val VIEW = "view:" // + expense id: read-only view
 private const val CATEGORY = "category:" // + category name, optionally + ":" + food type name
 
-private val TAB_ROUTES = mapOf(Tab.LEDGER to MONTH, Tab.CALENDAR to CALENDAR, Tab.ANNALS to ANNALS, Tab.GOALS to GOALS)
+private val TAB_ROUTES = mapOf(Tab.LEDGER to MONTH, Tab.CALENDAR to CALENDAR, Tab.ANNALS to ANNALS, Tab.GOALS to GOALS, Tab.SETTINGS to SETTINGS)
 
 @Composable
 fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel()) {
@@ -164,12 +164,6 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
         context.startActivity(
             Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName),
         )
-    }
-    val testOwl = {
-        if (!OwlNotifier.show(context)) {
-            Toast.makeText(context, "Notifications are blocked: allow them first.", Toast.LENGTH_LONG).show()
-            askForNotifications()
-        }
     }
     val newExpenseDate = when {
         route == CALENDAR && selectedDay?.let { YearMonth.from(it) } == month -> selectedDay!!
@@ -232,8 +226,8 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                     if (!before.reminderOn && AppSettings.get(context).reminderOn) askForNotifications()
                 },
                 onFixOwls = fixOwls,
-                onTestOwl = testOwl,
-                onBack = ::pop,
+                onExport = { exportLauncher.launch("expensiarmus-${LocalDate.now()}.csv") },
+                bottomBar = { tabBar(Tab.SETTINGS) },
             )
             route == SEARCH -> SearchScreen(
                 expenses = data.expenses,
@@ -303,12 +297,9 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                     onOpen = { push(VIEW + it) },
                     onCategory = { c, t -> push(CATEGORY + c.name + (t?.let { ":" + it.name } ?: "")) },
                     onSearch = { push(SEARCH) },
-                    onSettings = { push(SETTINGS) },
                     reminderOn = settings.reminderOn,
                     owlsBlocked = owlsBlocked,
                     onFixOwls = fixOwls,
-                    onTestOwl = testOwl,
-                    onExport = { exportLauncher.launch("expensiarmus-${LocalDate.now()}.csv") },
                     snackbar = snackbar,
                     bottomBar = { tabBar(if (view == MonthView.CALENDAR) Tab.CALENDAR else Tab.LEDGER) },
                 )

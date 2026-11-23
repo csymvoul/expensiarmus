@@ -359,6 +359,17 @@ test('page blocks zooming and keeps the top bar fixed', () => {
   assert.match(app, /'gesturestart', 'gesturechange', 'gestureend'/);
 });
 
+test('record button is framed and floats on a shadow; settings is a tab', () => {
+  const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
+  const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+  assert.match(css, /\.fab \{[^}]*filter: drop-shadow/);
+  assert.match(css, /\.fab-frame \{[^}]*background: var\(--gold\)/);
+  assert.match(app, /\['settings', '#\/settings', W\.settings\]/);
+  assert.doesNotMatch(app, /test-owl/);
+  assert.equal(wordsFor(true).exportButton, 'Geminio · export CSV');
+  assert.equal(wordsFor(false).exportButton, 'Export CSV');
+});
+
 test('number pad keys are centred', () => {
   const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
   const rule = css.match(/\.numpad button \{([^}]*)\}/)[1];
