@@ -122,12 +122,6 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
     fun replaceTop(r: String) { stack = stack.substringBeforeLast('|', "") .let { if (it.isEmpty()) r else "$it|$r" } }
     fun pop() { stack = stack.substringBeforeLast('|', MONTH) }
 
-    /** After deleting from the edit screen, also leave the deleted expense's read-only view. */
-    fun popAfterDelete(id: String) {
-        pop()
-        if (stack.substringAfterLast('|') == VIEW + id) pop()
-    }
-
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -271,7 +265,6 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                         month = YearMonth.from(it.date)
                         pop()
                     },
-                    onDelete = { vm.delete(it); popAfterDelete(it) },
                     onBack = ::pop,
                 )
             }

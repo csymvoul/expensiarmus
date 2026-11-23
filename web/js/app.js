@@ -126,9 +126,6 @@ const ICON = {
   left: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
   right: '<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
   search: '<svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>',
-  check: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
-  trash: '<svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg>',
-  pen: '<svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4zM14 6l3 3"/></svg>',
 };
 
 function header(title, { backBtn = false, actions = '' } = {}) {
@@ -471,8 +468,6 @@ function editScreen(id) {
   const titleBad = d.showErrors && !d.title.trim();
   const amountBad = d.showErrors && !(cents > 0);
   const cat = category(d.category);
-  const actions = `${d.id ? `<button class="icon-btn" data-action="ask-delete" aria-label="${esc(W.deleteBtn)}">${ICON.trash}</button>` : ''}
-    <button class="icon-btn" data-action="save" aria-label="Save">${ICON.check}</button>`;
   const catChips = CATEGORIES.map((c) =>
     `<button class="chip ${d.category === c.id ? 'on' : ''}" data-action="edit-cat" data-cat="${c.id}">${c.emoji} ${c.label}</button>`).join('');
   const foodChips = d.category === 'ENTERTAINMENT'
@@ -489,7 +484,8 @@ function editScreen(id) {
         <p id="share-line">${shareLine()}</p>
       </div>`
     : '';
-  return `${header(d.id ? W.editExpense : W.newExpense, { backBtn: true, actions })}
+  // Saving is the framed button at the bottom; deleting lives on the Ledger entry page.
+  return `${header(d.id ? W.editExpense : W.newExpense, { backBtn: true })}
   <main class="form">
     <div class="field"><label class="label" for="edit-title">Title</label>
       <input id="edit-title" type="text" value="${esc(d.title)}" placeholder="e.g. Butterbeer with friends" data-input="edit-title" class="${titleBad ? 'bad' : ''}" autocapitalize="sentences" autocomplete="off">
@@ -507,7 +503,7 @@ function editScreen(id) {
       <input type="checkbox" class="switch" ${d.split ? 'checked' : ''} data-input="edit-split"></label>
     ${split}
     <button class="btn wide" data-action="save"><span class="frame"><span class="frame-inner">${esc(W.save)}</span></span></button>
-  </main>${ui.modal ? deleteModal(d.title) : ''}`;
+  </main>`;
 }
 
 /** Fills the form from a suggestion: amount, category, food type and split. */
@@ -557,9 +553,8 @@ function viewScreen(id) {
   const c = category(e.category);
   const f = e.foodType ? foodType(e.foodType) : null;
   const row = (label, value, note = '') => `<div class="detail"><span class="h-small">${label}</span><span>${esc(value)}</span>${note ? `<span class="small soft italic">${esc(note)}</span>` : ''}</div>`;
-  const actions = `<button class="icon-btn" data-action="ask-delete" aria-label="${esc(W.deleteBtn)}">${ICON.trash}</button>
-    <button class="icon-btn" data-action="amend" data-id="${esc(e.id)}" aria-label="Edit">${ICON.pen}</button>`;
-  return `${header(W.entry, { backBtn: true, actions })}
+  // Amend and delete are the labelled buttons at the bottom; the top bar only has Back.
+  return `${header(W.entry, { backBtn: true })}
   <main>
     ${card(`<div class="legend-row">${emblem(f ? f.emoji : c.emoji, c.color, 52)}
         <span class="row-main"><span class="h-large">${esc(e.title)}</span>
@@ -912,11 +907,11 @@ const actions = {
   'ask-delete': () => { ui.modal = true; render(); },
   'cancel-delete': () => { ui.modal = false; render(); },
   'confirm-delete': (el) => {
-    const id = el.dataset.id || draft?.id;
+    const id = el.dataset.id;
     commit(remove(data, id));
     ui.modal = false;
     draft = null;
-    back(); // from the edit screen this lands on the deleted expense's view, which steps back again
+    back();
   },
   'search-cat': (el) => {
     const c = el.dataset.cat;

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.2 (Android), web app 1.6.2 and iPhone app 1.4.2 – unreleased (2026-11-23)
+
+### Changed
+- **Ledger entry page:** the trash and pencil icons in the top bar are gone. They did the same as the ✏️ Amend expense button and the Evanesco · delete link at the bottom, which stay. The top bar only has Back.
+- **Record / Amend expense screen:** the ✓ and 🗑 in the top bar are gone. The framed Save button at the bottom saves, and deleting is on the Ledger entry page.
+- 2 new web tests check there's exactly one way to amend and one to delete on the entry page, and only the Save button on the edit screen (49 web tests). 144 Android tests, all passing.
+
 ## 1.7.1 (Android), web app 1.6.1 and iPhone app 1.4.1 – unreleased (2026-11-23)
 
 ### Changed

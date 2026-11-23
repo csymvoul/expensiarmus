@@ -13,8 +13,6 @@ import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
@@ -51,7 +49,7 @@ import java.util.Locale
 
 private val longDate = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.ENGLISH)
 
-/** Read-only view of one expense, with Amend and Evanesco (delete). */
+/** Read-only view of one expense. Amend and Evanesco (delete) are the buttons at the bottom; the top bar only has Back. */
 @Composable
 fun ExpenseDetailScreen(
     expense: Expense?,
@@ -75,14 +73,6 @@ fun ExpenseDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { confirmingDelete = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
-                    }
-                    IconButton(onClick = { onEdit(expense.id) }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Amend")
                     }
                 },
             )

@@ -375,6 +375,21 @@ test('record button is framed and floats on a shadow; settings is a tab', () => 
   assert.equal(wordsFor(false).exportButton, 'Export CSV');
 });
 
+test('ledger entry page has one way to amend and one to delete', () => {
+  const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+  const view = app.slice(app.indexOf('function viewScreen('), app.indexOf('// ---------- category ----------'));
+  assert.equal(view.match(/data-action="amend"/g).length, 1);
+  assert.equal(view.match(/data-action="ask-delete"/g).length, 1);
+  assert.match(view, /header\(W\.entry, \{ backBtn: true \}\)/);
+});
+
+test('edit screen saves only with the Save button and has no delete', () => {
+  const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+  const edit = app.slice(app.indexOf('function editScreen('), app.indexOf('/** Fills the form from a suggestion'));
+  assert.equal(edit.match(/data-action="save"/g).length, 1);
+  assert.doesNotMatch(edit, /ask-delete|deleteModal/);
+});
+
 test('number pad keys are centred', () => {
   const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
   const rule = css.match(/\.numpad button \{([^}]*)\}/)[1];

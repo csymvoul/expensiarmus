@@ -17,10 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
@@ -81,7 +78,6 @@ fun EditExpenseScreen(
     history: List<Expense>,
     prefill: QuickPrefill?,
     onSave: (Expense) -> Unit,
-    onDelete: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val w = LocalWords.current
@@ -99,7 +95,6 @@ fun EditExpenseScreen(
     var myPercent by rememberSaveable { mutableIntStateOf(existing?.takeIf { it.isSplit }?.myPercent ?: 50) }
     var showErrors by rememberSaveable { mutableStateOf(false) }
     var pickingDate by remember { mutableStateOf(false) }
-    var confirmingDelete by remember { mutableStateOf(false) }
 
     val cents = Money.parseToCents(amount)
     val titleOk = title.isNotBlank()
@@ -132,16 +127,6 @@ fun EditExpenseScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    if (existing != null) {
-                        IconButton(onClick = { confirmingDelete = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete")
-                        }
-                    }
-                    IconButton(onClick = ::save) {
-                        Icon(Icons.Default.Check, contentDescription = "Save")
                     }
                 },
             )
@@ -306,17 +291,5 @@ fun EditExpenseScreen(
         ) {
             DatePicker(state = state)
         }
-    }
-
-    if (confirmingDelete && existing != null) {
-        AlertDialog(
-            onDismissRequest = { confirmingDelete = false },
-            title = { Text(w.deleteTitle) },
-            text = { Text(w.deleteBody(existing.title)) },
-            confirmButton = {
-                TextButton(onClick = { confirmingDelete = false; onDelete(existing.id) }) { Text(w.deleteBtn) }
-            },
-            dismissButton = { TextButton(onClick = { confirmingDelete = false }) { Text(w.keep) } },
-        )
     }
 }
