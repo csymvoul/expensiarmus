@@ -1,5 +1,11 @@
 # Changelog
 
+## Web app 1.11.1 and iPhone app 1.9.1 – unreleased (2026-11-24)
+
+### Fixed
+- **Evanesco in dark mode** was a pinkish red with white text instead of gold. It now matches every other dark-mode button (gold with dark text) and stays red in light mode. The same goes for the ward's "From … on" removal button. The colours come from two new theme values, `--danger-bg` and `--on-danger`. Android was not affected (its delete confirmation is already a gold text button).
+- Tests: 1 new web test checks the colours in light mode and in both dark modes (phone set to dark, or Dark chosen in Settings); 72 web tests, all passing. Checked in a browser in light and dark.
+
 ## 1.12.0 (Android), web app 1.11.0 and iPhone app 1.9.0 – unreleased (2026-11-24)
 
 ### Changed

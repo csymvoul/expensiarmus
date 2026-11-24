@@ -821,3 +821,16 @@ test('Home was called Rent, and old backups still come back in', () => {
   assert.deepEqual(r.problems, []);
   assert.deepEqual(r.added.map((x) => x.category), ['RENT', 'RENT']);
 });
+
+test('Evanesco is red by day and gold at night, like the other buttons', () => {
+  const css = readFileSync(webFile('css/style.css'), 'utf8');
+  assert.match(css, /\.btn\.danger \.frame-inner \{ background-color: var\(--danger-bg\); color: var\(--on-danger\); \}/);
+  const light = css.slice(css.indexOf(':root {'), css.indexOf('@media (prefers-color-scheme: dark)'));
+  assert.match(light, /--danger-bg: var\(--error\);/);
+  const media = css.slice(css.indexOf('@media (prefers-color-scheme: dark)'), css.indexOf(":root[data-theme='dark']"));
+  const forced = css.slice(css.indexOf(":root[data-theme='dark']"));
+  for (const dark of [media, forced.slice(0, forced.indexOf('}'))]) {
+    assert.match(dark, /--danger-bg: var\(--primary\);/);
+    assert.match(dark, /--on-danger: var\(--on-primary\);/);
+  }
+});
