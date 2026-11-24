@@ -344,22 +344,33 @@ function installBanner() {
 }
 
 function monthSwitch(prev = 'prev-month', next = 'next-month', title = monthTitle(ui.month)) {
-  // Away from the current month, one tap brings the month switcher back to it.
-  const thisMonth = today().slice(0, 7);
-  const back = prev === 'prev-month' && ui.month !== thisMonth
-    ? `<button class="link this-month" data-action="this-month">↩ ${esc(W.thisMonth(monthTitle(thisMonth)))}</button>`
-    : '';
   return `<div class="month-switch">
       <button class="icon-btn gold" data-action="${prev}" aria-label="Previous">${ICON.left}</button>
       <h2 class="h-large">${title}</h2>
       <button class="icon-btn gold" data-action="${next}" aria-label="Next">${ICON.right}</button>
-    </div>${back}`;
+    </div>`;
+}
+
+/** On Annals → By year, only away from the current year: the Time-Turner brings you back to it. */
+function yearTurner() {
+  const thisYear = Number(today().slice(0, 4));
+  if (ui.annals.view !== 'year' || ui.annals.year === thisYear) return '';
+  const label = esc(W.thisMonth(String(thisYear)));
+  return `<button class="icon-btn" data-action="this-year" aria-label="${label}" title="${label}"><span class="today-glyph"></span></button>`;
+}
+
+/** In the top bar, only away from the current month: a Time-Turner that brings you back to it. */
+function timeTurner() {
+  const thisMonth = today().slice(0, 7);
+  if (ui.month === thisMonth) return '';
+  const label = esc(W.thisMonth(monthTitle(thisMonth)));
+  return `<button class="icon-btn" data-action="this-month" aria-label="${label}" title="${label}"><span class="today-glyph"></span></button>`;
 }
 
 /** The Ledger tab (overview of the month) and the Calendar tab. */
 function monthScreen(calendar) {
   const s = monthlySummary(data, ui.month);
-  const actions = `<button class="icon-btn" data-action="go" data-to="#/search" aria-label="${W.search}"><span class="search-glyph"></span></button>`;
+  const actions = `${timeTurner()}<button class="icon-btn" data-action="go" data-to="#/search" aria-label="${W.search}"><span class="search-glyph"></span></button>`;
   let body;
   if (!calendar) {
     body = `${totalCard(s)}
@@ -750,7 +761,7 @@ function goalsScreen() {
           <button class="btn danger" data-action="ward-remove-on"><span class="frame"><span class="frame-inner">From ${name} on</span></span></button></div>
       </div></div></div>`
     : '';
-  return `${header(`${W.goals} · ${name}`, { icon: TAB_ICONS.goals })}
+  return `${header(`${W.goals} · ${name}`, { icon: TAB_ICONS.goals, actions: timeTurner() })}
   <main class="with-tabs">
     ${monthSwitch()}
     <p class="soft">${esc(W.goalsIntro(monthTitle(m)))}</p>
@@ -859,7 +870,7 @@ function annalsScreen() {
   }
   const facts = [s.expenseCount === 1 ? '1 expense' : `${s.expenseCount} expenses`,
     s.biggest ? `biggest: ${s.biggest.title}, ${format(myShareCents(s.biggest))}` : ''].filter(Boolean).join(' · ');
-  return `${header(W.annals, { icon: TAB_ICONS.annals })}
+  return `${header(W.annals, { icon: TAB_ICONS.annals, actions: yearTurner() })}
   <main class="with-tabs">
     <div class="segmented">
       <button class="${a.view === 'year' ? 'on' : ''}" data-action="annals-view" data-view="year">${chipIcon({ icon: TAB_ICONS.calendar })}By year</button>
@@ -951,6 +962,7 @@ const actions = {
   },
   'slice-clear': () => { ui.highlighted = null; render(); },
   'annals-view': (el) => { ui.annals = { ...ui.annals, view: el.dataset.view, bar: null }; ui.highlighted = null; render(); },
+  'this-year': () => { ui.annals = { ...ui.annals, year: Number(today().slice(0, 4)), bar: null }; ui.highlighted = null; render(); },
   'prev-year': () => { ui.annals = { ...ui.annals, year: ui.annals.year - 1, bar: null }; ui.highlighted = null; render(); },
   'next-year': () => { ui.annals = { ...ui.annals, year: ui.annals.year + 1, bar: null }; ui.highlighted = null; render(); },
   bar: (el) => { const i = Number(el.dataset.index); ui.annals = { ...ui.annals, bar: ui.annals.bar === i ? null : i }; render(); },

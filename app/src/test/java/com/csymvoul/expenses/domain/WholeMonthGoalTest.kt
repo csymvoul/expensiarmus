@@ -5,6 +5,8 @@ import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.Goals
 import com.csymvoul.expenses.widget.WidgetContent
+import com.csymvoul.expenses.R
+import com.csymvoul.expenses.ui.theme.todayGlyph
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -75,5 +77,10 @@ class WholeMonthGoalTest {
         assertEquals(3, w.wards.size)
         assertEquals("✦ Whole month · €464.00 of €1,000.00", w.wards[0].text)
         assertTrue(w.wards.drop(1).none { it.text.startsWith("✦") })
+    }
+
+    @Test fun `the Time-Turner is gold at night and bronze by day`() {
+        assertEquals(R.drawable.emblem_today_dark, todayGlyph(night = true))
+        assertEquals(R.drawable.emblem_today_light, todayGlyph(night = false))
     }
 }

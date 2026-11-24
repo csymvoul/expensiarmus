@@ -235,6 +235,7 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                     onViewChange = { annalsView = it },
                     onPreviousYear = { annalsYear-- },
                     onNextYear = { annalsYear++ },
+                    onThisYear = { annalsYear = LocalDate.now().year },
                     onOpenMonth = {
                         month = it
                         stack = MONTH

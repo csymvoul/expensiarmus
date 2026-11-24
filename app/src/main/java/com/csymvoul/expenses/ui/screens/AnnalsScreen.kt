@@ -17,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import com.csymvoul.expenses.ui.components.ChipEmblem
 import com.csymvoul.expenses.ui.components.Tab
+import com.csymvoul.expenses.ui.components.TodayGlyph
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
@@ -60,6 +61,8 @@ fun AnnalsScreen(
     onViewChange: (AnnalsView) -> Unit,
     onPreviousYear: () -> Unit,
     onNextYear: () -> Unit,
+    /** Jumps back to the current year (By year only). */
+    onThisYear: () -> Unit,
     onOpenMonth: (YearMonth) -> Unit,
     onOpenYear: (Int) -> Unit,
     onCategory: (Category, FoodType?) -> Unit,
@@ -71,7 +74,18 @@ fun AnnalsScreen(
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
-        topBar = { WizardTopBar(title = w.annals, icon = Tab.ANNALS.icon) },
+        topBar = {
+            WizardTopBar(
+                title = w.annals,
+                icon = Tab.ANNALS.icon,
+                actions = {
+                    // Only on By year, away from the current year: the Time-Turner brings you back to it.
+                    if (view == AnnalsView.YEAR && year != today.year) {
+                        IconButton(onClick = onThisYear) { TodayGlyph(w.thisMonth(today.year.toString())) }
+                    }
+                },
+            )
+        },
         bottomBar = bottomBar,
     ) { padding ->
         LazyColumn(

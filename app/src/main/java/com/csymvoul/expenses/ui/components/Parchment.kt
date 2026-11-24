@@ -52,12 +52,19 @@ import com.csymvoul.expenses.domain.Words
 import com.csymvoul.expenses.R
 import com.csymvoul.expenses.ui.theme.frameLine
 import com.csymvoul.expenses.ui.theme.searchGlyph
+import com.csymvoul.expenses.ui.theme.todayGlyph
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /** True on the dark (candle-lit) theme. */
 @Composable
 fun isNight() = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
+/** The Time-Turner on its own, with no badge (like Accio's glass): bronze by day, gold at night. */
+@Composable
+fun TodayGlyph(contentDescription: String?, size: Dp = 30.dp) {
+    Image(painterResource(todayGlyph(isNight())), contentDescription = contentDescription, modifier = Modifier.size(size))
+}
 
 /** Accio's magnifying glass on its own, with no badge: bronze by day, gold at night. */
 @Composable

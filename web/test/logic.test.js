@@ -610,7 +610,7 @@ test('logo and Settings emblems exist on disk and are cached offline', () => {
 test('headers, Settings and Annals use the painted emblems, not emoji', () => {
   const app = readFileSync(webFile('js/app.js'), 'utf8');
   assert.match(app, /header\('Expensiarmus', \{ actions, icon: EMBLEMS\.logo \}\)/);
-  for (const tab of ['settings', 'annals', 'goals']) assert.match(app, new RegExp(`icon: TAB_ICONS\\.${tab} \\}`));
+  for (const tab of ['settings', 'annals', 'goals']) assert.match(app, new RegExp(`icon: TAB_ICONS\\.${tab}[ ,]`));
   assert.match(app, /header\(cat\.label, \{ backBtn: true, icon: /);
   assert.doesNotMatch(app, /\$\{cat\.emoji\} \$\{cat\.label\}`, \{ backBtn/);
   assert.match(app, /TAB_ICONS\.calendar \}\)\}By year/);
@@ -919,10 +919,34 @@ test('the whole-month ward warns at 80% and when broken, once each', () => {
 test('the Ledger shows the whole-month ward under its total, and a way back to this month', () => {
   const app = readFileSync(webFile('js/app.js'), 'utf8');
   assert.match(app, /\$\{s\.totalGoal \? `\$\{goalBar\(s\.totalGoal\)\}/);
-  assert.match(app, /prev === 'prev-month' && ui\.month !== thisMonth/);
+  assert.match(app, /if \(ui\.month === thisMonth\) return '';/);
+  assert.doesNotMatch(app, /class="link this-month"/);
   assert.match(app, /'this-month': \(\) => \{ ui\.month = today\(\)\.slice\(0, 7\);/);
   assert.equal(wordsFor(true).thisMonth('November 2026'), 'Back to November 2026');
   assert.match(app, /const vaults = \[whole, \.\.\.CATEGORIES\]/);
   assert.match(app, /setGoal\(data\.goals, goalKey\(cat\)/);
   assert.match(app, /removeGoal\(data\.goals, goalKey\(cat\)/);
+});
+
+test('the Time-Turner sits in the top bar, bronze by day and gold at night, without a badge', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  const css = readFileSync(webFile('css/style.css'), 'utf8');
+  const sw = readFileSync(webFile('sw.js'), 'utf8');
+  assert.match(app, /const actions = `\$\{timeTurner\(\)\}<button class="icon-btn" data-action="go" data-to="#\/search"/);
+  assert.match(app, /header\(`\$\{W\.goals\} · \$\{name\}`, \{ icon: TAB_ICONS\.goals, actions: timeTurner\(\) \}\)/);
+  assert.match(app, /data-action="this-month" aria-label="\$\{label\}"[^>]*><span class="today-glyph"><\/span>/);
+  assert.equal(css.match(/--today-glyph: url\('\.\.\/icons\/emblems\/today_light\.png'\)/g).length, 1);
+  assert.equal(css.match(/--today-glyph: url\('\.\.\/icons\/emblems\/today_dark\.png'\)/g).length, 2);
+  for (const f of ['today_light.png', 'today_dark.png']) {
+    assert.ok(existsSync(webFile(`icons/emblems/${f}`)));
+    assert.ok(sw.includes(`'icons/emblems/${f}'`));
+  }
+});
+
+test('Annals by year has its own Time-Turner back to the current year', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  assert.match(app, /header\(W\.annals, \{ icon: TAB_ICONS\.annals, actions: yearTurner\(\) \}\)/);
+  assert.match(app, /if \(ui\.annals\.view !== 'year' \|\| ui\.annals\.year === thisYear\) return '';/);
+  assert.match(app, /'this-year': \(\) => \{ ui\.annals = \{ \.\.\.ui\.annals, year: Number\(today\(\)\.slice\(0, 4\)\)/);
+  assert.equal(wordsFor(true).thisMonth('2026'), 'Back to 2026');
 });

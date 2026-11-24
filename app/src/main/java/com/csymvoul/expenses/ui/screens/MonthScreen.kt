@@ -59,6 +59,7 @@ import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.ui.components.CalendarGrid
 import com.csymvoul.expenses.ui.components.EmblemBadge
+import com.csymvoul.expenses.ui.components.TodayGlyph
 import com.csymvoul.expenses.ui.components.SearchGlyph
 import com.csymvoul.expenses.ui.components.WizardFab
 import com.csymvoul.expenses.ui.components.WizardTopBar
@@ -129,6 +130,11 @@ fun MonthScreen(
                 title = "Expensiarmus",
                 icon = R.drawable.emblem_logo_pouch,
                 actions = {
+                    // Only away from the current month: the Time-Turner brings you back to it.
+                    val now = YearMonth.now()
+                    if (summary.month != now) {
+                        IconButton(onClick = onThisMonth) { TodayGlyph(w.thisMonth(now.format(monthFormat))) }
+                    }
                     IconButton(onClick = onSearch) {
                         SearchGlyph()
                     }
@@ -153,7 +159,7 @@ fun MonthScreen(
             if (reminderOn && owlsBlocked) {
                 item { OwlsBlockedBanner(onFixOwls) }
             }
-            item { MonthSwitcher(summary, onPreviousMonth, onNextMonth, onThisMonth) }
+            item { MonthSwitcher(summary, onPreviousMonth, onNextMonth) }
             when (view) {
                 MonthView.OVERVIEW -> {
                     item { TotalCard(summary) }
@@ -244,7 +250,7 @@ private fun Hint(text: String) {
 }
 
 @Composable
-private fun MonthSwitcher(summary: MonthlySummary, onPrevious: () -> Unit, onNext: () -> Unit, onThisMonth: () -> Unit) {
+private fun MonthSwitcher(summary: MonthlySummary, onPrevious: () -> Unit, onNext: () -> Unit) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onPrevious) {
@@ -267,11 +273,6 @@ private fun MonthSwitcher(summary: MonthlySummary, onPrevious: () -> Unit, onNex
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
-    }
-    // Away from the current month, one tap brings it back.
-    val now = YearMonth.now()
-    if (summary.month != now) {
-        TextButton(onClick = onThisMonth) { Text("↩ " + LocalWords.current.thisMonth(now.format(monthFormat))) }
     }
     }
 }

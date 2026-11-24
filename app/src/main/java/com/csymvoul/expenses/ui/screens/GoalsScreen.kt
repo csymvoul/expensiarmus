@@ -55,6 +55,7 @@ import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.GoalEntry
 import com.csymvoul.expenses.model.Goals
 import com.csymvoul.expenses.ui.components.EmblemBadge
+import com.csymvoul.expenses.ui.components.TodayGlyph
 import com.csymvoul.expenses.ui.components.GoalBar
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.ParchmentCard
@@ -98,7 +99,19 @@ fun GoalsScreen(
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
-        topBar = { WizardTopBar(title = "${w.goals} · ${month.format(monthName)}", icon = Tab.GOALS.icon) },
+        topBar = {
+            WizardTopBar(
+                title = "${w.goals} · ${month.format(monthName)}",
+                icon = Tab.GOALS.icon,
+                actions = {
+                    // Only away from the current month: the Time-Turner brings you back to it.
+                    val now = YearMonth.now()
+                    if (month != now) {
+                        IconButton(onClick = onThisMonth) { TodayGlyph(w.thisMonth(now.format(monthYear))) }
+                    }
+                },
+            )
+        },
         bottomBar = bottomBar,
     ) { padding ->
         Column(
@@ -122,12 +135,6 @@ fun GoalsScreen(
                 )
                 IconButton(onClick = onNextMonth) {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month", tint = MaterialTheme.colorScheme.primary)
-                }
-            }
-            val now = YearMonth.now()
-            if (month != now) {
-                TextButton(onClick = onThisMonth, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                    Text("↩ " + w.thisMonth(now.format(monthYear)))
                 }
             }
             Text(

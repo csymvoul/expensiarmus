@@ -29,6 +29,7 @@
   --frame-line-soft: rgba(168, 122, 30, 0.55);
   --frame-sparkle: var(--sparkle);
   --search-glyph: url('../icons/emblems/search_light.png');
+  --today-glyph: url('../icons/emblems/today_light.png');
   /* Evanesco and other removing buttons: red by day; at night gold like every other button. */
   --danger-bg: var(--error);
   --on-danger: #fff;
@@ -58,6 +59,7 @@
     /* Gold buttons get burgundy lines, which gold lines would vanish into. */
     --frame-line: #7B1E1E;
     --search-glyph: url('../icons/emblems/search_dark.png');
+    --today-glyph: url('../icons/emblems/today_dark.png');
     --danger-bg: var(--primary);
     --on-danger: var(--on-primary);
     --frame-line-soft: rgba(123, 30, 30, 0.7);
@@ -86,6 +88,7 @@
   color-scheme: dark;
   --frame-line: #7B1E1E;
   --search-glyph: url('../icons/emblems/search_dark.png');
+  --today-glyph: url('../icons/emblems/today_dark.png');
   --danger-bg: var(--primary);
   --on-danger: var(--on-primary);
   --frame-line-soft: rgba(123, 30, 30, 0.7);
@@ -149,6 +152,7 @@ p { margin: 4px 0; }
 .bar h1 { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
 .bar h1 span { overflow: hidden; text-overflow: ellipsis; }
 .bar-icon { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--gold); object-fit: cover; }
+.today-glyph { flex: none; display: block; width: 30px; height: 30px; background: var(--today-glyph) center / contain no-repeat; }
 .search-glyph { flex: none; display: block; width: 30px; height: 30px; background: var(--search-glyph) center / contain no-repeat; }
 .card-title { display: flex; align-items: center; gap: 10px; }
 .bar-actions { display: flex; position: relative; }
@@ -390,7 +394,6 @@ input[type='range'] { width: 100%; accent-color: var(--primary); }
 .glance-tile small { font-size: 11px; color: var(--ink-soft); line-height: 1.2; }
 .import-summary { max-height: 50vh; overflow-y: auto; margin: 8px 0; }
 .import-summary .error { color: var(--error); }
-.this-month { display: block; margin: -4px auto 6px; font-size: 14px; }
 .more-link { display: block; margin: 6px auto 0; }
 .up { color: var(--error); }
 .down { color: var(--good); }

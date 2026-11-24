@@ -213,5 +213,8 @@ fun frameLine(night: Boolean, gold: Color): Color = if (night) Burgundy else gol
 /** Accio's magnifying glass, drawn without a badge: gold on the dark theme, bronze on parchment. */
 fun searchGlyph(night: Boolean): Int = if (night) R.drawable.emblem_search_dark else R.drawable.emblem_search_light
 
+/** The Time-Turner that brings you back to the current month: gold on the dark theme, bronze on parchment. */
+fun todayGlyph(night: Boolean): Int = if (night) R.drawable.emblem_today_dark else R.drawable.emblem_today_light
+
 /** Amber used once 80% of a goal is spent. */
 val WarningColor = Color(0xFFE08A00)

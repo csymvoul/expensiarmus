@@ -171,4 +171,10 @@ The Apparate emblem is vector art (`art/emblem-apparate.svg`). To redraw its pic
 qlmanage -t -s 384 -o /tmp art/emblem-apparate.svg && sips -s format png -z 192 192 /tmp/emblem-apparate.svg.png --out /tmp/set_apparate.png
 ```
 
+The Time-Turner (back to this month) has no badge and needs a see-through background, which Quick Look can't give, so it is rendered by `art/svg2png.swift`:
+
+```bash
+swiftc -O -o /tmp/svg2png art/svg2png.swift && /tmp/svg2png art/glyph-today-light.svg /tmp/today_light.png 192 && /tmp/svg2png art/glyph-today-dark.svg /tmp/today_dark.png 192
+```
+
 Copy each `<name>.png` to `web/icons/emblems/<name>.png` and to `app/src/main/res/drawable-nodpi/emblem_<name>.png`. A new emblem also needs a line in `web/sw.js` so it works offline.

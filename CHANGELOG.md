@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.15.1 (Android), web app 1.15.0 and iPhone app 1.12.1 – unreleased (2026-11-25)
+
+### Changed
+- **Back to this month is a Time-Turner** in the top bar, next to Accio's magnifying glass, instead of the "↩ Back to …" text under the month name. Like the glass it has no badge: bronze on parchment, gold at night. It only appears when you are looking at another month (Ledger, Calendar, Protego), and its label reads "Back to November 2026" for screen readers. **Annals → By year** has the same Time-Turner when you are on another year, bringing you back to the current one ("Back to 2026"); it doesn't show on All time. The pictures are drawn as vector art (`art/glyph-today-light.svg`, `art/glyph-today-dark.svg`) and rendered with a transparent background by `art/svg2png.swift`.
+- Tests: Android 184 (1 new: the right shade per theme), web 80 (2 new: the Time-Turner in the top bar, both shades, cached offline, and the Annals year one; two older tests updated). All passing. Checked in a browser in light and dark: hidden on November, shown on October, and it brings you back; on Annals hidden on 2026 and on All time, shown on 2025.
+
+### Known issues
+- Not yet checked on a phone.
+
 ## 1.15.0 (Android), web app 1.14.0 and iPhone app 1.12.0 – unreleased (2026-11-25)
 
 ### Added
