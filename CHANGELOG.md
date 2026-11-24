@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.17.2 (Android), web app 1.17.2 and iPhone app 1.14.2 – unreleased (2026-11-25)
+
+### Changed
+- **No title suggestions when recording.** Quick add and the expense form no longer suggest earlier titles while you type: you write the title yourself or pick a favourite.
+- **Quick add is more compact:** a smaller amount, shorter number keys (40 px on the web, 44 dp on Android), smaller category tiles and calendar emblem, and tighter spacing. On a 375×812 phone it now fits without scrolling, favourites included.
+- Tests: Android 193 (2 new: no suggestions on either screen, the compact sizes), web 90 (1 new; the suggestions test now checks they are gone, and one size updated). All passing. Checked in a browser: typing "fre" shows nothing, and the sheet fits the screen.
+
 ## 1.17.1 (Android), web app 1.17.1 and iPhone app 1.14.1 – unreleased (2026-11-25)
 
 ### Changed

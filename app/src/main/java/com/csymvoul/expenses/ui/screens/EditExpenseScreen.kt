@@ -55,7 +55,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.csymvoul.expenses.domain.Money
-import com.csymvoul.expenses.domain.Suggestions
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
@@ -79,7 +78,6 @@ private val dateFormat = DateTimeFormatter.ofPattern("EEE d MMMM yyyy", Locale.E
 fun EditExpenseScreen(
     existing: Expense?,
     defaultDate: LocalDate,
-    history: List<Expense>,
     prefill: QuickPrefill?,
     /** Shown for a new expense: one tap fills in a favourite's title, category and split. */
     favorites: List<Favorite>,
@@ -90,11 +88,6 @@ fun EditExpenseScreen(
     var title by rememberSaveable { mutableStateOf(existing?.title ?: prefill?.title ?: "") }
     var amount by rememberSaveable { mutableStateOf(existing?.let { Money.forInput(it.amountCents) } ?: prefill?.amount ?: "") }
     var date by rememberSaveable { mutableStateOf(existing?.date ?: prefill?.date ?: defaultDate) }
-    // Suggestions show for new expenses while typing a title, until one is picked.
-    var suggestionPicked by rememberSaveable { mutableStateOf(false) }
-    val suggestions = remember(history, title, suggestionPicked) {
-        if (existing != null || suggestionPicked) emptyList() else Suggestions.of(history, title)
-    }
     var category by rememberSaveable { mutableStateOf(existing?.category ?: prefill?.category ?: Category.SUPERMARKET) }
     var foodType by rememberSaveable { mutableStateOf(existing?.foodType ?: prefill?.foodType) }
     val handedPercent = prefill?.myPercent?.takeIf { existing == null && it < 100 }
@@ -167,7 +160,6 @@ fun EditExpenseScreen(
                                     foodType = f.foodType
                                     split = f.myPercent < 100
                                     myPercent = if (f.myPercent < 100) f.myPercent else 50
-                                    suggestionPicked = true
                                 },
                                 label = { Text(f.title) },
                                 leadingIcon = { ChipEmblem(f.foodType?.icon ?: f.category.icon) },
@@ -178,7 +170,7 @@ fun EditExpenseScreen(
             }
             OutlinedTextField(
                 value = title,
-                onValueChange = { title = it; suggestionPicked = false },
+                onValueChange = { title = it },
                 label = { Text("Title") },
                 placeholder = { Text("e.g. Butterbeer with friends") },
                 singleLine = true,
@@ -190,13 +182,6 @@ fun EditExpenseScreen(
                 ),
                 modifier = Modifier.fillMaxWidth(),
             )
-            if (suggestions.isNotEmpty()) {
-                SuggestionList(suggestions) { s ->
-                    // Only the title: amount, category and split stay as they are.
-                    title = s.title
-                    suggestionPicked = true
-                }
-            }
             OutlinedTextField(
                 value = amount,
                 onValueChange = { amount = it },

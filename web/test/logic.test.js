@@ -635,7 +635,7 @@ test('Quick add date uses the calendar emblem; Accio uses a magnifier with no ba
   const app = readFileSync(webFile('js/app.js'), 'utf8');
   const css = readFileSync(webFile('css/style.css'), 'utf8');
   const sw = readFileSync(webFile('sw.js'), 'utf8');
-  assert.match(app, /<label class="quick-date">\$\{emblem\(TAB_ICONS\.calendar, 28\)\}<input/);
+  assert.match(app, /<label class="quick-date">\$\{emblem\(TAB_ICONS\.calendar, 24\)\}<input/);
   assert.doesNotMatch(app, /quick-date">📅/);
   assert.match(app, /data-to="#\/search"[^`]*<span class="search-glyph"><\/span>/);
   assert.match(app, /header\(W\.search, \{ backBtn: true, glyph: '<span class="search-glyph"><\/span>' \}\)/);
@@ -997,18 +997,23 @@ test('there can be at most five favourites', () => {
   assert.equal(toggleFavorite(fewer, sixth).length, 5); // after removing one, there is room again
 });
 
-test('suggestions only fill in the title; favourites live in Quick add and on the expense view', () => {
+test('no title suggestions when recording; favourites live in Quick add and on the expense view', () => {
   const app = readFileSync(webFile('js/app.js'), 'utf8');
-  const sugg = app.slice(app.indexOf("  'quick-sugg': (el) => {"), app.indexOf("  'edit-cat':"));
-  assert.doesNotMatch(sugg, /quickRecord|makeExpense|amountCents/); // nothing is recorded, no amount copied
-  assert.match(sugg, /ui\.quick\.title = s\.title;/);
-  assert.match(sugg, /draft\.title = suggestions\(/);
+  // You type a title or pick a favourite: earlier titles are not suggested in Quick add or the form.
+  assert.doesNotMatch(app, /suggestionList|quick-sugg|edit-sugg|title-sugg|suggestions\(/);
   assert.doesNotMatch(app, /function applySuggestion/);
-  const list = app.slice(app.indexOf('function suggestionList'), app.indexOf('// ---------- ledger and calendar'));
-  assert.doesNotMatch(list, /format\(s\.amountCents\)/); // the list shows no amounts
   assert.match(app, /\$\{favStar\(e\)\}<\/div>/);
   assert.match(app, /\$\{favRow\(q\)\}/);
   assert.match(app, /prefill = \{ title: q\.title, amount: q\.amount, date: q\.date, category: q\.cat, foodType: q\.food, myPercent: q\.pct \}/);
+});
+
+test('Quick add is compact: smaller amount, keys and tiles', () => {
+  const css = readFileSync(webFile('css/style.css'), 'utf8');
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  assert.match(css, /\.quick-amount \{[^}]*font-size: 32px/);
+  assert.match(css, /\.numpad button \{[^}]*height: 40px/);
+  assert.match(css, /\.sheet \{[^}]*gap: 7px/);
+  assert.match(app, /\$\{emblem\(t\.icon, 32\)\}<span>/);
 });
 
 test('the favourite star is a drawn glyph like the others, bronze by day and gold at night', () => {

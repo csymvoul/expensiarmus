@@ -37,12 +37,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.domain.MoneyStyle
-import com.csymvoul.expenses.domain.Suggestion
 import com.csymvoul.expenses.domain.Suggestions
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
@@ -59,7 +57,6 @@ import androidx.compose.material3.FilterChip
 import com.csymvoul.expenses.ui.components.WizardButton
 import com.csymvoul.expenses.ui.components.ChipEmblem
 import com.csymvoul.expenses.ui.components.StarGlyph
-import com.csymvoul.expenses.domain.ExpenseQueries
 import com.csymvoul.expenses.model.Favorite
 import com.csymvoul.expenses.ui.components.Tab
 import com.csymvoul.expenses.ui.components.LocalWords
@@ -86,13 +83,12 @@ data class QuickPrefill(
 
 /**
  * Quick add: type the amount, pick a category tile (or a favourite), then tap the gold ✓ at the top.
- * Tiles only select, so you can change your mind before recording. Typing a title offers earlier
- * titles; tapping one fills it in (no amount is copied). Favourites are edited in Settings → Favourites.
+ * Tiles only select, so you can change your mind before recording. The title is typed or comes from a
+ * favourite (earlier titles are not suggested). Favourites are edited in Settings → Favourites.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun QuickAddSheet(
-    history: List<Expense>,
     favorites: List<Favorite>,
     date: LocalDate,
     onSave: (Expense) -> Unit,
@@ -105,10 +101,6 @@ fun QuickAddSheet(
     var day by rememberSaveable { mutableStateOf(date) }
     var error by remember { mutableStateOf<String?>(null) }
     var pickingDate by remember { mutableStateOf(false) }
-    // Earlier titles, minus the one already typed in full.
-    val suggestions = remember(history, title) {
-        Suggestions.of(history, title).filter { ExpenseQueries.normalize(it.title) != ExpenseQueries.normalize(title) }
-    }
     // What the ✓ will record: the picked category and food type, and the share (a favourite's split).
     var picked by rememberSaveable { mutableStateOf<Category?>(null) }
     var pickedFood by rememberSaveable { mutableStateOf<FoodType?>(null) }
@@ -172,8 +164,8 @@ fun QuickAddSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .navigationBarsPadding()
-                .padding(bottom = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                .padding(bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onDismiss) { Text("Cancel") }
@@ -216,28 +208,27 @@ fun QuickAddSheet(
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth(),
             )
-            if (suggestions.isNotEmpty()) SuggestionList(suggestions) { s -> title = s.title }
             Text(
                 if (greek) "${amount.ifEmpty { "0" }} €" else "€${amount.ifEmpty { "0" }}",
-                style = MaterialTheme.typography.displaySmall,
+                style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
             TextButton(onClick = { pickingDate = true }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                EmblemBadge(Tab.CALENDAR.icon, size = 26.dp)
+                EmblemBadge(Tab.CALENDAR.icon, size = 22.dp)
                 Spacer(Modifier.width(8.dp))
                 Text(day.format(dayFormat))
             }
             listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf(Money.decimalKey(), "0", "⌫")).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                     row.forEach { k ->
                         OutlinedButton(
                             onClick = { key(k) },
                             shape = RoundedCornerShape(10.dp),
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)),
-                            modifier = Modifier.weight(1f).height(52.dp),
-                        ) { Text(k, fontSize = 22.sp, fontWeight = FontWeight.SemiBold) }
+                            modifier = Modifier.weight(1f).height(44.dp),
+                        ) { Text(k, fontSize = 20.sp, fontWeight = FontWeight.SemiBold) }
                     }
                 }
             }
@@ -267,8 +258,8 @@ fun QuickAddSheet(
                                 .padding(vertical = 4.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            EmblemBadge(look.first, size = 40.dp)
-                            Spacer(Modifier.height(4.dp))
+                            EmblemBadge(look.first, size = 34.dp)
+                            Spacer(Modifier.height(3.dp))
                             Text(look.second, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2)
                         }
                     }
@@ -293,29 +284,5 @@ fun QuickAddSheet(
             },
             dismissButton = { TextButton(onClick = { pickingDate = false }) { Text("Cancel") } },
         ) { DatePicker(state = state) }
-    }
-}
-
-/** Earlier titles matching what is typed, without amounts; tapping one calls [onPick]. */
-@Composable
-internal fun SuggestionList(suggestions: List<Suggestion>, onPick: (Suggestion) -> Unit) {
-    Column(Modifier.fillMaxWidth()) {
-        suggestions.forEach { s ->
-            Row(
-                Modifier.fillMaxWidth().clickable { onPick(s) }.padding(vertical = 6.dp, horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                EmblemBadge(s.foodType?.icon ?: s.category.icon, size = 28.dp)
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(s.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        s.foodType?.label ?: s.category.label,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
     }
 }

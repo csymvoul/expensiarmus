@@ -328,7 +328,6 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                 EditExpenseScreen(
                     existing = existing,
                     defaultDate = newExpenseDate,
-                    history = data.expenses,
                     prefill = handed,
                     favorites = data.favorites,
                     onSave = {
@@ -375,7 +374,6 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
 
     if (quickOpen) {
         QuickAddSheet(
-            history = data.expenses,
             favorites = data.favorites,
             date = newExpenseDate,
             onSave = { e ->

@@ -3,7 +3,7 @@ import { CATEGORIES, FOOD_TYPES, TAB_ICONS, EMBLEMS, WHOLE_MONTH, goalKey, witho
 import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
 import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
-import { dailyTotals, onDay, calendarCells, byCategory, inPeriod, normalize, isFavorite, toggleFavorite, MAX_FAVORITES, saveFavorite, removeFavoriteAt, search, shiftMonth, suggestions, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
+import { dailyTotals, onDay, calendarCells, byCategory, inPeriod, isFavorite, toggleFavorite, MAX_FAVORITES, saveFavorite, removeFavoriteAt, search, shiftMonth, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
 import { toCsv, importCsv, importSummary } from './csv.js';
 import { load, save, KEY } from './store.js';
 import { upcomingReminders } from './reminder.js';
@@ -174,19 +174,6 @@ function expenseRow(e, showYear = false) {
     <span class="row-main"><span class="row-title">${esc(e.title)}</span><span class="row-sub">${esc(details)}</span></span>
     <span class="row-amount"><b>${format(myShareCents(e))}</b>${isSplit(e) ? `<small>of ${format(e.amountCents)}</small>` : ''}</span>
   </button>`;
-}
-
-/** Earlier titles matching what is typed. Tapping one only fills in the title; no amount is copied. */
-function suggestionList(typed, action) {
-  const list = suggestions(data.expenses, typed).filter((s) => normalize(s.title) !== normalize(typed));
-  if (!list.length) return '';
-  return `<div class="suggestions">${list.map((s, i) => {
-    const c = category(s.category);
-    const f = s.foodType ? foodType(s.foodType) : null;
-    return `<button class="suggestion" data-action="${action}" data-i="${i}">
-      ${emblem(f ? f.icon : c.icon, 26)}
-      <span class="row-main"><span class="row-title">${esc(s.title)}</span><span class="row-sub">${esc(f ? f.label : c.label)}</span></span></button>`;
-  }).join('')}</div>`;
 }
 
 // ---------- ledger and calendar ----------
@@ -430,7 +417,8 @@ function quickHelp(q) {
 
 /**
  * Quick add: type the amount, pick a category tile (or a favourite), then tap the gold ✓ at the top.
- * Tiles only select, so you can change your mind before recording.
+ * Tiles only select, so you can change your mind before recording. The title is typed or comes
+ * from a favourite; earlier titles are not suggested.
  */
 function quickSheet() {
   const q = ui.quick;
@@ -448,13 +436,12 @@ function quickSheet() {
     </div>
     ${favRow(q)}
     <input class="quick-title" type="text" placeholder="Title (optional)" value="${esc(q.title)}" data-input="quick-title" autocapitalize="sentences">
-    <div id="quick-sugg">${suggestionList(q.title, 'quick-sugg')}</div>
     <div class="quick-amount" id="quick-amount">${esc(quickAmountText())}</div>
-    <label class="quick-date">${emblem(TAB_ICONS.calendar, 28)}<input type="date" value="${q.date}" data-input="quick-date"></label>
+    <label class="quick-date">${emblem(TAB_ICONS.calendar, 24)}<input type="date" value="${q.date}" data-input="quick-date"></label>
     <div class="numpad">${keys.map((k) => `<button data-action="quick-key" data-key="${k}">${k}</button>`).join('')}</div>
     <p class="small center ${q.error ? 'error' : 'soft'}" id="quick-help">${esc(quickHelp(q))}</p>
     <div class="tiles">${tiles.map((t) => `<button class="tile ${q.cat === t.cat && (q.food ?? '') === t.food ? 'glow' : ''}" data-action="quick-pick" data-cat="${t.cat}" data-food="${t.food}">
-      ${emblem(t.icon, 38)}<span>${esc(t.label)}</span></button>`).join('')}</div>
+      ${emblem(t.icon, 32)}<span>${esc(t.label)}</span></button>`).join('')}</div>
     <button class="link center-link" data-action="quick-more">More details ›</button>
   </div>`;
 }
@@ -595,7 +582,6 @@ function editScreen(id) {
       <div class="chips">${data.favorites.map((f, i) => `<button class="chip" data-action="edit-fav" data-i="${i}">${chipIcon(f.foodType ? foodType(f.foodType) : category(f.category))}${esc(f.title)}</button>`).join('')}</div></div>` : ''}
     <div class="field"><label class="label" for="edit-title">Title</label>
       <input id="edit-title" type="text" value="${esc(d.title)}" placeholder="e.g. Butterbeer with friends" data-input="edit-title" class="${titleBad ? 'bad' : ''}" autocapitalize="sentences" autocomplete="off">
-      <div id="title-sugg">${d.id ? '' : suggestionList(d.title, 'edit-sugg')}</div>
       ${titleBad ? '<span class="error">Enter a title</span>' : ''}</div>
     <label class="field"><span class="label">${esc(W.amount)}</span>
       <span class="money-input ${amountBad ? 'bad' : ''}"><span>€</span><input type="text" inputmode="decimal" value="${esc(d.amount)}" placeholder="0${decimalKey()}00" data-input="edit-amount"></span>
@@ -1119,17 +1105,6 @@ const actions = {
     toast(isFavorite(next, e) ? `${e.title} is now a favourite` : `${e.title} is no longer a favourite`);
     render();
   },
-  'quick-sugg': (el) => {
-    const typed = ui.quick.title;
-    const s = suggestions(data.expenses, typed).filter((x) => normalize(x.title) !== normalize(typed))[Number(el.dataset.i)];
-    ui.quick.title = s.title;
-    render();
-  },
-  'edit-sugg': (el) => {
-    const typed = draft.title;
-    draft.title = suggestions(data.expenses, typed).filter((x) => normalize(x.title) !== normalize(typed))[Number(el.dataset.i)].title;
-    render();
-  },
   'edit-cat': (el) => { draft.category = el.dataset.cat; if (draft.category !== 'ENTERTAINMENT') draft.foodType = null; render(); },
   'edit-food': (el) => { draft.foodType = el.dataset.food || null; render(); },
   'edit-pct': (el) => { draft.myPercent = Number(el.dataset.pct); render(); },
@@ -1172,10 +1147,7 @@ const actions = {
 };
 
 const inputs = {
-  'edit-title': (el) => {
-    draft.title = el.value;
-    if (!draft.id) app.querySelector('#title-sugg').innerHTML = suggestionList(el.value, 'edit-sugg');
-  },
+  'edit-title': (el) => { draft.title = el.value; },
   'edit-amount': (el) => { draft.amount = el.value; const s = app.querySelector('#share-line'); if (s) s.textContent = shareLine(); },
   'edit-date': (el) => { draft.date = el.value; },
   'edit-split': (el) => { draft.split = el.checked; render(); },
@@ -1185,7 +1157,7 @@ const inputs = {
     app.querySelector('#share-line').textContent = shareLine();
   },
   'fe-title': (el) => { ui.favEdit.title = el.value; },
-  'quick-title': (el) => { ui.quick.title = el.value; app.querySelector('#quick-sugg').innerHTML = suggestionList(el.value, 'quick-sugg'); },
+  'quick-title': (el) => { ui.quick.title = el.value; },
   'import-file': (el) => { readImport(el); },
   'quick-date': (el) => { if (el.value) ui.quick.date = el.value; },
   'search-q': (el) => { finder.q = el.value; app.querySelector('#results').innerHTML = searchResults(); },
