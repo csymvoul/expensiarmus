@@ -186,7 +186,7 @@ test('CSV has the same columns as the Android export', () => {
     makeExpense({ id: '2', date: '2026-11-05', title: 'Pizza, beers', amountCents: 2400, category: 'ENTERTAINMENT', myPercent: 50, foodType: 'DELIVERY' }),
     makeExpense({ id: '1', date: '2026-11-01', title: 'Rent', amountCents: 60000, category: 'RENT' }),
   ]);
-  assert.equal(csv, `${HEADER}\n2026-11-01,Rent,Rent,,600.00,100,600.00\n2026-11-05,"Pizza, beers",Entertainment,Delivery,24.00,50,12.00\n`);
+  assert.equal(csv, `${HEADER}\n2026-11-01,Rent,Home,,600.00,100,600.00\n2026-11-05,"Pizza, beers",Entertainment,Delivery,24.00,50,12.00\n`);
   assert.equal(escape('say "hi"'), '"say ""hi"""');
 });
 
@@ -812,4 +812,12 @@ test('Settings has the Apparate card: a CSV picker, a confirmation, and nothing 
   assert.equal(wordsFor(true).importButton, 'Apparate · import CSV');
   assert.equal(wordsFor(true).imported(12), 'Apparate! 12 expenses appeared in the ledger.');
   assert.equal(wordsFor(false).imported(1), '1 expense imported.');
+});
+
+test('Home was called Rent, and old backups still come back in', () => {
+  assert.equal(CATEGORIES.find((c) => c.id === 'RENT').label, 'Home');
+  assert.match(CATEGORIES.find((c) => c.id === 'RENT').hint, /κοινόχρηστα/);
+  const r = importCsv('date,title,category,amount_eur\n2026-10-01,October rent,Rent,450\n2026-11-01,Κοινόχρηστα,Home,35\n', [], ids);
+  assert.deepEqual(r.problems, []);
+  assert.deepEqual(r.added.map((x) => x.category), ['RENT', 'RENT']);
 });

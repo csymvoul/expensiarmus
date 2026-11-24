@@ -1,7 +1,7 @@
 // Categories, food types and expense helpers. Same data shape as the Android app.
 
 export const CATEGORIES = [
-  { id: 'RENT', label: 'Rent', hint: 'Monthly rent', emoji: '🏰', nickname: 'The Castle Keep', color: '#A33A3A', icon: 'icons/emblems/cat_rent.png' },
+  { id: 'RENT', label: 'Home', hint: 'Rent and shared building costs (κοινόχρηστα)', emoji: '🏰', nickname: 'The Castle Keep', color: '#A33A3A', icon: 'icons/emblems/cat_rent.png' },
   { id: 'SUPERMARKET', label: 'Super market', hint: 'Groceries and household items', emoji: '🛒', nickname: 'Potion Ingredients', color: '#2F7D4E', icon: 'icons/emblems/cat_supermarket.png' },
   { id: 'ENTERTAINMENT', label: 'Entertainment', hint: 'Food, cinema, theatre, etc.', emoji: '🍽️', nickname: 'Revelry & Feasts', color: '#C8962E', icon: 'icons/emblems/cat_entertainment.png' },
   { id: 'BILLS', label: 'Bills', hint: 'Water, electricity, gas, etc.', emoji: '⚡', nickname: 'Lumos, Aguamenti, Incendio', color: '#3A63A8', icon: 'icons/emblems/cat_bills.png' },

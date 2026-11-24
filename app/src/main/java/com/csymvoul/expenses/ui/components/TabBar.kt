@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
@@ -47,8 +48,9 @@ fun WizardTabBar(selected: Tab, onSelect: (Tab) -> Unit) {
         Tab.LEDGER to w.ledgerTab, Tab.CALENDAR to w.calendarTab, Tab.ANNALS to w.annalsTab,
         Tab.GOALS to w.goalsTab, Tab.SETTINGS to w.settingsTab,
     )
-    Column {
-        GoldRule()
+    // One opaque band: the gold rule sits right on the tab bar's top edge, with no see-through gap above the tabs.
+    Column(Modifier.background(MaterialTheme.colorScheme.surfaceContainer)) {
+        GoldRule(atTopEdge = true)
         NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
             Tab.entries.forEach { tab ->
                 val name = labels.getValue(tab).split(" ", limit = 2).let { parts -> parts.getOrElse(1) { parts[0] } }

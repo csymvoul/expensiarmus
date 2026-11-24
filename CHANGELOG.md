@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.12.0 (Android), web app 1.11.0 and iPhone app 1.9.0 – unreleased (2026-11-24)
+
+### Changed
+- **Rent is now Home**, for rent and shared building costs (κοινόχρηστα). Only the name and its hint change: the category keeps its code (`RENT`), its castle emblem, colour, nickname, goals and every expense already in it. Geminio exports now write "Home"; Apparate still reads "Rent", so older backups import into Home.
+- **Android tab bar:** the gold line now sits right on the top edge of the tab bar, on one solid band. Before, it sat a few pixels higher on a see-through strip, so the page showed through between the line and the tabs.
+- Tests: Android 175 (3 new: the Home name and old "Rent" backups, and where the tab-bar line sits), web 71 (1 new), all passing. The export tests now expect "Home".
+
+### Known issues
+- The tab-bar change is Android-only and not yet checked on a phone.
+
 ## 1.11.1 (Android), web app 1.10.1 and iPhone app 1.8.1 – unreleased (2026-11-24)
 
 ### Changed

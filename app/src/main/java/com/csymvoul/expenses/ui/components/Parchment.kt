@@ -147,14 +147,26 @@ private fun DrawScope.drawFrame(paperCenter: Color, paperEdge: Color, gold: Colo
 
 /** Two thin gold lines with a sparkle in the middle. */
 @Composable
-fun GoldRule(modifier: Modifier = Modifier) {
+fun GoldRule(modifier: Modifier = Modifier, atTopEdge: Boolean = false) {
     val gold = MaterialTheme.colorScheme.secondary
-    Canvas(modifier.fillMaxWidth().height(10.dp)) {
-        val y1 = 3.dp.toPx()
-        val y2 = 6.dp.toPx()
+    val lines = GoldRuleLines.of(atTopEdge)
+    Canvas(modifier.fillMaxWidth().height(lines.heightDp.dp)) {
+        val y1 = lines.firstDp.dp.toPx()
+        val y2 = lines.secondDp.dp.toPx()
         drawLine(gold, Offset(0f, y1), Offset(size.width, y1), 1.2.dp.toPx())
         drawLine(gold.copy(alpha = 0.5f), Offset(0f, y2), Offset(size.width, y2), 0.8.dp.toPx())
         drawSparkle(Offset(center.x, (y1 + y2) / 2), 5.dp.toPx(), gold)
+    }
+}
+
+/**
+ * Where a [GoldRule] draws its two lines, in dp from the top of its strip. Under the top bar the strip
+ * has a little room above the lines. On top of the tab bar ([atTopEdge]) the bright line sits on the
+ * strip's top edge, so nothing of the page shows between the line and the tabs.
+ */
+data class GoldRuleLines(val heightDp: Float, val firstDp: Float, val secondDp: Float) {
+    companion object {
+        fun of(atTopEdge: Boolean) = if (atTopEdge) GoldRuleLines(5f, 0.6f, 3.6f) else GoldRuleLines(10f, 3f, 6f)
     }
 }
 

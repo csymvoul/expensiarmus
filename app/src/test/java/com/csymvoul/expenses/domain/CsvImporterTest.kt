@@ -109,4 +109,13 @@ class CsvImporterTest {
         assertEquals("1 expense imported.", Words.PLAIN.imported(1))
         assertEquals("Import CSV", Words.PLAIN.importButton)
     }
+
+    @Test fun `Home was called Rent, and old backups still come back in`() {
+        assertEquals("Home", Category.RENT.label)
+        assertTrue("κοινόχρηστα" in Category.RENT.hint)
+        val csv = "date,title,category,amount_eur\n2026-10-01,October rent,Rent,450\n2026-11-01,Κοινόχρηστα,Home,35\n"
+        val r = CsvImporter.import(csv, emptyList(), ids)
+        assertEquals(emptyList<ImportProblem>(), r.problems)
+        assertEquals(listOf(Category.RENT, Category.RENT), r.added.map { it.category })
+    }
 }

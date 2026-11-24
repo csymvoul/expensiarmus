@@ -17,7 +17,7 @@ class CsvExporterTest {
         )
         assertEquals(
             CsvExporter.HEADER + "\n" +
-                "2026-11-01,Rent,Rent,,600.00,100,600.00\n" +
+                "2026-11-01,Rent,Home,,600.00,100,600.00\n" +
                 "2026-11-05,\"Pizza, beers\",Entertainment,Delivery,24.00,50,12.00\n",
             csv,
         )

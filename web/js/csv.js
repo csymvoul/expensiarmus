@@ -37,7 +37,9 @@ export function parseCsv(text, delimiter = ',') {
 }
 
 const squash = (v) => String(v ?? '').toLowerCase().replace(/[\s_-]/g, '');
-const findCategory = (v) => CATEGORIES.find((c) => squash(c.label) === squash(v) || squash(c.id) === squash(v));
+/** Earlier names still read, so old backups come back in: Home was called Rent before web 1.11. */
+const OLD_NAMES = { rent: 'RENT' };
+const findCategory = (v) => CATEGORIES.find((c) => squash(c.label) === squash(v) || squash(c.id) === squash(v)) ?? category(OLD_NAMES[squash(v)]);
 const findFood = (v) => FOOD_TYPES.find((f) => squash(f.label) === squash(v) || squash(f.id) === squash(v));
 
 /** "2026-11-22", or a spreadsheet's "22/11/2026" or "22.11.2026" (day first), as YYYY-MM-DD; null if not a real date. */

@@ -133,7 +133,10 @@ object CsvImporter {
     }
 
     private fun squash(v: String) = v.lowercase().filterNot { it.isWhitespace() || it == '_' || it == '-' }
-    private fun findCategory(v: String) = Category.entries.firstOrNull { squash(it.label) == squash(v) || squash(it.name) == squash(v) }
+    /** Earlier names still read, so old backups come back in: Home was called Rent before 1.12. */
+    private val oldNames = mapOf("rent" to Category.RENT)
+    private fun findCategory(v: String) =
+        Category.entries.firstOrNull { squash(it.label) == squash(v) || squash(it.name) == squash(v) } ?: oldNames[squash(v)]
     private fun findFood(v: String) = FoodType.entries.firstOrNull { squash(it.label) == squash(v) || squash(it.name) == squash(v) }
     private fun sameness(e: Expense) = listOf(e.date, e.title.trim().lowercase(), e.amountCents, e.category, e.foodType, e.myPercent)
 }

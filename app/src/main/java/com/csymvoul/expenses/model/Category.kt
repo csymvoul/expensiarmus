@@ -1,7 +1,8 @@
 package com.csymvoul.expenses.model
 
+/** [RENT] keeps its code so saved data still loads; on screen it is "Home" (until 1.12 it was "Rent"). */
 enum class Category(val label: String, val hint: String) {
-    RENT("Rent", "Monthly rent"),
+    RENT("Home", "Rent and shared building costs (κοινόχρηστα)"),
     SUPERMARKET("Super market", "Groceries and household items"),
     ENTERTAINMENT("Entertainment", "Food, cinema, theatre, etc."),
     BILLS("Bills", "Water, electricity, gas, etc."),
