@@ -8,6 +8,7 @@ import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.Favorite
 import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.ui.theme.starGlyph
+import com.csymvoul.expenses.ui.theme.checkGlyph
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -65,5 +66,29 @@ class FavoritesTest {
         assertEquals(R.drawable.emblem_star_on_dark, starGlyph(on = true, night = true))
         assertEquals(R.drawable.emblem_star_off_light, starGlyph(on = false, night = false))
         assertEquals(R.drawable.emblem_star_off_dark, starGlyph(on = false, night = true))
+    }
+
+    @Test fun `the Favourites page edits, adds and removes with the same rules as the web app`() {
+        val coffee = Favorite("Freddo", Category.ENTERTAINMENT, FoodType.DAY_TO_DAY)
+        val rent = Favorite("Apartment", Category.RENT)
+        var list = Favorites.save(emptyList(), null, coffee).list!!
+        list = Favorites.save(list, null, rent).list!!
+        assertEquals(listOf("Apartment", "Freddo"), list.map { it.title })
+        list = Favorites.save(list, 1, Favorite(" Espresso ", Category.OTHER, FoodType.DAY_TO_DAY, 50)).list!!
+        assertEquals(Favorite("Espresso", Category.OTHER, null, 50), list[1])
+        assertEquals(2, Favorites.save(list, 0, rent).list!!.size)
+        assertEquals("Give it a title.", Favorites.save(list, 0, rent.copy(title = " ")).error)
+        assertEquals("Your share must be between 1 and 100%.", Favorites.save(list, 0, rent.copy(myPercent = 0)).error)
+        assertEquals("You already have this favourite.", Favorites.save(list, null, rent.copy(title = "APARTMENT")).error)
+        var five = emptyList<Favorite>()
+        for (t in listOf("A", "B", "C", "D", "E")) five = Favorites.save(five, null, rent.copy(title = t)).list!!
+        assertEquals("You can keep up to 5 favourites.", Favorites.save(five, null, rent.copy(title = "F")).error)
+        assertEquals(5, Favorites.save(five, 2, rent.copy(title = "F")).list!!.size)
+        assertEquals(listOf("B", "C", "D", "E"), Favorites.removeAt(five, 0).map { it.title })
+    }
+
+    @Test fun `the record check is gold at night and bronze by day`() {
+        assertEquals(R.drawable.emblem_check_dark, checkGlyph(night = true))
+        assertEquals(R.drawable.emblem_check_light, checkGlyph(night = false))
     }
 }

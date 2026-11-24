@@ -40,6 +40,8 @@ import com.csymvoul.expenses.domain.Release
 import com.csymvoul.expenses.update.UpdateState
 import com.csymvoul.expenses.domain.MoneyStyle
 import com.csymvoul.expenses.ui.components.LocalWords
+import com.csymvoul.expenses.domain.Favorites
+import com.csymvoul.expenses.ui.components.StarGlyph
 import com.csymvoul.expenses.domain.Words
 import com.csymvoul.expenses.R
 import com.csymvoul.expenses.ui.components.Tab
@@ -63,6 +65,8 @@ fun SettingsScreen(
     onFixOwls: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
+    favoriteCount: Int,
+    onOpenFavorites: () -> Unit,
     updateState: UpdateState,
     appVersion: String,
     canInstall: Boolean,
@@ -120,6 +124,19 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 WizardButton(onClick = onExport) { Text(w.exportButton) }
+            }
+            ParchmentCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StarGlyph(on = true, contentDescription = null, size = 32.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text("Favourites", style = MaterialTheme.typography.titleMedium)
+                }
+                Text(
+                    "Up to ${Favorites.MAX} expenses you record often, ready in ${w.newExpense}: their title, category and split are filled in, you type the amount.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                WizardButton(onClick = onOpenFavorites) { Text(if (favoriteCount > 0) "Edit favourites" else "Add favourites") }
             }
             ParchmentCard {
                 CardTitle(R.drawable.emblem_set_apparate, w.importTitle)

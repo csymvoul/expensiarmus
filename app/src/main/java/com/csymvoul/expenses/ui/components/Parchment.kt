@@ -54,6 +54,7 @@ import com.csymvoul.expenses.ui.theme.frameLine
 import com.csymvoul.expenses.ui.theme.searchGlyph
 import com.csymvoul.expenses.ui.theme.todayGlyph
 import com.csymvoul.expenses.ui.theme.starGlyph
+import com.csymvoul.expenses.ui.theme.checkGlyph
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -65,6 +66,12 @@ fun isNight() = MaterialTheme.colorScheme.background.luminance() < 0.5f
 @Composable
 fun TodayGlyph(contentDescription: String?, size: Dp = 30.dp) {
     Image(painterResource(todayGlyph(isNight())), contentDescription = contentDescription, modifier = Modifier.size(size))
+}
+
+/** The record ✓ on its own, with no badge: bronze by day, gold at night. */
+@Composable
+fun CheckGlyph(contentDescription: String?, size: Dp = 32.dp) {
+    Image(painterResource(checkGlyph(isNight())), contentDescription = contentDescription, modifier = Modifier.size(size))
 }
 
 /** The favourite star on its own, with no badge: filled when [on]; bronze by day, gold at night. */

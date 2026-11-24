@@ -224,5 +224,8 @@ fun starGlyph(on: Boolean, night: Boolean): Int = when {
     else -> R.drawable.emblem_star_off_light
 }
 
+/** The record ✓ at the top of Quick add: gold on the dark theme, bronze on parchment. */
+fun checkGlyph(night: Boolean): Int = if (night) R.drawable.emblem_check_dark else R.drawable.emblem_check_light
+
 /** Amber used once 80% of a goal is spent. */
 val WarningColor = Color(0xFFE08A00)

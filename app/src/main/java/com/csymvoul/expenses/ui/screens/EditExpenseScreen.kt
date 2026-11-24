@@ -1,6 +1,9 @@
 package com.csymvoul.expenses.ui.screens
 
 import com.csymvoul.expenses.ui.components.ChipEmblem
+import com.csymvoul.expenses.ui.components.StarGlyph
+import com.csymvoul.expenses.ui.components.CheckGlyph
+import com.csymvoul.expenses.model.Favorite
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -57,7 +60,6 @@ import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.FoodType
-import com.csymvoul.expenses.ui.components.WizardButton
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.theme.icon
 import com.csymvoul.expenses.ui.theme.nickname
@@ -79,6 +81,8 @@ fun EditExpenseScreen(
     defaultDate: LocalDate,
     history: List<Expense>,
     prefill: QuickPrefill?,
+    /** Shown for a new expense: one tap fills in a favourite's title, category and split. */
+    favorites: List<Favorite>,
     onSave: (Expense) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -132,6 +136,8 @@ fun EditExpenseScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                // Saving is the gold ✓ here, like Quick add's.
+                actions = { IconButton(onClick = ::save) { CheckGlyph(w.save) } },
             )
         },
     ) { padding ->
@@ -144,6 +150,32 @@ fun EditExpenseScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            if (existing == null && favorites.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        StarGlyph(on = true, contentDescription = null, size = 18.dp)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Favourites", style = MaterialTheme.typography.titleSmall)
+                    }
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        favorites.forEach { f ->
+                            FilterChip(
+                                selected = false,
+                                onClick = {
+                                    title = f.title
+                                    category = f.category
+                                    foodType = f.foodType
+                                    split = f.myPercent < 100
+                                    myPercent = if (f.myPercent < 100) f.myPercent else 50
+                                    suggestionPicked = true
+                                },
+                                label = { Text(f.title) },
+                                leadingIcon = { ChipEmblem(f.foodType?.icon ?: f.category.icon) },
+                            )
+                        }
+                    }
+                }
+            }
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it; suggestionPicked = false },
@@ -264,10 +296,6 @@ fun EditExpenseScreen(
                         )
                     }
                 }
-            }
-
-            WizardButton(onClick = ::save, modifier = Modifier.fillMaxWidth()) {
-                Text(w.save)
             }
         }
     }

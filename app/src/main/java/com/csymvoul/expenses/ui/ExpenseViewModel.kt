@@ -55,6 +55,15 @@ class ExpenseViewModel(app: Application) : AndroidViewModel(app) {
 
     fun removeFavorite(favorite: Favorite) = update { it.copy(favorites = Favorites.toggle(it.favorites, favorite)) }
 
+    /** Saves a favourite from the Favourites page; returns what to fix, or null when saved. */
+    fun saveFavorite(index: Int?, favorite: Favorite): String? {
+        val r = Favorites.save(_state.value.favorites, index, favorite)
+        r.list?.let { list -> update { it.copy(favorites = list) } }
+        return r.error
+    }
+
+    fun removeFavoriteAt(index: Int) = update { it.copy(favorites = Favorites.removeAt(it.favorites, index)) }
+
     /** Sets a goal for [category] (null: the whole month) in [month] only, or from [month] onwards. */
     fun setGoal(category: Category?, month: YearMonth, cents: Long, onwards: Boolean) =
         update { it.copy(goals = it.goals.set(category, month, cents, onwards)) }

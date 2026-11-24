@@ -27,6 +27,22 @@ object Favorites {
         else -> (favorites + f).sortedBy { ExpenseQueries.normalize(it.title) }
     }
 
+    /** The result of saving on the Favourites page: the new list (sorted by title), or what to fix. */
+    data class Saved(val list: List<Favorite>?, val error: String?)
+
+    /** Replaces the favourite at [index], or adds a new one when [index] is null. Same rules as the web app. */
+    fun save(favorites: List<Favorite>, index: Int?, fav: Favorite): Saved {
+        val f = fav.copy(title = fav.title.trim(), foodType = fav.foodType.takeIf { fav.category == com.csymvoul.expenses.model.Category.ENTERTAINMENT })
+        if (f.title.isEmpty()) return Saved(null, "Give it a title.")
+        if (f.myPercent !in 1..100) return Saved(null, "Your share must be between 1 and 100%.")
+        val others = favorites.filterIndexed { i, _ -> i != index }
+        if (others.any { key(it) == key(f) }) return Saved(null, "You already have this favourite.")
+        if (index == null && favorites.size >= MAX) return Saved(null, "You can keep up to $MAX favourites.")
+        return Saved((others + f).sortedBy { ExpenseQueries.normalize(it.title) }, null)
+    }
+
+    fun removeAt(favorites: List<Favorite>, index: Int) = favorites.filterIndexed { i, _ -> i != index }
+
     /** What loading keeps: valid favourites, at most five. */
     fun cleaned(favorites: List<Favorite>) = favorites.filter { it.isValid }.map { it.copy(title = it.title.trim()) }.take(MAX)
 }

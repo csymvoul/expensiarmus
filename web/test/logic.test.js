@@ -384,10 +384,13 @@ test('ledger entry page has one way to amend and one to delete', () => {
   assert.match(view, /header\(W\.entry, \{ backBtn: true, icon: TAB_ICONS\.month \}\)/);
 });
 
-test('edit screen saves only with the Save button and has no delete', () => {
+test('the expense form saves only with the gold ✓ in its top bar and has no delete', () => {
   const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
   const edit = app.slice(app.indexOf('function editScreen('), app.indexOf('/** Fills the form from a suggestion'));
   assert.equal(edit.match(/data-action="save"/g).length, 1);
+  assert.match(edit, /<button class="icon-btn" data-action="save"[^>]*><span class="check-glyph"><\/span><\/button>/);
+  assert.match(edit, /header\(d\.id \? W\.editExpense : W\.newExpense, \{ backBtn: true, actions: check \}\)/);
+  assert.doesNotMatch(edit, /class="btn wide" data-action="save"/);
   assert.doesNotMatch(edit, /ask-delete|deleteModal/);
 });
 
@@ -1004,9 +1007,8 @@ test('suggestions only fill in the title; favourites live in Quick add and on th
   const list = app.slice(app.indexOf('function suggestionList'), app.indexOf('// ---------- ledger and calendar'));
   assert.doesNotMatch(list, /format\(s\.amountCents\)/); // the list shows no amounts
   assert.match(app, /\$\{favStar\(e\)\}<\/div>/);
-  assert.match(app, /'fav-record': \(\) => \{[\s\S]*?category: f\.category, foodType: f\.foodType, myPercent: f\.myPercent/);
   assert.match(app, /\$\{favRow\(q\)\}/);
-  assert.match(app, /prefill = \{ title: q\.title, amount: q\.amount, date: q\.date, category: f\?\.category/);
+  assert.match(app, /prefill = \{ title: q\.title, amount: q\.amount, date: q\.date, category: q\.cat, foodType: q\.food, myPercent: q\.pct \}/);
 });
 
 test('the favourite star is a drawn glyph like the others, bronze by day and gold at night', () => {
@@ -1022,4 +1024,55 @@ test('the favourite star is a drawn glyph like the others, bronze by day and gol
       assert.ok(sw.includes(`'icons/emblems/star_${kind}_${theme}.png'`));
     }
   }
+});
+
+import { saveFavorite, removeFavoriteAt } from '../js/queries.js';
+
+test('the Favourites page edits, adds and removes favourites with the same rules as Android', () => {
+  const coffee = { title: 'Freddo', category: 'ENTERTAINMENT', foodType: 'DAY_TO_DAY', myPercent: 100 };
+  const rent = { title: 'Apartment', category: 'RENT', foodType: null, myPercent: 100 };
+  let r = saveFavorite([], null, coffee);
+  assert.deepEqual(r.list, [coffee]);
+  r = saveFavorite(r.list, null, rent);
+  assert.deepEqual(r.list.map((f) => f.title), ['Apartment', 'Freddo']);
+  // Editing: change the title, split and category; a food type only stays under Entertainment.
+  r = saveFavorite(r.list, 1, { title: ' Espresso ', category: 'OTHER', foodType: 'DAY_TO_DAY', myPercent: 50 });
+  assert.deepEqual(r.list[1], { title: 'Espresso', category: 'OTHER', foodType: null, myPercent: 50 });
+  assert.equal(saveFavorite(r.list, 0, rent).list.length, 2); // saving unchanged is fine
+  assert.equal(saveFavorite(r.list, 0, { ...rent, title: ' ' }).error, 'Give it a title.');
+  assert.equal(saveFavorite(r.list, 0, { ...rent, myPercent: 0 }).error, 'Your share must be between 1 and 100%.');
+  assert.equal(saveFavorite(r.list, null, { ...rent, title: 'APARTMENT' }).error, 'You already have this favourite.');
+  let five = [];
+  for (const t of ['A', 'B', 'C', 'D', 'E']) five = saveFavorite(five, null, { ...rent, title: t }).list;
+  assert.equal(saveFavorite(five, null, { ...rent, title: 'F' }).error, 'You can keep up to 5 favourites.');
+  assert.equal(saveFavorite(five, 2, { ...rent, title: 'F' }).list.length, 5); // editing one of five is fine
+  assert.deepEqual(removeFavoriteAt(five, 0).map((f) => f.title), ['B', 'C', 'D', 'E']);
+});
+
+test('Quick add records with the ✓ at the top; tiles and favourites only select', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  const css = readFileSync(webFile('css/style.css'), 'utf8');
+  const sw = readFileSync(webFile('sw.js'), 'utf8');
+  const sheet = app.slice(app.indexOf('function quickSheet()'), app.indexOf('function quickKey('));
+  assert.match(sheet, /<div class="sheet-head">[\s\S]*data-action="quick-record"[^>]*><span class="check-glyph"><\/span><\/button>\s*<\/div>/);
+  assert.match(sheet, /data-action="quick-pick"/);
+  assert.doesNotMatch(app, /data-action="quick-save"|'quick-save'|fav-record/);
+  const pick = app.slice(app.indexOf("  'quick-pick':"), app.indexOf("  'quick-record':"));
+  assert.doesNotMatch(pick, /quickRecord|commit/); // a tile only selects
+  const record = app.slice(app.indexOf("  'quick-record':"), app.indexOf("  'fav-pick':"));
+  assert.match(record, /'Type an amount first' : !q\.cat \? 'Pick a category first'/);
+  assert.match(record, /category: q\.cat, foodType: q\.food, myPercent: q\.pct \?\? 100/);
+  assert.equal(css.match(/--check-glyph: url\('\.\.\/icons\/emblems\/check_light\.png'\)/g).length, 1);
+  assert.equal(css.match(/--check-glyph: url\('\.\.\/icons\/emblems\/check_dark\.png'\)/g).length, 2);
+  for (const v of ['light', 'dark']) assert.ok(existsSync(webFile(`icons/emblems/check_${v}.png`)) && sw.includes(`'icons/emblems/check_${v}.png'`));
+});
+
+test('favourites have their own page, a Settings card, and show in the full form for new expenses', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  assert.match(app, /case 'favorites': app\.innerHTML = favoritesScreen\(\); break;/);
+  assert.match(app, /'fav-page': \(\) => \{ ui\.quick = null; go\('#\/favorites'\); \}/);
+  assert.match(app, /data-action="go" data-to="#\/favorites"/);
+  assert.match(app, /const r = saveFavorite\(data\.favorites, ed\.index, ed\);/);
+  assert.match(app, /\$\{!d\.id && data\.favorites\?\.length \?/); // only for a new expense
+  assert.match(app, /'edit-fav': \(el\) => \{[\s\S]*?category: f\.category, foodType: f\.foodType \?\? null, split:/);
 });

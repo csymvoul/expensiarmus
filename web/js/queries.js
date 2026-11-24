@@ -163,3 +163,20 @@ export function toggleFavorite(favorites, e) {
   if (list.length >= MAX_FAVORITES) return list;
   return [...list, favoriteOf(e)].sort((a, b) => normalize(a.title).localeCompare(normalize(b.title)));
 }
+
+/**
+ * Saves a favourite from the Favourites page: replaces the one at [index], or adds a new one when
+ * [index] is null. Returns { list } (sorted by title) or { error } with what to fix. Same rules as Android.
+ */
+export function saveFavorite(favorites, index, fav) {
+  const list = favorites ?? [];
+  const f = { title: String(fav.title ?? '').trim(), category: fav.category, foodType: fav.category === 'ENTERTAINMENT' ? fav.foodType ?? null : null, myPercent: fav.myPercent ?? 100 };
+  if (!f.title) return { error: 'Give it a title.' };
+  if (!Number.isInteger(f.myPercent) || f.myPercent < 1 || f.myPercent > 100) return { error: 'Your share must be between 1 and 100%.' };
+  const others = list.filter((_, i) => i !== index);
+  if (others.some((o) => favoriteKey(o) === favoriteKey(f))) return { error: 'You already have this favourite.' };
+  if (index == null && list.length >= MAX_FAVORITES) return { error: `You can keep up to ${MAX_FAVORITES} favourites.` };
+  return { list: [...others, f].sort((a, b) => normalize(a.title).localeCompare(normalize(b.title))) };
+}
+
+export const removeFavoriteAt = (favorites, index) => (favorites ?? []).filter((_, i) => i !== index);

@@ -48,6 +48,9 @@ import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.ui.components.EmblemBadge
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.material3.IconButton
+import com.csymvoul.expenses.ui.components.CheckGlyph
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -82,9 +85,9 @@ data class QuickPrefill(
 )
 
 /**
- * Quick add: type the amount on a big number pad, then tap a category (or food) tile to save.
- * The title is optional; typing one offers earlier titles, and tapping one fills it in (no amount is
- * copied). Favourites fill in the title and category: type the amount, then tap Record.
+ * Quick add: type the amount, pick a category tile (or a favourite), then tap the gold ✓ at the top.
+ * Tiles only select, so you can change your mind before recording. Typing a title offers earlier
+ * titles; tapping one fills it in (no amount is copied). Edit › on the favourites opens their page.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -93,7 +96,7 @@ fun QuickAddSheet(
     favorites: List<Favorite>,
     date: LocalDate,
     onSave: (Expense) -> Unit,
-    onRemoveFavorite: (Favorite) -> Unit,
+    onOpenFavorites: () -> Unit,
     onMore: (QuickPrefill) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -101,19 +104,21 @@ fun QuickAddSheet(
     var title by rememberSaveable { mutableStateOf("") }
     var amount by rememberSaveable { mutableStateOf("") }
     var day by rememberSaveable { mutableStateOf(date) }
-    var error by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
     var pickingDate by remember { mutableStateOf(false) }
     // Earlier titles, minus the one already typed in full.
     val suggestions = remember(history, title) {
         Suggestions.of(history, title).filter { ExpenseQueries.normalize(it.title) != ExpenseQueries.normalize(title) }
     }
+    // What the ✓ will record: the picked category and food type, and the share (a favourite's split).
+    var picked by rememberSaveable { mutableStateOf<Category?>(null) }
+    var pickedFood by rememberSaveable { mutableStateOf<FoodType?>(null) }
+    var share by rememberSaveable { mutableIntStateOf(100) }
     var favIndex by rememberSaveable { mutableStateOf<Int?>(null) }
-    var favEdit by rememberSaveable { mutableStateOf(false) }
-    val fav = favIndex?.let { favorites.getOrNull(it) }
     val greek = Money.style == MoneyStyle.GREEK
 
     fun key(k: String) {
-        error = false
+        error = null
         amount = when {
             k == "⌫" -> amount.dropLast(1)
             k == "." || k == "," -> if (amount.any { it == '.' || it == ',' }) amount else amount.ifEmpty { "0" } + k
@@ -124,32 +129,38 @@ fun QuickAddSheet(
         }
     }
 
-    fun save(category: Category, food: FoodType?) {
-        val cents = Money.parseToCents(amount)
-        if (cents == null || cents <= 0) {
-            error = true
-            return
+    fun pick(category: Category, food: FoodType?) {
+        picked = category
+        pickedFood = food
+        val f = favIndex?.let { favorites.getOrNull(it) }
+        // A favourite's split stays only while its own category is picked.
+        if (f == null || f.category != category || f.foodType != food) {
+            favIndex = null
+            share = 100
         }
+        error = null
+    }
+
+    fun record() {
+        val cents = Money.parseToCents(amount)
+        val category = picked
+        error = when {
+            cents == null || cents <= 0 -> "Type an amount first"
+            category == null -> "Pick a category first"
+            else -> null
+        }
+        if (error != null || category == null || cents == null) return
         onSave(
             Expense(
                 id = UUID.randomUUID().toString(),
                 date = day,
-                title = title.trim().ifEmpty { Suggestions.defaultTitle(category, food) },
+                title = title.trim().ifEmpty { Suggestions.defaultTitle(category, pickedFood) },
                 amountCents = cents,
                 category = category,
-                foodType = food,
+                myPercent = share,
+                foodType = pickedFood,
             ),
         )
-    }
-
-    /** Records the picked favourite with the typed amount. */
-    fun recordFavorite(f: Favorite) {
-        val cents = Money.parseToCents(amount)
-        if (cents == null || cents <= 0) {
-            error = true
-            return
-        }
-        onSave(Expense(UUID.randomUUID().toString(), day, title.trim().ifEmpty { f.title }, cents, f.category, f.myPercent, f.foodType))
     }
 
     ModalBottomSheet(
@@ -168,29 +179,32 @@ fun QuickAddSheet(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onDismiss) { Text("Cancel") }
                 Text(w.newExpense, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                TextButton(onClick = { onMore(QuickPrefill(title, amount, day, fav?.category, fav?.foodType, fav?.myPercent)) }) { Text("More details ›") }
+                IconButton(onClick = ::record) { CheckGlyph("Record") }
             }
             if (favorites.isNotEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     StarGlyph(on = true, contentDescription = null, size = 18.dp)
                     Spacer(Modifier.width(6.dp))
                     Text("Favourites", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { favEdit = !favEdit; favIndex = null }) { Text(if (favEdit) "Done" else "Edit") }
+                    TextButton(onClick = onOpenFavorites) { Text("Edit ›") }
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     favorites.forEachIndexed { i, f ->
                         FilterChip(
-                            selected = !favEdit && favIndex == i,
+                            selected = favIndex == i,
                             onClick = {
-                                if (favEdit) {
-                                    onRemoveFavorite(f)
-                                    if (favorites.size <= 1) favEdit = false
+                                if (favIndex == i) {
+                                    favIndex = null
                                 } else {
-                                    favIndex = if (favIndex == i) null else i
-                                    title = if (favIndex == null) "" else f.title
+                                    favIndex = i
+                                    title = f.title
+                                    picked = f.category
+                                    pickedFood = f.foodType
+                                    share = f.myPercent
+                                    error = null
                                 }
                             },
-                            label = { Text(f.title + if (favEdit) "  ×" else "") },
+                            label = { Text(f.title) },
                             leadingIcon = { ChipEmblem(f.foodType?.icon ?: f.category.icon) },
                         )
                     }
@@ -229,19 +243,12 @@ fun QuickAddSheet(
                     }
                 }
             }
-            fav?.let { f ->
-                WizardButton(onClick = { recordFavorite(f) }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Record · " + title.trim().ifEmpty { f.title }, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
             Text(
-                when {
-                    error -> "Type an amount first"
-                    fav != null -> "or tap a category to save it there"
-                    else -> "Tap a category to save"
-                },
+                error ?: picked?.let { c ->
+                    (pickedFood?.label ?: c.label) + (if (share < 100) " · your share $share%" else "") + " · tap ✓ to record"
+                } ?: "Pick a category, then tap ✓ at the top",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -250,7 +257,7 @@ fun QuickAddSheet(
             tiles.chunked(5).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     row.forEach { (category, food, look) ->
-                        val glow = fav != null && fav.category == category && fav.foodType == food
+                        val glow = picked == category && pickedFood == food
                         Column(
                             Modifier
                                 .weight(1f)
@@ -258,7 +265,7 @@ fun QuickAddSheet(
                                     if (glow) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f) else Color.Transparent,
                                     RoundedCornerShape(10.dp),
                                 )
-                                .clickable { save(category, food) }
+                                .clickable { pick(category, food) }
                                 .padding(vertical = 4.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
@@ -269,6 +276,10 @@ fun QuickAddSheet(
                     }
                 }
             }
+            TextButton(
+                onClick = { onMore(QuickPrefill(title, amount, day, picked, pickedFood, share.takeIf { it < 100 })) },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            ) { Text("More details ›") }
         }
     }
 

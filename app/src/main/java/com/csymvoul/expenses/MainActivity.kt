@@ -61,6 +61,7 @@ import com.csymvoul.expenses.ui.screens.QuickPrefill
 import com.csymvoul.expenses.ui.screens.SearchScreen
 import com.csymvoul.expenses.ui.screens.SettingsScreen
 import com.csymvoul.expenses.ui.screens.ImportDialog
+import com.csymvoul.expenses.ui.screens.FavoritesScreen
 import com.csymvoul.expenses.update.Updater
 import androidx.lifecycle.lifecycleScope
 import com.csymvoul.expenses.domain.ImportResult
@@ -109,6 +110,7 @@ private const val ANNALS = "annals"
 private const val GOALS = "goals"
 private const val SETTINGS = "settings"
 private const val SEARCH = "search"
+private const val FAVORITES = "favorites"
 private const val EDIT = "edit:" // + expense id, empty for a new expense
 private const val VIEW = "view:" // + expense id: read-only view
 private const val CATEGORY = "category:" // + category name, ":" + food type name (or nothing), ":" + period ("2026-11", "2026", or nothing for all time)
@@ -267,8 +269,16 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                 onCheckUpdates = { scope.launch { Updater.check(context, notify = false) } },
                 onDownloadUpdate = { release -> scope.launch { Updater.download(context, release) } },
                 onInstallUpdate = { file -> Updater.install(context, file) },
+                favoriteCount = data.favorites.size,
+                onOpenFavorites = { push(FAVORITES) },
                 onImport = { importLauncher.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "application/octet-stream")) },
                 bottomBar = { tabBar(Tab.SETTINGS) },
+            )
+            route == FAVORITES -> FavoritesScreen(
+                favorites = data.favorites,
+                onSave = vm::saveFavorite,
+                onRemove = vm::removeFavoriteAt,
+                onBack = ::pop,
             )
             route == SEARCH -> SearchScreen(
                 expenses = data.expenses,
@@ -301,7 +311,7 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                     onToggleFavorite = { e ->
                         val was = Favorites.isFavorite(data.favorites, e)
                         val msg = when {
-                            !vm.toggleFavorite(e) -> "You have ${Favorites.MAX} favourites already. Remove one first (Edit, in ${words.newExpense})."
+                            !vm.toggleFavorite(e) -> "You have ${Favorites.MAX} favourites already. Remove one first, in Settings → Favourites."
                             was -> "${e.title} is no longer a favourite"
                             else -> "${e.title} is now a favourite"
                         }
@@ -320,6 +330,7 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                     defaultDate = newExpenseDate,
                     history = data.expenses,
                     prefill = handed,
+                    favorites = data.favorites,
                     onSave = {
                         vm.upsert(it)
                         month = YearMonth.from(it.date)
@@ -367,7 +378,7 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
             history = data.expenses,
             favorites = data.favorites,
             date = newExpenseDate,
-            onRemoveFavorite = vm::removeFavorite,
+            onOpenFavorites = { quickOpen = false; push(FAVORITES) },
             onSave = { e ->
                 vm.upsert(e)
                 month = YearMonth.from(e.date)

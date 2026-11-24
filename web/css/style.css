@@ -31,6 +31,7 @@
   --search-glyph: url('../icons/emblems/search_light.png');
   --today-glyph: url('../icons/emblems/today_light.png');
   --star-on: url('../icons/emblems/star_on_light.png');
+  --check-glyph: url('../icons/emblems/check_light.png');
   --star-off: url('../icons/emblems/star_off_light.png');
   /* Evanesco and other removing buttons: red by day; at night gold like every other button. */
   --danger-bg: var(--error);
@@ -63,6 +64,7 @@
     --search-glyph: url('../icons/emblems/search_dark.png');
     --today-glyph: url('../icons/emblems/today_dark.png');
     --star-on: url('../icons/emblems/star_on_dark.png');
+    --check-glyph: url('../icons/emblems/check_dark.png');
     --star-off: url('../icons/emblems/star_off_dark.png');
     --danger-bg: var(--primary);
     --on-danger: var(--on-primary);
@@ -94,6 +96,7 @@
   --search-glyph: url('../icons/emblems/search_dark.png');
   --today-glyph: url('../icons/emblems/today_dark.png');
   --star-on: url('../icons/emblems/star_on_dark.png');
+  --check-glyph: url('../icons/emblems/check_dark.png');
   --star-off: url('../icons/emblems/star_off_dark.png');
   --danger-bg: var(--primary);
   --on-danger: var(--on-primary);
@@ -158,6 +161,8 @@ p { margin: 4px 0; }
 .bar h1 { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
 .bar h1 span { overflow: hidden; text-overflow: ellipsis; }
 .bar-icon { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--gold); object-fit: cover; }
+.check-glyph { flex: none; display: block; width: 32px; height: 32px; background: var(--check-glyph) center / contain no-repeat; }
+.star-on.title-glyph { width: 26px; height: 26px; }
 .today-glyph { flex: none; display: block; width: 30px; height: 30px; background: var(--today-glyph) center / contain no-repeat; }
 .search-glyph { flex: none; display: block; width: 30px; height: 30px; background: var(--search-glyph) center / contain no-repeat; }
 .card-title { display: flex; align-items: center; gap: 10px; }

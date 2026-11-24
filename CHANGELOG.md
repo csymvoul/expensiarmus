@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.17.0 (Android), web app 1.17.0 and iPhone app 1.14.0 – unreleased (2026-11-25)
+
+### Added
+- **A Favourites page** (Settings → Favourites, or Edit › on Quick add's favourites): change a favourite's title, category, food type and split, remove it, or add a new one without starring an expense first. Still up to five; a duplicate or a sixth is refused with a short reason. Rules in `saveFavorite` / `Favorites.save`.
+- **Favourites in the full form:** a new expense ("More details", or the full form) shows the favourites above the title; one tap fills in title, category, food type and split.
+
+### Changed
+- **Quick add records with a gold ✓ at the top**, a drawn glyph like the magnifying glass, Time-Turner and star (bronze by day, gold at night). Category tiles and favourites now only *select* (the tile glows and the hint reads e.g. "Super market · your share 50% · tap ✓ to record"), so you can change your mind before recording. The ✓ says what is missing ("Type an amount first", "Pick a category first"). "More details ›" moved to the bottom and carries the picked category and split. The separate "Record · …" button is gone.
+- **The expense form saves with the same ✓ in its top bar**; the framed Save button at the bottom is gone. This applies to new expenses and to Amend.
+- Tests: Android 190 (2 new: the Favourites page rules, the ✓ picture), web 88 (4 new; two older tests updated to the ✓). All passing. Checked in a browser: the ✓ refuses without an amount, then without a category; picking the Groceries favourite selects Super market at 50% and records €12 as €6; editing Freddo to 50% on the Favourites page; the full form filled from a favourite and saved with the top ✓.
+
+### Known issues
+- Not yet checked on a phone.
+
 ## 1.16.0 (Android), web app 1.16.0 and iPhone app 1.13.0 – unreleased (2026-11-25)
 
 ### Added

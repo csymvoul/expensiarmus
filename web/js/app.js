@@ -3,7 +3,7 @@ import { CATEGORIES, FOOD_TYPES, TAB_ICONS, EMBLEMS, WHOLE_MONTH, goalKey, witho
 import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
 import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
-import { dailyTotals, onDay, calendarCells, byCategory, inPeriod, normalize, isFavorite, toggleFavorite, MAX_FAVORITES, search, shiftMonth, suggestions, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
+import { dailyTotals, onDay, calendarCells, byCategory, inPeriod, normalize, isFavorite, toggleFavorite, MAX_FAVORITES, saveFavorite, removeFavoriteAt, search, shiftMonth, suggestions, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
 import { toCsv, importCsv, importSummary } from './csv.js';
 import { load, save, KEY } from './store.js';
 import { upcomingReminders } from './reminder.js';
@@ -413,21 +413,28 @@ const quickAmountText = () => {
   return settings.money === 'el' ? `${typed} €` : `€${typed}`;
 };
 
-/** Quick add's favourites: tap one to fill the title and category, then type the amount and Record. */
+/** Quick add's favourites: tap one to fill in its title, category and split; Edit opens the Favourites page. */
 function favRow(q) {
   const favs = data.favorites ?? [];
   if (!favs.length) return '';
   return `<div class="fav-head"><span class="h-small fav-title"><span class="star-on small-glyph"></span>Favourites</span>
-      <button class="link" data-action="fav-edit">${q.favEdit ? 'Done' : 'Edit'}</button></div>
-    <div class="chips fav-chips">${favs.map((f, i) => {
-      const look = f.foodType ? foodType(f.foodType) : category(f.category);
-      return `<button class="chip ${q.fav === i && !q.favEdit ? 'on' : ''}" data-action="${q.favEdit ? 'fav-remove' : 'fav-pick'}" data-i="${i}">${chipIcon(look)}${esc(f.title)}${q.favEdit ? ' <span class="chip-x">×</span>' : ''}</button>`;
-    }).join('')}</div>`;
+      <button class="link" data-action="fav-page">Edit ›</button></div>
+    <div class="chips fav-chips">${favs.map((f, i) => `<button class="chip ${q.fav === i ? 'on' : ''}" data-action="fav-pick" data-i="${i}">${chipIcon(f.foodType ? foodType(f.foodType) : category(f.category))}${esc(f.title)}</button>`).join('')}</div>`;
 }
 
+/** The hint under the number pad: what is still missing, or what ✓ will record. */
+function quickHelp(q) {
+  if (q.error) return q.error;
+  if (!q.cat) return 'Pick a category, then tap ✓ at the top';
+  return `${q.food ? foodType(q.food).label : category(q.cat).label}${q.pct < 100 ? ` · your share ${q.pct}%` : ''} · tap ✓ to record`;
+}
+
+/**
+ * Quick add: type the amount, pick a category tile (or a favourite), then tap the gold ✓ at the top.
+ * Tiles only select, so you can change your mind before recording.
+ */
 function quickSheet() {
   const q = ui.quick;
-  const fav = q.fav != null ? (data.favorites ?? [])[q.fav] : null;
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', decimalKey(), '0', '⌫'];
   const tiles = [
     ...CATEGORIES.map((c) => ({ cat: c.id, food: '', icon: c.icon, label: c.label })),
@@ -438,7 +445,7 @@ function quickSheet() {
     <div class="sheet-head">
       <button class="link" data-action="quick-close">Cancel</button>
       <span class="h-small">${esc(W.newExpense)}</span>
-      <button class="link" data-action="quick-more">More details ›</button>
+      <button class="icon-btn" data-action="quick-record" aria-label="Record" title="Record"><span class="check-glyph"></span></button>
     </div>
     ${favRow(q)}
     <input class="quick-title" type="text" placeholder="Title (optional)" value="${esc(q.title)}" data-input="quick-title" autocapitalize="sentences">
@@ -446,10 +453,10 @@ function quickSheet() {
     <div class="quick-amount" id="quick-amount">${esc(quickAmountText())}</div>
     <label class="quick-date">${emblem(TAB_ICONS.calendar, 28)}<input type="date" value="${q.date}" data-input="quick-date"></label>
     <div class="numpad">${keys.map((k) => `<button data-action="quick-key" data-key="${k}">${k}</button>`).join('')}</div>
-    ${fav ? `<button class="btn wide fav-record" data-action="fav-record"><span class="frame"><span class="frame-inner">Record · ${esc(q.title.trim() || fav.title)}</span></span></button>` : ''}
-    <p class="small center ${q.error ? 'error' : 'soft'}" id="quick-help">${q.error ? 'Type an amount first' : fav ? 'or tap a category to save it there' : 'Tap a category to save'}</p>
-    <div class="tiles">${tiles.map((t) => `<button class="tile ${fav && fav.category === t.cat && (fav.foodType ?? '') === t.food ? 'glow' : ''}" data-action="quick-save" data-cat="${t.cat}" data-food="${t.food}">
+    <p class="small center ${q.error ? 'error' : 'soft'}" id="quick-help">${esc(quickHelp(q))}</p>
+    <div class="tiles">${tiles.map((t) => `<button class="tile ${q.cat === t.cat && (q.food ?? '') === t.food ? 'glow' : ''}" data-action="quick-pick" data-cat="${t.cat}" data-food="${t.food}">
       ${emblem(t.icon, 38)}<span>${esc(t.label)}</span></button>`).join('')}</div>
+    <button class="link center-link" data-action="quick-more">More details ›</button>
   </div>`;
 }
 
@@ -470,7 +477,7 @@ function quickKey(key) {
   app.querySelector('#quick-amount').textContent = quickAmountText();
   const help = app.querySelector('#quick-help');
   help.className = 'small center soft';
-  help.textContent = q.fav != null ? 'or tap a category to save it there' : 'Tap a category to save';
+  help.textContent = quickHelp(q);
 }
 
 /** Saves an expense from Quick add and offers Undo for a few seconds. */
@@ -581,9 +588,12 @@ function editScreen(id) {
         <p id="share-line">${shareLine()}</p>
       </div>`
     : '';
-  // Saving is the framed button at the bottom; deleting lives on the Ledger entry page.
-  return `${header(d.id ? W.editExpense : W.newExpense, { backBtn: true })}
+  // Saving is the gold ✓ in the top bar, like Quick add's; deleting lives on the Ledger entry page.
+  const check = `<button class="icon-btn" data-action="save" aria-label="${esc(W.save)}" title="${esc(W.save)}"><span class="check-glyph"></span></button>`;
+  return `${header(d.id ? W.editExpense : W.newExpense, { backBtn: true, actions: check })}
   <main class="form">
+    ${!d.id && data.favorites?.length ? `<div class="field"><span class="h-small fav-title"><span class="star-on small-glyph"></span>Favourites</span>
+      <div class="chips">${data.favorites.map((f, i) => `<button class="chip" data-action="edit-fav" data-i="${i}">${chipIcon(f.foodType ? foodType(f.foodType) : category(f.category))}${esc(f.title)}</button>`).join('')}</div></div>` : ''}
     <div class="field"><label class="label" for="edit-title">Title</label>
       <input id="edit-title" type="text" value="${esc(d.title)}" placeholder="e.g. Butterbeer with friends" data-input="edit-title" class="${titleBad ? 'bad' : ''}" autocapitalize="sentences" autocomplete="off">
       <div id="title-sugg">${d.id ? '' : suggestionList(d.title, 'edit-sugg')}</div>
@@ -599,7 +609,6 @@ function editScreen(id) {
     <label class="switch-row"><span><span class="h-small">${esc(W.split)}</span><span class="small soft">Only your share counts toward totals and goals</span></span>
       <input type="checkbox" class="switch" ${d.split ? 'checked' : ''} data-input="edit-split"></label>
     ${split}
-    <button class="btn wide" data-action="save"><span class="frame"><span class="frame-inner">${esc(W.save)}</span></span></button>
   </main>`;
 }
 
@@ -661,6 +670,62 @@ function favStar(e) {
   const on = isFavorite(data.favorites, e);
   const label = on ? 'Remove from favourites' : 'Add to favourites';
   return `<button class="icon-btn fav-star" data-action="fav-toggle" data-id="${esc(e.id)}" aria-label="${label}" title="${label}"><span class="${on ? 'star-on' : 'star-off'}"></span></button>`;
+}
+
+// ---------- favourites ----------
+
+const SHARES = [[100, 'Not split'], [50, '50-50'], [33, '33%'], [25, '25%']];
+
+/** The Favourites page: up to five, each editable (title, category, split) or removable; add new ones here too. */
+function favoritesScreen() {
+  const favs = data.favorites ?? [];
+  const ed = ui.favEdit;
+  const editor = (f) => {
+    const catChips = CATEGORIES.map((c) => `<button class="chip ${f.category === c.id ? 'on' : ''}" data-action="fe-cat" data-cat="${c.id}">${chipIcon(c)}${c.label}</button>`).join('');
+    const foodChips = f.category === 'ENTERTAINMENT'
+      ? `<span class="h-small">Is it food?</span><div class="chips"><button class="chip ${!f.foodType ? 'on' : ''}" data-action="fe-food" data-food="">Not food</button>${FOOD_TYPES.map((t) => `<button class="chip ${f.foodType === t.id ? 'on' : ''}" data-action="fe-food" data-food="${t.id}">${chipIcon(t)}${t.label}</button>`).join('')}</div>`
+      : '';
+    const shares = SHARES.some(([p]) => p === f.myPercent) ? SHARES : [...SHARES, [f.myPercent, `${f.myPercent}%`]];
+    return `<div class="ward-editor">
+      <label class="field"><span class="label">Title</span><input type="text" value="${esc(f.title)}" data-input="fe-title" autocapitalize="sentences" autocomplete="off"></label>
+      <span class="h-small">Category</span><div class="chips">${catChips}</div>
+      ${foodChips}
+      <span class="h-small">Your share</span><div class="chips">${shares.map(([p, l]) => `<button class="chip ${f.myPercent === p ? 'on' : ''}" data-action="fe-pct" data-pct="${p}">${l}</button>`).join('')}</div>
+      ${ed.error ? `<p class="error">${esc(ed.error)}</p>` : ''}
+      <div class="ward-actions">
+        ${ed.index != null ? '<button class="link danger-link" data-action="fe-remove">Remove</button>' : ''}
+        <span class="spacer"></span>
+        <button class="link" data-action="fe-cancel">Cancel</button>
+        <button class="btn" data-action="fe-save"><span class="frame"><span class="frame-inner">Save</span></span></button>
+      </div></div>`;
+  };
+  const cards = favs.map((f, i) => {
+    const look = f.foodType ? foodType(f.foodType) : category(f.category);
+    const sub = [look.label, f.myPercent < 100 ? `your share ${f.myPercent}%` : ''].filter(Boolean).join(' · ');
+    return card(ed && ed.index === i ? editor(ed) : `<button class="ward" data-action="fe-open" data-i="${i}"><span class="legend-row">${emblem(look.icon, 36)}
+        <span class="row-main"><span class="h-small">${esc(f.title)}</span><span class="row-sub">${esc(sub)}</span></span><span class="chev">${ICON.right}</span></span></button>`);
+  });
+  const adding = ed && ed.index == null
+    ? card(`<h3 class="h-medium">A new favourite</h3>${editor(ed)}`)
+    : favs.length < MAX_FAVORITES && !ed
+      ? `<button class="btn wide" data-action="fe-add"><span class="frame"><span class="frame-inner with-emblem"><span class="star-on title-glyph"></span>Add a favourite</span></span></button>`
+      : '';
+  return `${header('Favourites', { backBtn: true, glyph: '<span class="star-on"></span>' })}
+  <main>
+    <p class="soft">Up to ${MAX_FAVORITES}. In ${esc(W.newExpense)}, tap one to fill in its title, category and split, then type the amount. You can also star any expense on its page.</p>
+    ${favs.length || ed ? '' : hint('No favourites yet.')}
+    ${cards.join('')}
+    ${adding}
+  </main>`;
+}
+
+function saveFavoriteEdit() {
+  const ed = ui.favEdit;
+  const r = saveFavorite(data.favorites, ed.index, ed);
+  if (r.error) { ed.error = r.error; render(); return; }
+  ui.favEdit = null;
+  commit({ ...data, favorites: r.list });
+  render();
 }
 
 // ---------- category ----------
@@ -832,6 +897,9 @@ function settingsScreen() {
     ${card(`<h3 class="h-medium card-title">${emblem(EMBLEMS.geminio, 36)}${esc(withoutEmoji(W.exportTitle))}</h3>
       <p class="small soft">All your expenses as a CSV file, for a backup or a spreadsheet.</p>
       <button class="btn" data-action="export"><span class="frame"><span class="frame-inner">${esc(W.exportButton)}</span></span></button>`)}
+    ${card(`<h3 class="h-medium card-title"><span class="star-on title-glyph"></span>Favourites</h3>
+      <p class="small soft">Up to ${MAX_FAVORITES} expenses you record often, ready in ${esc(W.newExpense)}: their title, category and split are filled in, you type the amount.</p>
+      <button class="btn" data-action="go" data-to="#/favorites"><span class="frame"><span class="frame-inner">${(data.favorites ?? []).length ? 'Edit favourites' : 'Add favourites'}</span></span></button>`)}
     ${card(`<h3 class="h-medium card-title">${emblem(EMBLEMS.apparate, 36)}${esc(W.importTitle)}</h3>
       <p class="small soft">Bring expenses in from a CSV: a Geminio backup, or a spreadsheet with the same columns. You see what will be added first; expenses already in the ledger are skipped.</p>
       <button class="btn" data-action="import"><span class="frame"><span class="frame-inner">${esc(W.importButton)}</span></span></button>
@@ -941,6 +1009,7 @@ function render() {
   ui.modalScreen = r.name;
   if (r.name !== 'month' && r.name !== 'calendar') ui.quick = null;
   if (r.name !== 'goals') ui.goalEdit = null;
+  if (r.name !== 'favorites') ui.favEdit = null;
   if (r.name !== ui.lastScreen && TABS.includes(r.name)) ui.highlighted = null;
   ui.lastScreen = r.name;
   switch (r.name) {
@@ -948,6 +1017,7 @@ function render() {
     case 'view': app.innerHTML = viewScreen(r.a); break;
     case 'category': app.innerHTML = categoryScreen(r.a, r.b, r.c ?? ''); break;
     case 'search': app.innerHTML = searchScreen(); break;
+    case 'favorites': app.innerHTML = favoritesScreen(); break;
     case 'goals': app.innerHTML = goalsScreen(); break;
     case 'settings':
     case 'owl': app.innerHTML = settingsScreen(); break;
@@ -993,56 +1063,60 @@ const actions = {
     toast(W.imported(added.length));
     render();
   },
-  quick: () => { ui.quick = { title: '', amount: '', date: newExpenseDate(), error: false }; render(); },
+  quick: () => { ui.quick = { title: '', amount: '', date: newExpenseDate(), error: false, cat: null, food: null, pct: 100, fav: null }; render(); },
   'quick-close': () => { ui.quick = null; render(); },
   'quick-key': (el) => quickKey(el.dataset.key),
   'quick-more': () => {
     const q = ui.quick;
     // A picked favourite also carries its category, food type and split to the full form.
-    const f = q.fav != null ? data.favorites[q.fav] : null;
-    prefill = { title: q.title, amount: q.amount, date: q.date, category: f?.category, foodType: f?.foodType, myPercent: f?.myPercent };
+    // The picked category (and a favourite's split) go on to the full form.
+    prefill = { title: q.title, amount: q.amount, date: q.date, category: q.cat, foodType: q.food, myPercent: q.pct };
     ui.quick = null;
     go('#/edit');
   },
-  'quick-save': (el) => {
+  'quick-pick': (el) => {
     const q = ui.quick;
-    const cents = parseToCents(q.amount);
-    if (!(cents > 0)) {
-      q.error = true;
-      const help = app.querySelector('#quick-help');
-      help.className = 'small center error';
-      help.textContent = 'Type an amount first';
-      return;
-    }
-    const cat = el.dataset.cat;
-    const food = el.dataset.food || null;
-    quickRecord(makeExpense({ id: newId(), date: q.date, title: q.title.trim() || defaultTitle(cat, food), amountCents: cents, category: cat, foodType: food }));
-  },
-  'fav-pick': (el) => { const i = Number(el.dataset.i); ui.quick.fav = ui.quick.fav === i ? null : i; ui.quick.title = ui.quick.fav == null ? '' : data.favorites[i].title; render(); },
-  'fav-edit': () => { ui.quick.favEdit = !ui.quick.favEdit; ui.quick.fav = null; render(); },
-  'fav-remove': (el) => {
-    const f = data.favorites[Number(el.dataset.i)];
-    commit({ ...data, favorites: toggleFavorite(data.favorites, f) });
-    if (!data.favorites.length) ui.quick.favEdit = false;
+    q.cat = el.dataset.cat;
+    q.food = el.dataset.food || null;
+    const f = q.fav != null ? data.favorites[q.fav] : null;
+    // A favourite's split stays only while its own category is picked.
+    if (!f || f.category !== q.cat || (f.foodType ?? null) !== q.food) { q.fav = null; q.pct = 100; }
+    q.error = null;
     render();
   },
-  'fav-record': () => {
+  'quick-record': () => {
     const q = ui.quick;
-    const f = data.favorites[q.fav];
     const cents = parseToCents(q.amount);
-    if (!(cents > 0)) {
-      q.error = true;
-      const help = app.querySelector('#quick-help');
-      help.className = 'small center error';
-      help.textContent = 'Type an amount first';
-      return;
-    }
-    quickRecord(makeExpense({ id: newId(), date: q.date, title: q.title.trim() || f.title, amountCents: cents, category: f.category, foodType: f.foodType, myPercent: f.myPercent }));
+    q.error = !(cents > 0) ? 'Type an amount first' : !q.cat ? 'Pick a category first' : null;
+    if (q.error) { render(); return; }
+    quickRecord(makeExpense({ id: newId(), date: q.date, title: q.title.trim() || defaultTitle(q.cat, q.food), amountCents: cents, category: q.cat, foodType: q.food, myPercent: q.pct ?? 100 }));
+  },
+  'fav-pick': (el) => {
+    const q = ui.quick;
+    const i = Number(el.dataset.i);
+    if (q.fav === i) { q.fav = null; render(); return; }
+    const f = data.favorites[i];
+    Object.assign(q, { fav: i, title: f.title, cat: f.category, food: f.foodType ?? null, pct: f.myPercent ?? 100, error: null });
+    render();
+  },
+  'fav-page': () => { ui.quick = null; go('#/favorites'); },
+  'fe-open': (el) => { const i = Number(el.dataset.i); ui.favEdit = { ...data.favorites[i], index: i, error: null }; render(); },
+  'fe-add': () => { ui.favEdit = { index: null, title: '', category: 'SUPERMARKET', foodType: null, myPercent: 100, error: null }; render(); },
+  'fe-cat': (el) => { const ed = ui.favEdit; ed.category = el.dataset.cat; if (ed.category !== 'ENTERTAINMENT') ed.foodType = null; render(); },
+  'fe-food': (el) => { ui.favEdit.foodType = el.dataset.food || null; render(); },
+  'fe-pct': (el) => { ui.favEdit.myPercent = Number(el.dataset.pct); render(); },
+  'fe-cancel': () => { ui.favEdit = null; render(); },
+  'fe-save': saveFavoriteEdit,
+  'fe-remove': () => { const i = ui.favEdit.index; ui.favEdit = null; commit({ ...data, favorites: removeFavoriteAt(data.favorites, i) }); render(); },
+  'edit-fav': (el) => {
+    const f = data.favorites[Number(el.dataset.i)];
+    Object.assign(draft, { title: f.title, category: f.category, foodType: f.foodType ?? null, split: (f.myPercent ?? 100) < 100, myPercent: (f.myPercent ?? 100) < 100 ? f.myPercent : 50 });
+    render();
   },
   'fav-toggle': (el) => {
     const e = find(data, el.dataset.id);
     const next = toggleFavorite(data.favorites, e);
-    if (next === data.favorites) { toast(`You have ${MAX_FAVORITES} favourites already. Remove one first (Edit, in ${W.newExpense}).`); return; }
+    if (next === data.favorites) { toast(`You have ${MAX_FAVORITES} favourites already. Remove one first, in Settings → Favourites.`); return; }
     commit({ ...data, favorites: next });
     toast(isFavorite(next, e) ? `${e.title} is now a favourite` : `${e.title} is no longer a favourite`);
     render();
@@ -1112,6 +1186,7 @@ const inputs = {
     app.querySelector('#pct-label').textContent = `My share: ${draft.myPercent}% · Theirs: ${100 - draft.myPercent}%`;
     app.querySelector('#share-line').textContent = shareLine();
   },
+  'fe-title': (el) => { ui.favEdit.title = el.value; },
   'quick-title': (el) => { ui.quick.title = el.value; app.querySelector('#quick-sugg').innerHTML = suggestionList(el.value, 'quick-sugg'); },
   'import-file': (el) => { readImport(el); },
   'quick-date': (el) => { if (el.value) ui.quick.date = el.value; },
@@ -1158,7 +1233,7 @@ window.expensiarmusOpen = (hash) => {
   if (hash === '#/edit') {
     // The owl opens Quick add on the Ledger.
     location.hash = '#/';
-    ui.quick = { title: '', amount: '', date: today(), error: false };
+    ui.quick = { title: '', amount: '', date: today(), error: false, cat: null, food: null, pct: 100, fav: null };
     render();
     return;
   }
