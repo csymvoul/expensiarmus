@@ -390,6 +390,7 @@ input[type='range'] { width: 100%; accent-color: var(--primary); }
 .glance-tile small { font-size: 11px; color: var(--ink-soft); line-height: 1.2; }
 .import-summary { max-height: 50vh; overflow-y: auto; margin: 8px 0; }
 .import-summary .error { color: var(--error); }
+.this-month { display: block; margin: -4px auto 6px; font-size: 14px; }
 .more-link { display: block; margin: 6px auto 0; }
 .up { color: var(--error); }
 .down { color: var(--good); }

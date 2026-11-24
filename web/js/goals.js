@@ -1,4 +1,5 @@
-// Per-month category goals ("wards") and the 80% / over-the-goal warnings. Same rules as the
+// Per-month goals ("wards") for a category, or for the whole month (category null), and the
+// 80% / over-the-goal warnings. Same rules as the
 // Android app (model/Expense.kt Goals, domain/GoalAlerts.kt).
 import { CATEGORIES, category } from './model.js';
 import { format } from './money.js';
@@ -13,7 +14,8 @@ const monthName = (m) => MONTHS[Number(m.slice(5, 7)) - 1];
 const monthYear = (m) => `${monthName(m)} ${m.slice(0, 4)}`;
 
 /**
- * The goal that applies to a category in a month ("2026-11"), or null. A goal for one specific
+ * The goal that applies to a category in a month ("2026-11"), or null. A category of null is the
+ * whole month: a goal on everything spent that month. A goal for one specific
  * month wins over an "onwards" goal; among "onwards" goals the latest that started by then wins.
  * An entry of 0 cents switches an earlier goal off.
  */
@@ -48,7 +50,7 @@ export function removeGoal(goals, cat, month, onwards) {
  */
 export function migrateGoals(goals) {
   if (!goals) return { entries: [] };
-  const entries = Array.isArray(goals.entries) ? goals.entries.filter((e) => category(e.category) && e.month) : [];
+  const entries = Array.isArray(goals.entries) ? goals.entries.filter((e) => (e.category === null || category(e.category)) && e.month) : [];
   const legacy = goals.perCategoryCents?.ENTERTAINMENT;
   if (legacy > 0 && !entries.length) entries.push({ category: 'ENTERTAINMENT', month: LEGACY_START, cents: legacy, onwards: true });
   return { entries };
@@ -62,12 +64,14 @@ export function scopeText(entry, month) {
   return `Every month since ${monthYear(entry.month)}`;
 }
 
-export const alertKey = (cat, month, level) => `${cat}|${month}|${level}`;
+export const alertKey = (cat, month, level) => `${cat ?? 'TOTAL'}|${month}|${level}`;
 
 /** Warnings not yet sent for a month: at 80% of a goal, and on reaching it (100%, which wins). */
 export function alertsDue(data, month, words = wordsFor(true)) {
   const sent = new Set(data.alertsSent ?? []);
-  return monthlySummary(data, month).categories.flatMap((c) => {
+  const s = monthlySummary(data, month);
+  const watched = [{ category: null, goal: s.totalGoal }, ...s.categories];
+  return watched.flatMap((c) => {
     const g = c.goal;
     if (!g) return [];
     const level = g.spentCents >= g.goalCents ? 100 : g.spentCents * 100 >= g.goalCents * 80 ? 80 : 0;
@@ -77,7 +81,7 @@ export function alertsDue(data, month, words = wordsFor(true)) {
 }
 
 export function alertMessage(cat, month, level, g, words = wordsFor(true)) {
-  const label = category(cat).label;
+  const label = cat ? category(cat).label : 'monthly'; // "80% of your monthly ward is spent"
   const head = `${format(g.spentCents)} of ${format(g.goalCents)} in ${monthName(month)}`;
   return {
     category: cat,

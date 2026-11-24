@@ -42,12 +42,12 @@ class ExpenseViewModel(app: Application) : AndroidViewModel(app) {
 
     fun delete(id: String) = update { it.delete(id) }
 
-    /** Sets a goal for [category] in [month] only, or from [month] onwards. */
-    fun setGoal(category: Category, month: YearMonth, cents: Long, onwards: Boolean) =
+    /** Sets a goal for [category] (null: the whole month) in [month] only, or from [month] onwards. */
+    fun setGoal(category: Category?, month: YearMonth, cents: Long, onwards: Boolean) =
         update { it.copy(goals = it.goals.set(category, month, cents, onwards)) }
 
     /** Removes the goal for [category] in [month] only, or from [month] onwards. */
-    fun removeGoal(category: Category, month: YearMonth, onwards: Boolean) =
+    fun removeGoal(category: Category?, month: YearMonth, onwards: Boolean) =
         update { it.copy(goals = it.goals.remove(category, month, onwards)) }
 
     private fun update(change: (AppData) -> AppData) {

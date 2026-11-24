@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.15.0 (Android), web app 1.14.0 and iPhone app 1.12.0 – unreleased (2026-11-25)
+
+### Added
+- **A ward for the whole month.** In Protego, "Cast a new ward" now offers **Whole month** first (with the coin-pouch emblem), next to the categories: a goal on everything you spend that month, for that month only or from then on, like the category wards. It shows at the top of Protego, as a bar under "Gold spent this month" on the Ledger, and first on the Android widget. It warns at 80% and when broken ("80% of your monthly ward is spent"), once each. Stored as a goal with no category, so saved data and older versions' goals load unchanged.
+- **Back to this month.** On the Ledger, Calendar and Protego, when you are looking at another month, a "↩ Back to November 2026" link under the month name jumps straight back to the current month (and, on the Calendar, to today).
+- Tests: Android 183 (5 new: the whole-month ward's sums, scope, removal, warnings, saved data, widget line and keys), web 78 (3 new), all passing. Checked in a browser: casting a whole-month ward from November onwards, its bar on the Ledger, and Back to November from September.
+
+### Known issues
+- Not yet checked on a phone.
+
 ## Housekeeping – 2026-11-24 (no app changes)
 
 - The project folder is now `expensiarmus` (it was `expenses-app`), matching the GitHub repository, and the Gradle project is named `Expensiarmus` (it was `Expenses`; only Android Studio shows it).

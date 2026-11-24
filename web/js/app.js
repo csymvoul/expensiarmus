@@ -1,5 +1,5 @@
 // Expensiarmus web app: screens, navigation and event handling. Logic lives in the other modules.
-import { CATEGORIES, FOOD_TYPES, TAB_ICONS, EMBLEMS, withoutEmoji, category, foodType, makeExpense, myShareCents, isSplit, splitLine, upsert, remove, find, monthOf } from './model.js';
+import { CATEGORIES, FOOD_TYPES, TAB_ICONS, EMBLEMS, WHOLE_MONTH, goalKey, withoutEmoji, category, foodType, makeExpense, myShareCents, isSplit, splitLine, upsert, remove, find, monthOf } from './model.js';
 import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
 import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
@@ -90,7 +90,7 @@ function commit(next) {
 /** A real notification inside the iPhone app; on the web (no notifications on iPhone) an in-app card. */
 function showGoalAlert(a) {
   if (nativeBridge) {
-    post({ type: 'notify', id: `goal-${a.category}-${a.month}`, title: a.title, body: a.body });
+    post({ type: 'notify', id: `goal-${a.category ?? 'TOTAL'}-${a.month}`, title: a.title, body: a.body });
     return;
   }
   const el = document.createElement('div');
@@ -238,7 +238,8 @@ function totalCard(s) {
   return card(`
     <h3 class="h-small">${W.spentThisMonth}</h3>
     <p class="total">${format(s.totalCents)}</p>
-    ${s.paidTotalCents !== s.totalCents ? `<p class="small soft">Your share. Full bills came to ${format(s.paidTotalCents)}.</p>` : ''}`);
+    ${s.paidTotalCents !== s.totalCents ? `<p class="small soft">Your share. Full bills came to ${format(s.paidTotalCents)}.</p>` : ''}
+    ${s.totalGoal ? `${goalBar(s.totalGoal)}<span class="small">${esc(describeGoal(s.totalGoal, W))}</span>` : ''}`);
 }
 
 /** [period] is what a tapped category opens for: the month, the year, or "" for all time. */
@@ -343,11 +344,16 @@ function installBanner() {
 }
 
 function monthSwitch(prev = 'prev-month', next = 'next-month', title = monthTitle(ui.month)) {
+  // Away from the current month, one tap brings the month switcher back to it.
+  const thisMonth = today().slice(0, 7);
+  const back = prev === 'prev-month' && ui.month !== thisMonth
+    ? `<button class="link this-month" data-action="this-month">↩ ${esc(W.thisMonth(monthTitle(thisMonth)))}</button>`
+    : '';
   return `<div class="month-switch">
       <button class="icon-btn gold" data-action="${prev}" aria-label="Previous">${ICON.left}</button>
       <h2 class="h-large">${title}</h2>
       <button class="icon-btn gold" data-action="${next}" aria-label="Next">${ICON.right}</button>
-    </div>`;
+    </div>${back}`;
 }
 
 /** The Ledger tab (overview of the month) and the Calendar tab. */
@@ -692,7 +698,7 @@ function searchScreen() {
 function wardEditor(m, fixed, choices, ed) {
   const name = monthName(m);
   const picker = fixed ? '' : `<span class="h-small">${esc(W.whichCategory)}</span>
-    <div class="chips">${choices.map((c) => `<button class="chip ${ed.picked === c.id ? 'on' : ''}" data-action="ward-pick" data-cat="${c.id}">${chipIcon(c)}${c.label}</button>`).join('')}</div>`;
+    <div class="chips">${choices.map((c) => `<button class="chip ${ed.picked === c.id ? 'on' : ''}" data-action="ward-pick" data-cat="${c.id}">${chipIcon(c)}${esc(c.label ?? W.wholeMonth)}</button>`).join('')}</div>`;
   return `<div class="ward-editor">
     ${picker}
     <label class="field"><span class="label">Goal for ${name}</span>
@@ -714,13 +720,18 @@ function goalsScreen() {
   const m = ui.month;
   const s = monthlySummary(data, m);
   const ed = ui.goalEdit;
-  const active = CATEGORIES.map((c) => ({ c, entry: goalFor(data.goals, c.id, m) })).filter((x) => x.entry);
-  const free = CATEGORIES.filter((c) => !active.some((a) => a.c.id === c.id));
+  // The whole month comes first, then one ward per category.
+  const whole = { ...WHOLE_MONTH, label: W.wholeMonth };
+  const vaults = [whole, ...CATEGORIES];
+  const spentOn = (id) => (id === 'TOTAL' ? s.totalCents : s.categories.find((x) => x.category === id).spentCents);
+  const active = vaults.map((c) => ({ c, entry: goalFor(data.goals, goalKey(c.id), m) })).filter((x) => x.entry);
+  const free = vaults.filter((c) => !active.some((a) => a.c.id === c.id));
   const wards = active.map(({ c, entry }) => {
-    const g = goalProgress(entry.cents, s.categories.find((x) => x.category === c.id).spentCents);
+    const g = goalProgress(entry.cents, spentOn(c.id));
+    const sub = c.id === 'TOTAL' ? `${W.wholeMonthSub} · ${scopeText(entry, m)}` : scopeText(entry, m);
     return card(`<button class="ward" data-action="ward-edit" data-cat="${c.id}">
         <span class="legend-row">${emblem(c.icon, 36)}
-          <span class="row-main"><span class="h-small">${c.label}</span><span class="row-sub italic">${esc(scopeText(entry, m))}</span></span>
+          <span class="row-main"><span class="h-small">${esc(c.label)}</span><span class="row-sub italic">${esc(sub)}</span></span>
           <b class="h-medium">${format(entry.cents)}</b></span>
         ${goalBar(g)}<span class="small">${esc(describeGoal(g, W))}</span>
       </button>
@@ -758,14 +769,14 @@ function saveWard() {
     return;
   }
   ui.goalEdit = null;
-  commit({ ...data, goals: setGoal(data.goals, cat, ui.month, cents, ed.onwards) });
+  commit({ ...data, goals: setGoal(data.goals, goalKey(cat), ui.month, cents, ed.onwards) });
   render();
 }
 
 function removeWard(onwards) {
   const cat = ui.goalEdit.cat;
   ui.goalEdit = null;
-  commit({ ...data, goals: removeGoal(data.goals, cat, ui.month, onwards) });
+  commit({ ...data, goals: removeGoal(data.goals, goalKey(cat), ui.month, onwards) });
   render();
 }
 
@@ -930,6 +941,7 @@ const actions = {
   go: (el) => go(el.dataset.to),
   tab: (el) => { navDepth = 0; location.replace(el.dataset.to); },
   'ledger-all': () => { ui.ledgerAll = ui.ledgerAll === ui.month ? null : ui.month; render(); },
+  'this-month': () => { ui.month = today().slice(0, 7); ui.day = today(); ui.highlighted = null; ui.goalEdit = null; render(); },
   'prev-month': () => { ui.month = shiftMonth(ui.month, -1); ui.highlighted = null; ui.goalEdit = null; render(); },
   'next-month': () => { ui.month = shiftMonth(ui.month, 1); ui.highlighted = null; ui.goalEdit = null; render(); },
   slice: (el) => {
@@ -1007,12 +1019,12 @@ const actions = {
     app.querySelector('#results').innerHTML = searchResults();
   },
   'ward-edit': (el) => {
-    const entry = goalFor(data.goals, el.dataset.cat, ui.month);
+    const entry = goalFor(data.goals, goalKey(el.dataset.cat), ui.month);
     ui.goalEdit = { cat: el.dataset.cat, amount: forInput(entry.cents), onwards: entry.onwards };
     render();
   },
   'ward-add': () => {
-    const free = CATEGORIES.filter((c) => !goalFor(data.goals, c.id, ui.month));
+    const free = [WHOLE_MONTH, ...CATEGORIES].filter((c) => !goalFor(data.goals, goalKey(c.id), ui.month));
     ui.goalEdit = { cat: null, adding: true, picked: free[0]?.id, amount: '', onwards: false };
     render();
   },

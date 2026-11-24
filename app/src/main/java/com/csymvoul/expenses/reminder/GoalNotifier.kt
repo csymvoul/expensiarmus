@@ -23,7 +23,7 @@ object GoalNotifier {
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL, "Goal warnings", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "When a category reaches 80% of its monthly goal, and when it goes over"
+                description = "When a category, or the whole month, reaches 80% of its goal, and when it goes over"
             },
         )
         val open = PendingIntent.getActivity(
@@ -42,6 +42,6 @@ object GoalNotifier {
             .setAutoCancel(true)
             .build()
         // One notification per category and month; the 100% warning replaces the 80% one.
-        manager.notify("goal|${alert.category.name}|${alert.month}".hashCode(), notification)
+        manager.notify("goal|${alert.category?.name ?: "TOTAL"}|${alert.month}".hashCode(), notification)
     }
 }

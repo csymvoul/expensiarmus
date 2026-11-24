@@ -37,13 +37,14 @@ data class Expense(
 }
 
 /**
- * One goal for one category. [month] is "2026-11". With [onwards] it applies to that month and
+ * One goal for one category, or for the whole month when [category] is null (a goal on everything
+ * spent that month). [month] is "2026-11". With [onwards] it applies to that month and
  * every later month (until a later "onwards" goal for the same category); without it, only to
  * that month. [cents] of 0 means "no goal" and is used to switch an earlier goal off.
  */
 @Serializable
 data class GoalEntry(
-    val category: Category,
+    val category: Category? = null,
     val month: String,
     val cents: Long,
     val onwards: Boolean,
@@ -60,8 +61,8 @@ data class Goals(
     val monthlyCents: Long? = null,
     val perCategoryCents: Map<Category, Long> = emptyMap(),
 ) {
-    /** The goal that applies to [category] in [month], or null when there is none. */
-    fun goalFor(category: Category, month: YearMonth): GoalEntry? {
+    /** The goal that applies to [category] (null: the whole month) in [month], or null when there is none. */
+    fun goalFor(category: Category?, month: YearMonth): GoalEntry? {
         val key = month.toString()
         val single = entries.firstOrNull { it.category == category && !it.onwards && it.month == key }
         val effective = single ?: entries
@@ -71,7 +72,7 @@ data class Goals(
     }
 
     /** Sets [cents] for [category] in [month] only, or from [month] onwards. */
-    fun set(category: Category, month: YearMonth, cents: Long, onwards: Boolean): Goals {
+    fun set(category: Category?, month: YearMonth, cents: Long, onwards: Boolean): Goals {
         val key = month.toString()
         val kept = entries.filterNot {
             it.category == category && ((!it.onwards && it.month == key) || (onwards && it.onwards && it.month >= key))
@@ -80,7 +81,7 @@ data class Goals(
     }
 
     /** Removes the goal for [category] in [month] only, or from [month] onwards. */
-    fun remove(category: Category, month: YearMonth, onwards: Boolean): Goals {
+    fun remove(category: Category?, month: YearMonth, onwards: Boolean): Goals {
         val key = month.toString()
         var kept = entries.filterNot { it.category == category && !it.onwards && it.month == key }
         if (onwards) kept = kept.filterNot { it.category == category && it.month >= key }

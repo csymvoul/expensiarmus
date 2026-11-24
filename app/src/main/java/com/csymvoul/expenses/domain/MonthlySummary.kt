@@ -82,6 +82,8 @@ data class MonthlySummary(
     /** One entry per category, in [Category] order. */
     val categories: List<CategoryTotal>,
     val food: FoodSummary,
+    /** The whole-month goal (a ward on everything spent), or null. */
+    val totalGoal: GoalProgress? = null,
 ) {
     companion object {
         fun of(data: AppData, month: YearMonth): MonthlySummary {
@@ -105,6 +107,7 @@ data class MonthlySummary(
                 expenses = inMonth,
                 categories = categories,
                 food = FoodSummary.of(inMonth),
+                totalGoal = data.goals.goalFor(null, month)?.let { GoalProgress(it.cents, total) },
             )
         }
     }

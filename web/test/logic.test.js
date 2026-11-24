@@ -873,3 +873,56 @@ test('Transport was called Fuel, and old backups still come back in', () => {
   assert.deepEqual(r.problems, []);
   assert.deepEqual(r.added.map((x) => x.category), ['FUEL', 'FUEL']);
 });
+
+// --- whole-month ward and the way back to this month ---
+import { WHOLE_MONTH, goalKey } from '../js/model.js';
+
+test('a whole-month ward watches everything spent, next to the category wards', () => {
+  let goals = setGoal({ entries: [] }, null, '2026-11', 100000, true);
+  goals = setGoal(goals, 'ENTERTAINMENT', '2026-11', 20000, false);
+  assert.equal(goalFor(goals, null, '2026-11').cents, 100000);
+  assert.equal(goalFor(goals, null, '2027-02').cents, 100000); // onwards
+  assert.equal(goalFor(goals, null, '2026-10'), null);
+  assert.equal(goalFor(goals, 'ENTERTAINMENT', '2026-11').cents, 20000);
+  assert.equal(goalFor(goals, 'RENT', '2026-11'), null); // a whole-month ward is not a category ward
+  const data = { expenses: [e('2026-11-01', 45000, 'RENT'), e('2026-11-05', 40000, 'ENTERTAINMENT')], goals, alertsSent: [] };
+  const s = monthlySummary(data, '2026-11');
+  assert.deepEqual([s.totalGoal.goalCents, s.totalGoal.spentCents, s.totalGoal.percent], [100000, 85000, 85]);
+  assert.equal(monthlySummary({ ...data, goals: { entries: [] } }, '2026-11').totalGoal, null);
+  // Removing it for November only switches the onwards ward off there, December keeps it.
+  const off = removeGoal(goals, null, '2026-11', false);
+  assert.equal(goalFor(off, null, '2026-11'), null);
+  assert.equal(goalFor(off, null, '2026-12').cents, 100000);
+  // Saved whole-month wards survive loading.
+  assert.equal(migrateGoals(goals).entries.filter((x) => x.category === null).length, 1);
+  assert.equal(goalKey('TOTAL'), null);
+  assert.equal(goalKey('RENT'), 'RENT');
+  assert.equal(WHOLE_MONTH.id, 'TOTAL');
+});
+
+test('the whole-month ward warns at 80% and when broken, once each', () => {
+  const goals = setGoal({ entries: [] }, null, '2026-11', 10000, false);
+  const at = (cents, sent = []) => alertsDue({ expenses: [e('2026-11-02', cents, 'OTHER')], goals, alertsSent: sent }, '2026-11');
+  assert.deepEqual(at(7000), []);
+  const eighty = at(8500);
+  assert.equal(eighty.length, 1);
+  assert.equal(eighty[0].category, null);
+  assert.equal(eighty[0].title, wordsFor(true).alert80('monthly'));
+  assert.match(eighty[0].body, /€85\.00 of €100\.00 in November/);
+  assert.equal(at(8500, ['TOTAL|2026-11|80']).length, 0);
+  const broken = at(12000, ['TOTAL|2026-11|80']);
+  assert.equal(broken[0].level, 100);
+  assert.equal(broken[0].title, wordsFor(true).alert100('monthly'));
+  assert.deepEqual(markAlertsSent({ alertsSent: [] }, broken).alertsSent.sort(), ['TOTAL|2026-11|100', 'TOTAL|2026-11|80']);
+});
+
+test('the Ledger shows the whole-month ward under its total, and a way back to this month', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  assert.match(app, /\$\{s\.totalGoal \? `\$\{goalBar\(s\.totalGoal\)\}/);
+  assert.match(app, /prev === 'prev-month' && ui\.month !== thisMonth/);
+  assert.match(app, /'this-month': \(\) => \{ ui\.month = today\(\)\.slice\(0, 7\);/);
+  assert.equal(wordsFor(true).thisMonth('November 2026'), 'Back to November 2026');
+  assert.match(app, /const vaults = \[whole, \.\.\.CATEGORIES\]/);
+  assert.match(app, /setGoal\(data\.goals, goalKey\(cat\)/);
+  assert.match(app, /removeGoal\(data\.goals, goalKey\(cat\)/);
+});

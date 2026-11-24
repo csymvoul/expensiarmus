@@ -212,12 +212,14 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                 month = month,
                 goals = data.goals,
                 spent = remember(data, month) {
-                    MonthlySummary.of(data, month).categories.associate { it.category to it.spentCents }
+                    val s = MonthlySummary.of(data, month)
+                    s.categories.associate<_, Category?, Long> { it.category to it.spentCents } + (null to s.totalCents)
                 },
                 onSet = { c, cents, onwards -> vm.setGoal(c, month, cents, onwards) },
                 onRemove = { c, onwards -> vm.removeGoal(c, month, onwards) },
                 onPreviousMonth = { month = month.minusMonths(1) },
                 onNextMonth = { month = month.plusMonths(1) },
+                onThisMonth = { month = YearMonth.now() },
                 bottomBar = { tabBar(Tab.GOALS) },
             )
             route == ANNALS -> {
@@ -332,6 +334,7 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                     onSelectDay = { selectedDay = it },
                     onPreviousMonth = { month = month.minusMonths(1) },
                     onNextMonth = { month = month.plusMonths(1) },
+                    onThisMonth = { month = YearMonth.now(); selectedDay = LocalDate.now() },
                     onAdd = { quickOpen = true },
                     onOpen = { push(VIEW + it) },
                     onCategory = { c, t -> push(categoryRoute(c, t, if (annalsView == AnnalsView.YEAR) annalsYear.toString() else "")) },

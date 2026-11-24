@@ -63,6 +63,8 @@ export function monthlySummary(data, month) {
       };
     }),
     food: foodSummary(inMonth),
+    /** The whole-month goal (a ward on everything spent), or null. */
+    totalGoal: (() => { const entry = goalFor(goals, null, month); return entry ? goalProgress(entry.cents, total) : null; })(),
   };
 }
 

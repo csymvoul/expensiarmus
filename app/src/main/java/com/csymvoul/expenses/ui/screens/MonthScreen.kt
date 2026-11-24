@@ -104,6 +104,8 @@ fun MonthScreen(
     onSelectDay: (LocalDate) -> Unit,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
+    /** Jumps back to the current month. */
+    onThisMonth: () -> Unit,
     onAdd: () -> Unit,
     onOpen: (String) -> Unit,
     onCategory: (Category, FoodType?) -> Unit,
@@ -151,7 +153,7 @@ fun MonthScreen(
             if (reminderOn && owlsBlocked) {
                 item { OwlsBlockedBanner(onFixOwls) }
             }
-            item { MonthSwitcher(summary, onPreviousMonth, onNextMonth) }
+            item { MonthSwitcher(summary, onPreviousMonth, onNextMonth, onThisMonth) }
             when (view) {
                 MonthView.OVERVIEW -> {
                     item { TotalCard(summary) }
@@ -242,7 +244,8 @@ private fun Hint(text: String) {
 }
 
 @Composable
-private fun MonthSwitcher(summary: MonthlySummary, onPrevious: () -> Unit, onNext: () -> Unit) {
+private fun MonthSwitcher(summary: MonthlySummary, onPrevious: () -> Unit, onNext: () -> Unit, onThisMonth: () -> Unit) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onPrevious) {
             Icon(
@@ -264,6 +267,12 @@ private fun MonthSwitcher(summary: MonthlySummary, onPrevious: () -> Unit, onNex
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
+    }
+    // Away from the current month, one tap brings it back.
+    val now = YearMonth.now()
+    if (summary.month != now) {
+        TextButton(onClick = onThisMonth) { Text("↩ " + LocalWords.current.thisMonth(now.format(monthFormat))) }
+    }
     }
 }
 
@@ -333,6 +342,11 @@ private fun TotalCard(summary: MonthlySummary) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        // The whole-month ward, when one is cast.
+        summary.totalGoal?.let { goal ->
+            GoalBar(goal, Modifier.padding(top = 4.dp))
+            Text(goal.describe(LocalWords.current), style = MaterialTheme.typography.bodySmall)
         }
     }
 }

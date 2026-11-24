@@ -43,6 +43,11 @@ export const SEARCH_GLYPH = { light: 'icons/emblems/search_light.png', dark: 'ic
 /** A label without its leading emoji ("⚙️ Settings" → "Settings"), for places that show a painted emblem instead. */
 export const withoutEmoji = (label) => label.replace(/^[^\p{L}\p{N}]+\s*/u, '');
 
+/** The whole month as a ward on the Protego screen ("TOTAL" there; stored as a goal with category null). */
+export const WHOLE_MONTH = { id: 'TOTAL', icon: 'icons/emblems/logo_pouch.png' };
+/** The goal key for a ward picked on screen: null for the whole month, else the category. */
+export const goalKey = (id) => (id === 'TOTAL' ? null : id);
+
 export const category = (id) => CATEGORIES.find((c) => c.id === id);
 export const foodType = (id) => FOOD_TYPES.find((f) => f.id === id);
 

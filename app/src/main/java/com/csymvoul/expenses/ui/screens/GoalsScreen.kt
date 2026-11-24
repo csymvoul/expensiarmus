@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.csymvoul.expenses.domain.GoalProgress
 import com.csymvoul.expenses.domain.GoalScope
+import com.csymvoul.expenses.R
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.GoalEntry
@@ -71,25 +72,28 @@ private val monthName = DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH)
 private val monthYear = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)
 
 /**
- * Protego: the category goals ("wards") of one month. Tap a ward to change or remove it, or cast a
+ * Protego: the goals ("wards") of one month: one for the whole month and one per category. Tap a ward to change or remove it, or cast a
  * new one for a category, for this month only or for this month and every month after.
  */
 @Composable
 fun GoalsScreen(
     month: YearMonth,
     goals: Goals,
-    spent: Map<Category, Long>,
-    onSet: (Category, Long, Boolean) -> Unit,
-    onRemove: (Category, Boolean) -> Unit,
+    /** Spent per category, and under null the whole month's total. */
+    spent: Map<Category?, Long>,
+    onSet: (Category?, Long, Boolean) -> Unit,
+    onRemove: (Category?, Boolean) -> Unit,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
+    onThisMonth: () -> Unit,
     bottomBar: @Composable () -> Unit,
 ) {
     val w = LocalWords.current
-    var editing by rememberSaveable(month) { mutableStateOf<Category?>(null) }
+    // Wards are keyed "TOTAL" (the whole month) or by category code, see GoalScope.
+    var editing by rememberSaveable(month) { mutableStateOf<String?>(null) }
     var adding by rememberSaveable(month) { mutableStateOf(false) }
-    val active = Category.entries.mapNotNull { c -> goals.goalFor(c, month)?.let { c to it } }
-    val free = Category.entries.filter { c -> active.none { it.first == c } }
+    val active = GoalScope.targets.mapNotNull { c -> goals.goalFor(c, month)?.let { c to it } }
+    val free = GoalScope.targets.filter { c -> active.none { it.first == c } }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -120,6 +124,12 @@ fun GoalsScreen(
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month", tint = MaterialTheme.colorScheme.primary)
                 }
             }
+            val now = YearMonth.now()
+            if (month != now) {
+                TextButton(onClick = onThisMonth, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                    Text("↩ " + w.thisMonth(now.format(monthYear)))
+                }
+            }
             Text(
                 w.goalsIntro(month.format(monthYear)),
                 style = MaterialTheme.typography.bodyMedium,
@@ -134,12 +144,14 @@ fun GoalsScreen(
                 )
             }
             active.forEach { (category, entry) ->
-                key(category) {
-                    ParchmentCard(Modifier.clickable(enabled = editing != category) { editing = category; adding = false }) {
+                val wardKey = GoalScope.key(category)
+                key(wardKey) {
+                    ParchmentCard(Modifier.clickable(enabled = editing != wardKey) { editing = wardKey; adding = false }) {
                         WardSummary(category, entry, spent[category] ?: 0L, month)
-                        if (editing == category) {
+                        if (editing == wardKey) {
                             WardEditor(
                                 month = month,
+                                fixed = true,
                                 fixedCategory = category,
                                 choices = emptyList(),
                                 initialCents = entry.cents,
@@ -157,6 +169,7 @@ fun GoalsScreen(
                     Text(w.aNewWard, style = MaterialTheme.typography.titleMedium)
                     WardEditor(
                         month = month,
+                        fixed = false,
                         fixedCategory = null,
                         choices = free,
                         initialCents = null,
@@ -178,15 +191,16 @@ fun GoalsScreen(
 }
 
 @Composable
-private fun WardSummary(category: Category, entry: GoalEntry, spentCents: Long, month: YearMonth) {
+private fun WardSummary(category: Category?, entry: GoalEntry, spentCents: Long, month: YearMonth) {
+    val w = LocalWords.current
     val progress = GoalProgress(entry.cents, spentCents)
     Row(verticalAlignment = Alignment.CenterVertically) {
-        EmblemBadge(category.icon, size = 36.dp)
+        EmblemBadge(category?.icon ?: R.drawable.emblem_logo_pouch, size = 36.dp)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(category.label, style = MaterialTheme.typography.titleSmall)
+            Text(category?.label ?: w.wholeMonth, style = MaterialTheme.typography.titleSmall)
             Text(
-                GoalScope.text(entry, month),
+                (if (category == null) "${w.wholeMonthSub} · " else "") + GoalScope.text(entry, month),
                 style = MaterialTheme.typography.bodySmall,
                 fontStyle = FontStyle.Italic,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -202,15 +216,19 @@ private fun WardSummary(category: Category, entry: GoalEntry, spentCents: Long, 
 @Composable
 private fun WardEditor(
     month: YearMonth,
+    /** True when changing an existing ward (no picker); false when casting a new one. */
+    fixed: Boolean,
     fixedCategory: Category?,
-    choices: List<Category>,
+    choices: List<Category?>,
     initialCents: Long?,
     initialOnwards: Boolean,
-    onSave: (Category, Long, Boolean) -> Unit,
+    onSave: (Category?, Long, Boolean) -> Unit,
     onCancel: () -> Unit,
     onRemove: ((Boolean) -> Unit)?,
 ) {
-    var picked by rememberSaveable { mutableStateOf(fixedCategory ?: choices.firstOrNull()) }
+    var pickedKey by rememberSaveable {
+        mutableStateOf(if (fixed) GoalScope.key(fixedCategory) else if (choices.isEmpty()) null else GoalScope.key(choices.first()))
+    }
     var amount by rememberSaveable { mutableStateOf(initialCents?.let(Money::forInput) ?: "") }
     var onwards by rememberSaveable { mutableStateOf(initialOnwards) }
     var confirmRemove by remember { mutableStateOf(false) }
@@ -219,11 +237,16 @@ private fun WardEditor(
     val name = month.format(monthName)
 
     Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        if (fixedCategory == null) {
+        if (!fixed) {
             Text(LocalWords.current.whichCategory, style = MaterialTheme.typography.titleSmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 choices.forEach { c ->
-                    FilterChip(selected = picked == c, onClick = { picked = c }, label = { Text(c.label) }, leadingIcon = { ChipEmblem(c.icon) })
+                    FilterChip(
+                        selected = pickedKey == GoalScope.key(c),
+                        onClick = { pickedKey = GoalScope.key(c) },
+                        label = { Text(c?.label ?: LocalWords.current.wholeMonth) },
+                        leadingIcon = { ChipEmblem(c?.icon ?: R.drawable.emblem_logo_pouch) },
+                    )
                 }
             }
         }
@@ -256,8 +279,8 @@ private fun WardEditor(
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onCancel) { Text("Cancel") }
             WizardButton(
-                onClick = { picked?.let { c -> cents?.let { onSave(c, it, onwards) } } },
-                enabled = picked != null && amountOk,
+                onClick = { pickedKey?.let { k -> cents?.let { onSave(GoalScope.target(k), it, onwards) } } },
+                enabled = pickedKey != null && amountOk,
                 contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
             ) { Text("Save") }
         }
