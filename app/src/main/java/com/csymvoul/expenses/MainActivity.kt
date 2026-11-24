@@ -378,7 +378,6 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
             history = data.expenses,
             favorites = data.favorites,
             date = newExpenseDate,
-            onOpenFavorites = { quickOpen = false; push(FAVORITES) },
             onSave = { e ->
                 vm.upsert(e)
                 month = YearMonth.from(e.date)

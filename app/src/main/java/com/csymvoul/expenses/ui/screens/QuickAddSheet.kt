@@ -87,7 +87,7 @@ data class QuickPrefill(
 /**
  * Quick add: type the amount, pick a category tile (or a favourite), then tap the gold ✓ at the top.
  * Tiles only select, so you can change your mind before recording. Typing a title offers earlier
- * titles; tapping one fills it in (no amount is copied). Edit › on the favourites opens their page.
+ * titles; tapping one fills it in (no amount is copied). Favourites are edited in Settings → Favourites.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -96,7 +96,6 @@ fun QuickAddSheet(
     favorites: List<Favorite>,
     date: LocalDate,
     onSave: (Expense) -> Unit,
-    onOpenFavorites: () -> Unit,
     onMore: (QuickPrefill) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -186,7 +185,6 @@ fun QuickAddSheet(
                     StarGlyph(on = true, contentDescription = null, size = 18.dp)
                     Spacer(Modifier.width(6.dp))
                     Text("Favourites", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    TextButton(onClick = onOpenFavorites) { Text("Edit ›") }
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     favorites.forEachIndexed { i, f ->

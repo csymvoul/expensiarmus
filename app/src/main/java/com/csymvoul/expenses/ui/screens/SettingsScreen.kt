@@ -88,6 +88,20 @@ fun SettingsScreen(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // Order: Favourites, Owl reminder, Wizard words, Number format, Theme, Updates, Geminio, Apparate.
+            ParchmentCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StarGlyph(on = true, contentDescription = null, size = 32.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text("Favourites", style = MaterialTheme.typography.titleMedium)
+                }
+                Text(
+                    "Up to ${Favorites.MAX} expenses you record often, ready in ${w.newExpense}: their title, category and split are filled in, you type the amount.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                WizardButton(onClick = onOpenFavorites) { Text(if (favoriteCount > 0) "Edit favourites" else "Add favourites") }
+            }
             ParchmentCard {
                 CardTitle(R.drawable.emblem_set_reminder, w.reminder)
                 SwitchRow(w.reminderSwitch, "A daily nudge to record the day's expenses", settings.reminderOn) { on ->
@@ -117,39 +131,6 @@ fun SettingsScreen(
                 }
             }
             ParchmentCard {
-                CardTitle(R.drawable.emblem_set_geminio, w.exportTitle)
-                Text(
-                    "All your expenses as a CSV file, for a backup or a spreadsheet.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                WizardButton(onClick = onExport) { Text(w.exportButton) }
-            }
-            ParchmentCard {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    StarGlyph(on = true, contentDescription = null, size = 32.dp)
-                    Spacer(Modifier.width(10.dp))
-                    Text("Favourites", style = MaterialTheme.typography.titleMedium)
-                }
-                Text(
-                    "Up to ${Favorites.MAX} expenses you record often, ready in ${w.newExpense}: their title, category and split are filled in, you type the amount.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                WizardButton(onClick = onOpenFavorites) { Text(if (favoriteCount > 0) "Edit favourites" else "Add favourites") }
-            }
-            ParchmentCard {
-                CardTitle(R.drawable.emblem_set_apparate, w.importTitle)
-                Text(
-                    "Bring expenses in from a CSV: a Geminio backup, or a spreadsheet with the same columns. " +
-                        "You see what will be added first; expenses already in the ledger are skipped.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                WizardButton(onClick = onImport) { Text(w.importButton) }
-            }
-            UpdatesCard(settings, updateState, appVersion, canInstall, onChange, onCheckUpdates, onDownloadUpdate, onInstallUpdate)
-            ParchmentCard {
                 Text("Theme", style = MaterialTheme.typography.titleMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
@@ -165,6 +146,26 @@ fun SettingsScreen(
                         )
                     }
                 }
+            }
+            UpdatesCard(settings, updateState, appVersion, canInstall, onChange, onCheckUpdates, onDownloadUpdate, onInstallUpdate)
+            ParchmentCard {
+                CardTitle(R.drawable.emblem_set_geminio, w.exportTitle)
+                Text(
+                    "All your expenses as a CSV file, for a backup or a spreadsheet.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                WizardButton(onClick = onExport) { Text(w.exportButton) }
+            }
+            ParchmentCard {
+                CardTitle(R.drawable.emblem_set_apparate, w.importTitle)
+                Text(
+                    "Bring expenses in from a CSV: a Geminio backup, or a spreadsheet with the same columns. " +
+                        "You see what will be added first; expenses already in the ledger are skipped.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                WizardButton(onClick = onImport) { Text(w.importButton) }
             }
         }
     }

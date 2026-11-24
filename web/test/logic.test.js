@@ -1070,9 +1070,17 @@ test('Quick add records with the ✓ at the top; tiles and favourites only selec
 test('favourites have their own page, a Settings card, and show in the full form for new expenses', () => {
   const app = readFileSync(webFile('js/app.js'), 'utf8');
   assert.match(app, /case 'favorites': app\.innerHTML = favoritesScreen\(\); break;/);
-  assert.match(app, /'fav-page': \(\) => \{ ui\.quick = null; go\('#\/favorites'\); \}/);
+  assert.doesNotMatch(app, /fav-page/); // not editable from Quick add
   assert.match(app, /data-action="go" data-to="#\/favorites"/);
   assert.match(app, /const r = saveFavorite\(data\.favorites, ed\.index, ed\);/);
   assert.match(app, /\$\{!d\.id && data\.favorites\?\.length \?/); // only for a new expense
   assert.match(app, /'edit-fav': \(el\) => \{[\s\S]*?category: f\.category, foodType: f\.foodType \?\? null, split:/);
+});
+
+test('Settings cards come in the chosen order: Favourites, Owl reminder, Wizard words, Number format, Theme, Geminio, Apparate', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  const screen = app.slice(app.indexOf('function settingsScreen()'), app.indexOf('// ---------- annals'));
+  const at = ['Favourites</h3>', 'EMBLEMS.reminder', 'Wizard words</h3>', 'Number format</h3>', 'Theme</h3>', 'EMBLEMS.geminio', 'EMBLEMS.apparate'].map((m) => screen.indexOf(m));
+  assert.ok(at.every((i) => i > 0), 'every card is there');
+  assert.deepEqual([...at].sort((a, b) => a - b), at);
 });

@@ -413,12 +413,11 @@ const quickAmountText = () => {
   return settings.money === 'el' ? `${typed} €` : `€${typed}`;
 };
 
-/** Quick add's favourites: tap one to fill in its title, category and split; Edit opens the Favourites page. */
+/** Quick add's favourites: tap one to fill in its title, category and split. They are edited in Settings → Favourites. */
 function favRow(q) {
   const favs = data.favorites ?? [];
   if (!favs.length) return '';
-  return `<div class="fav-head"><span class="h-small fav-title"><span class="star-on small-glyph"></span>Favourites</span>
-      <button class="link" data-action="fav-page">Edit ›</button></div>
+  return `<div class="fav-head"><span class="h-small fav-title"><span class="star-on small-glyph"></span>Favourites</span></div>
     <div class="chips fav-chips">${favs.map((f, i) => `<button class="chip ${q.fav === i ? 'on' : ''}" data-action="fav-pick" data-i="${i}">${chipIcon(f.foodType ? foodType(f.foodType) : category(f.category))}${esc(f.title)}</button>`).join('')}</div>`;
 }
 
@@ -881,6 +880,9 @@ function settingsScreen() {
     : `<p class="small soft">A web app can't send scheduled notifications on iPhone, so let the <b>Reminders</b> app do it: add a reminder <i>"Record today's expenses in Expensiarmus"</i>, tap <b>ⓘ</b>, turn on <b>Date</b> and <b>Time</b>, set <b>${t}</b>, <b>Repeat: Daily</b>. After ${t} the app also shows a banner if nothing was recorded that day.</p>`;
   return `${header(W.settings, { icon: TAB_ICONS.settings })}
   <main class="with-tabs">
+    ${card(`<h3 class="h-medium card-title"><span class="star-on title-glyph"></span>Favourites</h3>
+      <p class="small soft">Up to ${MAX_FAVORITES} expenses you record often, ready in ${esc(W.newExpense)}: their title, category and split are filled in, you type the amount.</p>
+      <button class="btn" data-action="go" data-to="#/favorites"><span class="frame"><span class="frame-inner">${(data.favorites ?? []).length ? 'Edit favourites' : 'Add favourites'}</span></span></button>`)}
     ${card(`<h3 class="h-medium card-title">${emblem(EMBLEMS.reminder, 36)}${esc(withoutEmoji(W.reminder))}</h3>
       <label class="switch-row"><span><span class="h-small">${esc(W.reminderSwitch)}</span><span class="small soft">A daily nudge to record the day's expenses</span></span>
         <input type="checkbox" class="switch" ${settings.reminderOn ? 'checked' : ''} data-input="set-reminder"></label>
@@ -897,9 +899,6 @@ function settingsScreen() {
     ${card(`<h3 class="h-medium card-title">${emblem(EMBLEMS.geminio, 36)}${esc(withoutEmoji(W.exportTitle))}</h3>
       <p class="small soft">All your expenses as a CSV file, for a backup or a spreadsheet.</p>
       <button class="btn" data-action="export"><span class="frame"><span class="frame-inner">${esc(W.exportButton)}</span></span></button>`)}
-    ${card(`<h3 class="h-medium card-title"><span class="star-on title-glyph"></span>Favourites</h3>
-      <p class="small soft">Up to ${MAX_FAVORITES} expenses you record often, ready in ${esc(W.newExpense)}: their title, category and split are filled in, you type the amount.</p>
-      <button class="btn" data-action="go" data-to="#/favorites"><span class="frame"><span class="frame-inner">${(data.favorites ?? []).length ? 'Edit favourites' : 'Add favourites'}</span></span></button>`)}
     ${card(`<h3 class="h-medium card-title">${emblem(EMBLEMS.apparate, 36)}${esc(W.importTitle)}</h3>
       <p class="small soft">Bring expenses in from a CSV: a Geminio backup, or a spreadsheet with the same columns. You see what will be added first; expenses already in the ledger are skipped.</p>
       <button class="btn" data-action="import"><span class="frame"><span class="frame-inner">${esc(W.importButton)}</span></span></button>
@@ -1099,7 +1098,6 @@ const actions = {
     Object.assign(q, { fav: i, title: f.title, cat: f.category, food: f.foodType ?? null, pct: f.myPercent ?? 100, error: null });
     render();
   },
-  'fav-page': () => { ui.quick = null; go('#/favorites'); },
   'fe-open': (el) => { const i = Number(el.dataset.i); ui.favEdit = { ...data.favorites[i], index: i, error: null }; render(); },
   'fe-add': () => { ui.favEdit = { index: null, title: '', category: 'SUPERMARKET', foodType: null, myPercent: 100, error: null }; render(); },
   'fe-cat': (el) => { const ed = ui.favEdit; ed.category = el.dataset.cat; if (ed.category !== 'ENTERTAINMENT') ed.foodType = null; render(); },

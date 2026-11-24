@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.17.1 (Android), web app 1.17.1 and iPhone app 1.14.1 – unreleased (2026-11-25)
+
+### Changed
+- **Favourites are edited only in Settings → Favourites.** Quick add still shows them to pick, but its "Edit ›" link is gone.
+- **Settings cards in a new order:** Favourites, Owl reminder, Wizard words, Number format, Theme, Updates (Android only), Geminio, Apparate.
+- Tests: Android 191 (1 new: the card order), web 89 (1 new: the card order; the Quick add test now checks there is no Edit link). All passing. Checked in a browser: the Settings cards' order, and no Edit link in Quick add.
+
 ## 1.17.0 (Android), web app 1.17.0 and iPhone app 1.14.0 – unreleased (2026-11-25)
 
 ### Added
