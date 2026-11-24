@@ -51,6 +51,10 @@ data class Words(
     val exportButton: String,
     val exported: String,
     val exportFailed: String,
+    val importTitle: String,
+    val importButton: String,
+    /** "%s" becomes "1 expense" or "12 expenses". */
+    val importedLine: String,
     val settingsTab: String,
     val reminder: String,
     val reminderSwitch: String,
@@ -64,6 +68,7 @@ data class Words(
     val nicknames: Boolean,
 ) {
     fun spentIn(year: Int) = "$spentInPrefix $year"
+    fun imported(count: Int) = importedLine.format(if (count == 1) "1 expense" else "$count expenses")
     fun deleteBody(title: String) = "\"$title\" $deleteBodySuffix"
     fun goalsIntro(month: String) = "$goalsIntroPrefix $month. $goalsIntroSuffix"
     fun alert80(category: String) = "$alert80Prefix $category $alert80Suffix"
@@ -91,6 +96,7 @@ data class Words(
             noGoals = "No wards for this month yet.", whichCategory = "Which vault?",
             categoryEmpty = "This vault is empty. Nothing recorded here yet.",
             exportTitle = "📜 Geminio", exportButton = "Geminio · export CSV", exported = "Geminio! Ledger copied to CSV.",
+            importTitle = "Apparate", importButton = "Apparate · import CSV", importedLine = "Apparate! %s appeared in the ledger.",
             exportFailed = "The spell failed: export did not work.",
             settingsTab = "⚙️ Settings", reminder = "🦉 Owl reminder", reminderSwitch = "Send the evening owl",
             owlNothing = "🦉 Owl post: did you forget the ledger?", owlSome = "🦉 Owl post: anything else for the ledger?",
@@ -120,6 +126,7 @@ data class Words(
             noGoals = "No goals for this month yet.", whichCategory = "Which category?",
             categoryEmpty = "Nothing recorded in this category yet.",
             exportTitle = "📤 Export", exportButton = "Export CSV", exported = "Expenses exported.", exportFailed = "Export failed.",
+            importTitle = "Import", importButton = "Import CSV", importedLine = "%s imported.",
             settingsTab = "⚙️ Settings", reminder = "Daily reminder", reminderSwitch = "Send the daily reminder",
             owlNothing = "Did you record today's expenses?", owlSome = "Anything else to record today?",
             alert80Prefix = "80% of your", alert80Suffix = "goal is spent",

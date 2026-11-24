@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.csymvoul.expenses.data.AppSettings
 import com.csymvoul.expenses.data.ExpenseStore
 import com.csymvoul.expenses.domain.CsvExporter
+import com.csymvoul.expenses.domain.CsvImporter
+import com.csymvoul.expenses.domain.ImportResult
 import com.csymvoul.expenses.domain.GoalAlerts
 import com.csymvoul.expenses.model.AppData
 import com.csymvoul.expenses.model.Category
@@ -24,6 +26,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.YearMonth
+import java.util.UUID
 
 class ExpenseViewModel(app: Application) : AndroidViewModel(app) {
     private val store = ExpenseStore(File(app.filesDir, "expenses.json"))
@@ -65,6 +68,17 @@ class ExpenseViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Redraws the home-screen widget, if one is placed. */
     fun refreshWidget() = LedgerWidget.refresh(getApplication())
+
+    /** Apparate, step 1: reads a CSV and works out what it would add. Null if the file can't be read. */
+    suspend fun previewImport(resolver: ContentResolver, uri: Uri): ImportResult? = withContext(Dispatchers.IO) {
+        runCatching {
+            val text = resolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) } ?: error("cannot open $uri")
+            CsvImporter.import(text, _state.value.expenses) { UUID.randomUUID().toString() }
+        }.getOrNull()
+    }
+
+    /** Apparate, step 2: adds the expenses the user confirmed. */
+    fun addAll(expenses: List<Expense>) = update { it.copy(expenses = it.expenses + expenses) }
 
     /** Writes all expenses as CSV (UTF-8 with BOM so Excel shows Greek text correctly). */
     suspend fun exportCsv(resolver: ContentResolver, uri: Uri): Boolean = withContext(Dispatchers.IO) {

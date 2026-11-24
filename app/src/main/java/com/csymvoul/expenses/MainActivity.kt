@@ -59,6 +59,10 @@ import com.csymvoul.expenses.ui.screens.QuickAddSheet
 import com.csymvoul.expenses.ui.screens.QuickPrefill
 import com.csymvoul.expenses.ui.screens.SearchScreen
 import com.csymvoul.expenses.ui.screens.SettingsScreen
+import com.csymvoul.expenses.ui.screens.ImportDialog
+import com.csymvoul.expenses.update.Updater
+import androidx.lifecycle.lifecycleScope
+import com.csymvoul.expenses.domain.ImportResult
 import com.csymvoul.expenses.ui.theme.ExpensesTheme
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -72,12 +76,14 @@ class MainActivity : ComponentActivity() {
         ReminderScheduler.ensureChannel(this)
         ReminderScheduler.schedule(this)
         val record = intent.getBooleanExtra(EXTRA_RECORD, false)
+        val updates = intent.getBooleanExtra(EXTRA_UPDATES, false)
+        Updater.checkIfDue(this, lifecycleScope)
         setContent {
             val settings by AppSettings.state.collectAsState()
             ExpensesTheme(settings.theme) {
                 // Static locals: any change of settings (words, number style) redraws every screen.
                 CompositionLocalProvider(LocalWords provides settings.words, LocalSettingsVersion provides settings) {
-                    ExpensesApp(openRecord = record)
+                    ExpensesApp(openRecord = record, openUpdates = updates)
                 }
             }
         }
@@ -86,6 +92,9 @@ class MainActivity : ComponentActivity() {
     companion object {
         /** Set by the reminder notification and the widget's ➕: open Quick add. */
         const val EXTRA_RECORD = "record_expense"
+
+        /** Set by the update notification: open Settings, where the update card is. */
+        const val EXTRA_UPDATES = "open_updates"
     }
 }
 
@@ -106,10 +115,10 @@ private const val CATEGORY = "category:" // + category name, optionally + ":" + 
 private val TAB_ROUTES = mapOf(Tab.LEDGER to MONTH, Tab.CALENDAR to CALENDAR, Tab.ANNALS to ANNALS, Tab.GOALS to GOALS, Tab.SETTINGS to SETTINGS)
 
 @Composable
-fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel()) {
+fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: ExpenseViewModel = viewModel()) {
     val data by vm.state.collectAsStateWithLifecycle()
     val settings by AppSettings.state.collectAsStateWithLifecycle()
-    var stack by rememberSaveable { mutableStateOf(MONTH) }
+    var stack by rememberSaveable { mutableStateOf(if (openUpdates) SETTINGS else MONTH) }
     var month by rememberSaveable { mutableStateOf(YearMonth.now()) }
     var selectedDay by rememberSaveable { mutableStateOf<LocalDate?>(LocalDate.now()) }
     var annalsView by rememberSaveable { mutableStateOf(AnnalsView.YEAR) }
@@ -134,6 +143,30 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
             }
         }
     }
+
+    // Apparate: pick a CSV, see what it would add, then confirm.
+    var importPreview by remember { mutableStateOf<ImportResult?>(null) }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                importPreview = vm.previewImport(context.contentResolver, uri)
+                if (importPreview == null) Toast.makeText(context, "That file could not be read.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    importPreview?.let { preview ->
+        ImportDialog(
+            result = preview,
+            onConfirm = {
+                vm.addAll(preview.added)
+                Toast.makeText(context, words.imported(preview.added.size), Toast.LENGTH_SHORT).show()
+                importPreview = null
+            },
+            onDismiss = { importPreview = null },
+        )
+    }
+
+    val updateState by Updater.state.collectAsStateWithLifecycle()
 
     var owlsBlocked by remember { mutableStateOf(!OwlNotifier.canNotify(context)) }
     // Re-check whenever the app comes back, e.g. from the notification settings.
@@ -221,6 +254,13 @@ fun ExpensesApp(openRecord: Boolean = false, vm: ExpenseViewModel = viewModel())
                 },
                 onFixOwls = fixOwls,
                 onExport = { exportLauncher.launch("expensiarmus-${LocalDate.now()}.csv") },
+                updateState = updateState,
+                appVersion = remember { Updater.currentVersion(context) },
+                canInstall = Updater.canInstall(context),
+                onCheckUpdates = { scope.launch { Updater.check(context, notify = false) } },
+                onDownloadUpdate = { release -> scope.launch { Updater.download(context, release) } },
+                onInstallUpdate = { file -> Updater.install(context, file) },
+                onImport = { importLauncher.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "application/octet-stream")) },
                 bottomBar = { tabBar(Tab.SETTINGS) },
             )
             route == SEARCH -> SearchScreen(

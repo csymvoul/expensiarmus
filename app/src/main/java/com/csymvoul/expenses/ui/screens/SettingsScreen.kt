@@ -33,6 +33,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.csymvoul.expenses.data.Settings
 import com.csymvoul.expenses.data.ThemeMode
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.LinearProgressIndicator
+import java.io.File
+import com.csymvoul.expenses.domain.Release
+import com.csymvoul.expenses.update.UpdateState
 import com.csymvoul.expenses.domain.MoneyStyle
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.domain.Words
@@ -57,6 +62,13 @@ fun SettingsScreen(
     onChange: ((Settings) -> Settings) -> Unit,
     onFixOwls: () -> Unit,
     onExport: () -> Unit,
+    onImport: () -> Unit,
+    updateState: UpdateState,
+    appVersion: String,
+    canInstall: Boolean,
+    onCheckUpdates: () -> Unit,
+    onDownloadUpdate: (Release) -> Unit,
+    onInstallUpdate: (File) -> Unit,
     bottomBar: @Composable () -> Unit,
 ) {
     val w = LocalWords.current
@@ -110,6 +122,17 @@ fun SettingsScreen(
                 WizardButton(onClick = onExport) { Text(w.exportButton) }
             }
             ParchmentCard {
+                Text(w.importTitle, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Bring expenses in from a CSV: a Geminio backup, or a spreadsheet with the same columns. " +
+                        "You see what will be added first; expenses already in the ledger are skipped.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                WizardButton(onClick = onImport) { Text(w.importButton) }
+            }
+            UpdatesCard(settings, updateState, appVersion, canInstall, onChange, onCheckUpdates, onDownloadUpdate, onInstallUpdate)
+            ParchmentCard {
                 Text("Theme", style = MaterialTheme.typography.titleMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
@@ -143,6 +166,57 @@ fun SettingsScreen(
             },
             dismissButton = { TextButton(onClick = { pickingTime = false }) { Text("Cancel") } },
         )
+    }
+}
+
+/** Settings → Updates: the daily check switch, this version, and what to do about a newer one. */
+@Composable
+private fun UpdatesCard(
+    settings: Settings,
+    state: UpdateState,
+    appVersion: String,
+    canInstall: Boolean,
+    onChange: ((Settings) -> Settings) -> Unit,
+    onCheck: () -> Unit,
+    onDownload: (Release) -> Unit,
+    onInstall: (File) -> Unit,
+) {
+    ParchmentCard {
+        Text("Updates", style = MaterialTheme.typography.titleMedium)
+        SwitchRow(
+            "Check for new versions",
+            "Once a day the app asks GitHub whether a newer Expensiarmus is out, and sends a notification if so. Nothing about your expenses is sent.",
+            settings.updateCheck,
+        ) { on -> onChange { it.copy(updateCheck = on) } }
+        Text("This is version $appVersion.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        when (state) {
+            UpdateState.Idle -> OutlinedButton(onClick = onCheck) { Text("Check now") }
+            UpdateState.Checking -> Text("Asking GitHub…", style = MaterialTheme.typography.bodyMedium)
+            UpdateState.UpToDate -> {
+                Text("You have the latest version.", style = MaterialTheme.typography.bodyMedium)
+                OutlinedButton(onClick = onCheck) { Text("Check again") }
+            }
+            is UpdateState.Available -> {
+                Text("Expensiarmus ${state.release.version} is out.", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                WizardButton(onClick = { onDownload(state.release) }) { Text("Download and install") }
+            }
+            is UpdateState.Downloading -> {
+                Text("Downloading ${state.release.version}… ${state.percent}%", style = MaterialTheme.typography.bodyMedium)
+                LinearProgressIndicator(progress = { state.percent / 100f }, modifier = Modifier.fillMaxWidth())
+            }
+            is UpdateState.ReadyToInstall -> {
+                Text(
+                    if (canInstall) "Downloaded. Tap Install, then Update in Android's installer. Your expenses stay as they are."
+                    else "Downloaded. Android will first ask you to allow installs from Expensiarmus (only once); then come back and tap Install.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                WizardButton(onClick = { onInstall(state.file) }) { Text("Install ${state.release.version}") }
+            }
+            is UpdateState.Failed -> {
+                Text(state.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                OutlinedButton(onClick = { state.release?.let(onDownload) ?: onCheck() }) { Text("Try again") }
+            }
+        }
     }
 }
 

@@ -2,6 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Only for the update check: ask GitHub for the latest release and download its APK.
+         Expenses never leave the phone. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Lets the app hand a downloaded update to Android's installer (the user still confirms). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Exact 21:30 owl. Android 13+ grants USE_EXACT_ALARM to apps installed outside the Play Store;
          on Android 12 SCHEDULE_EXACT_ALARM is granted by default. -->
@@ -37,6 +42,16 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_ledger_info" />
         </receiver>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_paths" />
+        </provider>
 
         <receiver
             android:name=".reminder.ReminderReceiver"

@@ -46,6 +46,15 @@ For a new version, increase `versionCode` (and `versionName`) in `app/build.grad
 
 Build with a higher `versionCode` and the same key, then install the new APK the same way. Your data is kept.
 
+From 1.11.0 the app finds new versions itself: once a day (at app start and with the evening alarm) it asks `https://api.github.com/repos/csymvoul/expensiarmus/releases/latest`, notifies once per new version, and Settings → Updates downloads the APK and opens Android's installer. For that to work, every release must:
+
+- be published (not a draft or pre-release) on `csymvoul/expensiarmus`, tagged `v<versionName>` (for example `v1.12.0`);
+- carry exactly one `.apk`, named `Expensiarmus-<versionName>.apk`;
+- be signed with the same key (`keystore/expenses-release.jks`), or Android refuses to install it over the old one;
+- have a higher `versionName` than the installed app (compared part by part: 1.10.0 is newer than 1.9.5).
+
+The first in-app update asks once to allow installs from Expensiarmus (Android's "Install unknown apps" setting). Turning off Settings → Updates → Check for new versions stops the daily check; Check now still works.
+
 ## Web app (iPhone)
 
 The web app in `web/` is published to GitHub Pages at https://csymvoul.github.io/expensiarmus/ by the workflow `.github/workflows/pages.yml`. Every push to `main` that changes `web/` runs the tests and then deploys. It can also be started by hand from the repository's **Actions** tab ("Deploy web app to GitHub Pages" → Run workflow).

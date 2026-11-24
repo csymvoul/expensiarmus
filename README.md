@@ -1,6 +1,6 @@
 # Expensiarmus
 
-A personal, wizard-themed app for tracking monthly spending in euros: a native Android app, a web app anyone can add to their iPhone home screen, and an iPhone app for personal use (installed with AltStore). Think of it as an enchanted expense report on parchment. Everything is stored on the phone; there is no account, server or internet access.
+A personal, wizard-themed app for tracking monthly spending in euros: a native Android app, a web app anyone can add to their iPhone home screen, and an iPhone app for personal use (installed with AltStore). Think of it as an enchanted expense report on parchment. Everything is stored on the phone; there is no account or server. The only internet use is the Android app's update check, which asks GitHub for the latest release (and downloads it if you choose to update); nothing about your expenses is sent.
 
 ## What it does
 
@@ -20,6 +20,8 @@ A personal, wizard-themed app for tracking monthly spending in euros: a native A
 - **Settings:** reminder on/off and time, wizard words or plain words, number format (€1,234.56 or 1.234,56 €), theme, and CSV export (Geminio).
 - **Android widget:** this month's total, goal bars and a ➕ for Quick add on the home screen.
 - **CSV export** of all expenses for backup or analysis.
+- **Import (Apparate, Android):** bring expenses in from a CSV, either a Geminio backup or a spreadsheet with the same columns (comma or semicolon separated, dates as 2026-11-22 or 22/11/2026). You see what will be added first; rows already in the ledger are skipped and rows that can't be read are listed with the reason.
+- **Updates (Android):** once a day the app checks GitHub for a newer version and sends a notification. Settings → Updates downloads it and opens Android's installer, where you tap Update; your data is kept.
 - **Wizard look:** parchment, burgundy and gold by day; a candle-lit castle theme in dark mode. Cards are framed in gold with corner sparkles, headings use the Cinzel font, and each category, food type and tab has a painted gold-on-burgundy emblem; each category also has a wizarding nickname (Shopping is *Diagon Alley*). The wording is full of spells: Accio to search, Protego for goals, Evanesco to delete.
 
 ## iPhone: the web app

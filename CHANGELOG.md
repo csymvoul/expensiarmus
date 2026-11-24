@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.11.0 (Android only) – unreleased (2026-11-24)
+
+### Added
+- **Apparate · import CSV** (Settings, under Geminio; "Import CSV" in plain words). Pick a CSV with the system file picker: a Geminio export, or a spreadsheet with the same columns. Commas or semicolons, dates as 2026-11-22 or 22/11/2026, amounts in either number format, categories and food types by name or code, an empty share counts as 100%. A confirmation shows how many rows are new, how many are already in the ledger, and up to five rows that couldn't be read with the reason ("Line 4: \"2026-11-31\" is not a date."). Nothing is added until you confirm, existing expenses are never changed, and rows match the ledger one for one, so re-importing a backup adds nothing while two identical coffees stay two. Logic in `domain/CsvImporter.kt`.
+- **Update check.** Once a day (at app start and with the evening alarm) the app asks GitHub for the latest release. A newer version gets one notification ("🦉 Owl post: Expensiarmus 1.12.0 is out"); tapping it opens Settings → Updates, which downloads the APK into the app's cache and opens Android's installer, where you tap Update. The first time, Android asks to allow installs from Expensiarmus. A switch turns the daily check off; Check now still works. Logic in `domain/AppUpdate.kt`, Android parts in `update/Updater.kt`.
+- New permissions: `INTERNET` (only for the update check and the download) and `REQUEST_INSTALL_PACKAGES` (to hand the download to the installer). A `FileProvider` shares only the downloaded APK with the installer.
+
+### Notes
+- The web app and the iPhone app are unchanged: the iPhone app is updated through AltStore and the web app updates itself.
+- This is the first version that can update itself, so 1.11.0 itself still has to be installed by hand.
+- Tests: 8 import tests, 7 update tests (including GitHub's real answer for v1.10.0, kept in `app/src/test/resources/github-latest-release.json`) and 1 settings test; 172 Android tests in all, passing. The download, the notification and the installer hand-off were not run on a phone.
+
 ## 1.10.0 (Android), web app 1.9.0 and iPhone app 1.7.0 – unreleased (2026-11-23)
 
 ### Added

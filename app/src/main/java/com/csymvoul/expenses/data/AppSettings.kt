@@ -19,17 +19,20 @@ data class Settings(
     val wizardWords: Boolean = true,
     val moneyStyle: MoneyStyle = MoneyStyle.ENGLISH,
     val theme: ThemeMode = ThemeMode.SYSTEM,
+    /** Once a day, ask GitHub whether a newer Android app is out. */
+    val updateCheck: Boolean = true,
 ) {
     val words: Words get() = Words.of(wizardWords)
 
     companion object {
         /** Builds settings from stored values, falling back to the defaults for anything missing or invalid. */
-        fun fromStored(reminderOn: Boolean?, time: String?, wizard: Boolean?, money: String?, theme: String?) = Settings(
+        fun fromStored(reminderOn: Boolean?, time: String?, wizard: Boolean?, money: String?, theme: String?, updateCheck: Boolean? = null) = Settings(
             reminderOn = reminderOn ?: true,
             reminderTime = time?.let(Reminder::parseTime) ?: Reminder.TIME,
             wizardWords = wizard ?: true,
             moneyStyle = MoneyStyle.entries.firstOrNull { it.name == money } ?: MoneyStyle.ENGLISH,
             theme = ThemeMode.entries.firstOrNull { it.name == theme } ?: ThemeMode.SYSTEM,
+            updateCheck = updateCheck ?: true,
         )
     }
 }
@@ -42,6 +45,7 @@ object AppSettings {
     private const val WIZARD = "wizard_words"
     private const val MONEY = "money_style"
     private const val THEME = "theme"
+    private const val UPDATE_CHECK = "update_check"
 
     private val _state = MutableStateFlow(Settings())
     val state: StateFlow<Settings> = _state.asStateFlow()
@@ -61,6 +65,7 @@ object AppSettings {
             .putBoolean(WIZARD, next.wizardWords)
             .putString(MONEY, next.moneyStyle.name)
             .putString(THEME, next.theme.name)
+            .putBoolean(UPDATE_CHECK, next.updateCheck)
             .apply()
         publish(next)
     }
@@ -74,6 +79,7 @@ object AppSettings {
                 wizard = if (p.contains(WIZARD)) p.getBoolean(WIZARD, true) else null,
                 money = p.getString(MONEY, null),
                 theme = p.getString(THEME, null),
+                updateCheck = if (p.contains(UPDATE_CHECK)) p.getBoolean(UPDATE_CHECK, true) else null,
             ),
         )
     }

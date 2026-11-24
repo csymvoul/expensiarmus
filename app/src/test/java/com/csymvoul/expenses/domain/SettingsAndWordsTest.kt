@@ -142,4 +142,10 @@ class SuggestionsTest {
         assertEquals("Day-to-day", Suggestions.defaultTitle(Category.ENTERTAINMENT, FoodType.DAY_TO_DAY))
         assertEquals("Fuel", Suggestions.defaultTitle(Category.FUEL, null))
     }
+
+    @Test fun `the update check is on unless switched off`() {
+        assertEquals(true, com.csymvoul.expenses.data.Settings.fromStored(null, null, null, null, null).updateCheck)
+        assertEquals(false, com.csymvoul.expenses.data.Settings.fromStored(null, null, null, null, null, updateCheck = false).updateCheck)
+        assertEquals(true, com.csymvoul.expenses.data.Settings().updateCheck)
+    }
 }
