@@ -717,3 +717,98 @@ test('Record expense and Add expense carry the same pen', () => {
   assert.equal(wordsFor(false).fab.split(' ')[0], '✒️');
   assert.equal(wordsFor(false).fab, '✒️ Add expense');
 });
+
+// --- Apparate: import (mirrors CsvImporterTest on Android) ---
+import { importCsv, importSummary, parseDate } from '../js/csv.js';
+
+let imp = 0;
+const ids = () => `new${imp++}`;
+
+test('a Geminio export comes back in exactly, and importing it again adds nothing', () => {
+  const ledger = [
+    e('2026-11-01', 45000, 'RENT', 100, null, 'Rent, Nov'),
+    e('2026-11-22', 270, 'ENTERTAINMENT', 50, 'DAY_TO_DAY', 'Coffee "Freddo"'),
+    e('2026-11-03', 6230, 'SUPERMARKET', 100, null, 'Lidl'),
+  ];
+  const csv = '﻿' + toCsv(ledger);
+  const fresh = importCsv(csv, [], ids);
+  assert.equal(fresh.rows, 3);
+  assert.deepEqual(fresh.problems, []);
+  const strip = (x) => ({ ...x, id: '' });
+  assert.deepEqual(fresh.added.map(strip), [...ledger].sort((a, b) => a.date.localeCompare(b.date)).map(strip));
+  const again = importCsv(csv, ledger, ids);
+  assert.equal(again.added.length, 0);
+  assert.equal(again.duplicates, 3);
+});
+
+test('identical rows are matched one for one', () => {
+  const coffee = e('2026-11-05', 250, 'ENTERTAINMENT', 100, 'DAY_TO_DAY', 'Coffee');
+  const csv = toCsv([coffee, { ...coffee, id: '2' }, { ...coffee, id: '3' }]);
+  const r = importCsv(csv, [coffee], ids);
+  assert.equal(r.duplicates, 1);
+  assert.equal(r.added.length, 2);
+  assert.ok(r.added.every((x) => x.id.startsWith('new')));
+});
+
+test('spreadsheet CSVs work too: semicolons, day-first dates, Greek amounts, names in any case', () => {
+  const csv = '﻿Date;Title;Category;Food type;Amount EUR;My share percent\r\n'
+    + '22/11/2026;Souvlaki;entertainment;delivery;"1.234,56";\r\n'
+    + '3.11.2026;Diesel;FUEL;;60;50\r\n\r\n';
+  const r = importCsv(csv, [], ids);
+  assert.deepEqual(r.problems, []);
+  assert.equal(r.rows, 2);
+  const [souvlaki, diesel] = r.added;
+  assert.deepEqual([souvlaki.date, souvlaki.foodType, souvlaki.amountCents, souvlaki.myPercent], ['2026-11-22', 'DELIVERY', 123456, 100]);
+  assert.deepEqual([diesel.category, diesel.myPercent, diesel.date], ['FUEL', 50, '2026-11-03']);
+});
+
+test('unreadable rows are listed with their line and reason, the rest still come in', () => {
+  const csv = [
+    'date,title,category,food_type,amount_eur,my_share_percent',
+    '2026-11-31,Ghost,Rent,,10,100',
+    '2026-11-02,,Rent,,10,100',
+    '2026-11-02,Wands,Potions,,10,100',
+    '2026-11-02,Wine,Bills,Dine out,10,100',
+    '2026-11-02,Socks,Shopping,,ten,100',
+    '2026-11-02,Split,Other,,10,0',
+    '2026-11-02,Good,Other,,10,',
+  ].join('\n');
+  const r = importCsv(csv, [], ids);
+  assert.deepEqual(r.problems.map((p) => p.line), [2, 3, 4, 5, 6, 7]);
+  assert.equal(r.problems[0].reason, '"2026-11-31" is not a date.');
+  assert.equal(r.problems[3].reason, 'Only Entertainment can have a food type.');
+  assert.deepEqual(r.added.map((x) => x.title), ['Good']);
+  assert.equal(r.rows, 7);
+});
+
+test('a file without the needed columns is refused; dates must be real', () => {
+  assert.equal(importCsv('name,price\nx,1\n', [], ids).problems[0].reason, 'Not an Expensiarmus CSV: no date, title, category, amount_eur column.');
+  assert.equal(importCsv('', [], ids).problems[0].reason, 'The file is empty.');
+  assert.equal(parseDate('2026-2-3'), '2026-02-03');
+  assert.equal(parseDate('03/02/2026'), '2026-02-03');
+  assert.equal(parseDate('2026-02-30'), null);
+  assert.equal(parseDate('Feb 3'), null);
+});
+
+test('the confirmation sums it up and lists at most five problems, as on Android', () => {
+  const problems = Array.from({ length: 7 }, (_, i) => ({ line: i + 2, reason: `bad ${i + 1}` }));
+  assert.deepEqual(importSummary({ added: [{}], duplicates: 2, problems, rows: 10 }), [
+    'Found 10 expenses in the file.', '1 new, 2 already in your ledger.', '7 rows could not be read:',
+    'Line 2: bad 1', 'Line 3: bad 2', 'Line 4: bad 3', 'Line 5: bad 4', 'Line 6: bad 5', '…and 2 more.',
+  ]);
+  assert.deepEqual(importSummary({ added: [], duplicates: 1, problems: [], rows: 1 }), ['Found 1 expense in the file.', '0 new, 1 already in your ledger.']);
+});
+
+test('Settings has the Apparate card: a CSV picker, a confirmation, and nothing added before it', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  assert.match(app, /data-action="import"><span class="frame"><span class="frame-inner">\$\{esc\(W\.importButton\)\}/);
+  assert.match(app, /<input type="file" id="import-file" accept="\.csv,text\/csv[^"]*" data-input="import-file" hidden>/);
+  assert.match(app, /const ON_CHANGE = \['import-file',/);
+  // Reading the file only opens the confirmation; the expenses are committed on "Add".
+  const read = app.slice(app.indexOf('async function readImport'), app.indexOf('function deleteModal'));
+  assert.doesNotMatch(read, /commit\(/);
+  assert.match(app, /'import-confirm': \(\) => \{[\s\S]*?commit\(\{ \.\.\.data, expenses: \[\.\.\.data\.expenses, \.\.\.added\] \}\)/);
+  assert.equal(wordsFor(true).importButton, 'Apparate · import CSV');
+  assert.equal(wordsFor(true).imported(12), 'Apparate! 12 expenses appeared in the ledger.');
+  assert.equal(wordsFor(false).imported(1), '1 expense imported.');
+});

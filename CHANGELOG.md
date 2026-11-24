@@ -1,5 +1,15 @@
 # Changelog
 
+## Web app 1.10.0 and iPhone app 1.8.0 – unreleased (2026-11-24)
+
+### Added
+- **Apparate · import CSV** on the web app (github.io) and in the iPhone app, the same as in Android 1.11.0: a card in Settings under Geminio opens the file picker (Files on the iPhone), then a confirmation shows how many expenses are new, how many are already in the ledger and which rows couldn't be read. Nothing is added until you tap Add; existing expenses are never changed. The rules are the Android ones (`importCsv` and `importSummary` in `web/js/csv.js`), so a file gives the same result in every app.
+- The update check stays Android-only: the iPhone app is updated through AltStore and the web app updates itself.
+- Tests: 7 new web tests (the importer's cases from Android, the summary, and the Settings wiring); 70 web tests in all, passing. Checked in a browser: picking a CSV with one new row, one already in the ledger and one bad category shows the right summary, and Add saves only the new one.
+
+### Known issues
+- Not yet tried in the iPhone app.
+
 ## 1.11.0 (Android only) – unreleased (2026-11-24)
 
 ### Added

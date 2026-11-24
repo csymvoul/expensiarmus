@@ -4,7 +4,7 @@ import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.
 import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
 import { dailyTotals, onDay, calendarCells, byCategory, search, shiftMonth, suggestions, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
-import { toCsv } from './csv.js';
+import { toCsv, importCsv, importSummary } from './csv.js';
 import { load, save, KEY } from './store.js';
 import { upcomingReminders } from './reminder.js';
 import { wordsFor } from './words.js';
@@ -38,6 +38,7 @@ const ui = {
   modal: false,
   quick: null, // the Quick add sheet, when open
   ledgerAll: null, // the month whose whole ledger is shown; otherwise only the latest few
+  importing: null, // Apparate: what the picked CSV would add, waiting for the user to confirm
   annals: { view: 'year', year: Number(today().slice(0, 4)), bar: null },
 };
 let draft = null; // the expense being added or edited
@@ -488,6 +489,34 @@ function shareLine() {
   return `You pay ${format(Math.floor((cents * draft.myPercent + 50) / 100))} of ${format(cents)}`;
 }
 
+/** Apparate's confirmation: what the file holds, what is new, and which rows could not be read. */
+function importModal(r) {
+  const n = r.added.length;
+  const lines = importSummary(r).map((line) => `<p class="${line.startsWith('Line ') ? 'small error' : line.startsWith('…') ? 'small soft' : ''}">${esc(line)}</p>`).join('');
+  const actions = n > 0
+    ? `<button class="link" data-action="import-cancel">Cancel</button><button class="btn" data-action="import-confirm"><span class="frame"><span class="frame-inner">${n === 1 ? 'Add 1 expense' : `Add ${n} expenses`}</span></span></button>`
+    : '<button class="btn" data-action="import-cancel"><span class="frame"><span class="frame-inner">OK</span></span></button>';
+  return `<div class="modal-backdrop"><div class="card modal"><div class="paper">
+      <h3 class="h-medium">${esc(W.importTitle)}</h3>
+      <div class="import-summary">${lines}</div>
+      <div class="modal-actions">${actions}</div>
+    </div></div></div>`;
+}
+
+/** Reads the picked CSV and opens the confirmation. Nothing is added yet. */
+async function readImport(input) {
+  const file = input.files?.[0];
+  input.value = ''; // picking the same file again should work too
+  if (!file) return;
+  try {
+    ui.importing = importCsv(await file.text(), data.expenses, newId);
+  } catch {
+    toast('That file could not be read.');
+    return;
+  }
+  render();
+}
+
 function deleteModal(title, id = '') {
   return `<div class="modal-backdrop"><div class="card modal"><div class="paper">
       <h3 class="h-medium">${esc(W.deleteTitle)}</h3>
@@ -762,7 +791,11 @@ function settingsScreen() {
     ${card(`<h3 class="h-medium card-title">${emblem(EMBLEMS.geminio, 36)}${esc(withoutEmoji(W.exportTitle))}</h3>
       <p class="small soft">All your expenses as a CSV file, for a backup or a spreadsheet.</p>
       <button class="btn" data-action="export"><span class="frame"><span class="frame-inner">${esc(W.exportButton)}</span></span></button>`)}
-  </main>${tabBar('settings')}`;
+    ${card(`<h3 class="h-medium">${esc(W.importTitle)}</h3>
+      <p class="small soft">Bring expenses in from a CSV: a Geminio backup, or a spreadsheet with the same columns. You see what will be added first; expenses already in the ledger are skipped.</p>
+      <button class="btn" data-action="import"><span class="frame"><span class="frame-inner">${esc(W.importButton)}</span></span></button>
+      <input type="file" id="import-file" accept=".csv,text/csv,text/comma-separated-values,text/plain" data-input="import-file" hidden>`)}
+  </main>${tabBar('settings')}${ui.importing ? importModal(ui.importing) : ''}`;
 }
 
 // ---------- annals (tab) ----------
@@ -908,6 +941,15 @@ const actions = {
   open: (el) => go(`#/view/${encodeURIComponent(el.dataset.id)}`),
   amend: (el) => go(`#/edit/${encodeURIComponent(el.dataset.id)}`),
   export: () => exportCsv(),
+  import: () => app.querySelector('#import-file')?.click(),
+  'import-cancel': () => { ui.importing = null; render(); },
+  'import-confirm': () => {
+    const added = ui.importing?.added ?? [];
+    ui.importing = null;
+    if (added.length) commit({ ...data, expenses: [...data.expenses, ...added] });
+    toast(W.imported(added.length));
+    render();
+  },
   quick: () => { ui.quick = { title: '', amount: '', date: newExpenseDate(), error: false }; render(); },
   'quick-close': () => { ui.quick = null; render(); },
   'quick-key': (el) => quickKey(el.dataset.key),
@@ -991,6 +1033,7 @@ const inputs = {
     app.querySelector('#share-line').textContent = shareLine();
   },
   'quick-title': (el) => { ui.quick.title = el.value; app.querySelector('#quick-sugg').innerHTML = suggestionList(el.value, 'quick-sugg'); },
+  'import-file': (el) => { readImport(el); },
   'quick-date': (el) => { if (el.value) ui.quick.date = el.value; },
   'search-q': (el) => { finder.q = el.value; app.querySelector('#results').innerHTML = searchResults(); },
   'ward-amount': (el) => { ui.goalEdit.amount = el.value; app.querySelector('#ward-error').hidden = true; },
@@ -1004,7 +1047,7 @@ const inputs = {
 };
 
 // Settings controls change on "change" only, so typing a time doesn't re-render mid-edit.
-const ON_CHANGE = ['edit-split', 'edit-date', 'quick-date', 'ward-onwards', 'set-reminder', 'set-time', 'set-wizard'];
+const ON_CHANGE = ['import-file', 'edit-split', 'edit-date', 'quick-date', 'ward-onwards', 'set-reminder', 'set-time', 'set-wizard'];
 
 app.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-action]');

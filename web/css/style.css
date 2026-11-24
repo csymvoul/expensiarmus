@@ -381,6 +381,8 @@ input[type='range'] { width: 100%; accent-color: var(--primary); }
 .glance-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border: 1px solid var(--gold-soft); border-radius: 8px; background: var(--paper-center); text-align: center; }
 .glance-tile b { font-family: 'Cinzel', serif; font-size: 15px; color: var(--primary); white-space: nowrap; }
 .glance-tile small { font-size: 11px; color: var(--ink-soft); line-height: 1.2; }
+.import-summary { max-height: 50vh; overflow-y: auto; margin: 8px 0; }
+.import-summary .error { color: var(--error); }
 .more-link { display: block; margin: 6px auto 0; }
 .up { color: var(--error); }
 .down { color: var(--good); }
