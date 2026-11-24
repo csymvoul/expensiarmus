@@ -1,5 +1,11 @@
 # Changelog
 
+## Housekeeping – 2026-11-24 (no app changes)
+
+- The project folder is now `expensiarmus` (it was `expenses-app`), matching the GitHub repository, and the Gradle project is named `Expensiarmus` (it was `Expenses`; only Android Studio shows it).
+- Unchanged on purpose: the Android app ID `com.csymvoul.expenses` (changing it would make Android treat the app as a new one, so updates and data wouldn't carry over) and the signing key's file name.
+- Checked: the 178 Android tests pass and the release APK builds and is signed with the same key as 1.14.0.
+
 ## 1.14.0 (Android), web app 1.13.0 and iPhone app 1.11.0 – unreleased (2026-11-24)
 
 ### Changed
