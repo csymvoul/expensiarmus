@@ -216,5 +216,13 @@ fun searchGlyph(night: Boolean): Int = if (night) R.drawable.emblem_search_dark 
 /** The Time-Turner that brings you back to the current month: gold on the dark theme, bronze on parchment. */
 fun todayGlyph(night: Boolean): Int = if (night) R.drawable.emblem_today_dark else R.drawable.emblem_today_light
 
+/** The favourite star: filled when [on], outlined when not; gold on the dark theme, bronze on parchment. */
+fun starGlyph(on: Boolean, night: Boolean): Int = when {
+    on && night -> R.drawable.emblem_star_on_dark
+    on -> R.drawable.emblem_star_on_light
+    night -> R.drawable.emblem_star_off_dark
+    else -> R.drawable.emblem_star_off_light
+}
+
 /** Amber used once 80% of a goal is spent. */
 val WarningColor = Color(0xFFE08A00)

@@ -199,7 +199,8 @@ test('storage round trip', () => {
   const s = fakeStorage();
   assert.deepEqual(load(s), emptyData());
   save(s, data);
-  assert.deepEqual(load(s), data);
+  // Data saved before favourites existed loads with none.
+  assert.deepEqual(load(s), { ...data, favorites: [] });
 });
 
 test('corrupt storage is backed up, broken entries are skipped', () => {
@@ -949,4 +950,76 @@ test('Annals by year has its own Time-Turner back to the current year', () => {
   assert.match(app, /if \(ui\.annals\.view !== 'year' \|\| ui\.annals\.year === thisYear\) return '';/);
   assert.match(app, /'this-year': \(\) => \{ ui\.annals = \{ \.\.\.ui\.annals, year: Number\(today\(\)\.slice\(0, 4\)\)/);
   assert.equal(wordsFor(true).thisMonth('2026'), 'Back to 2026');
+});
+
+// --- favourites, and suggestions that only fill the title ---
+import { favoriteOf, favoriteKey, isFavorite, toggleFavorite, MAX_FAVORITES } from '../js/queries.js';
+
+test('a favourite keeps the title, category, food type and split, never the amount', () => {
+  const coffee = e('2026-11-05', 270, 'ENTERTAINMENT', 50, 'DAY_TO_DAY', ' Freddo espresso ');
+  assert.deepEqual(favoriteOf(coffee), { title: 'Freddo espresso', category: 'ENTERTAINMENT', foodType: 'DAY_TO_DAY', myPercent: 50 });
+  let favs = toggleFavorite([], coffee);
+  assert.equal(favs.length, 1);
+  assert.ok(isFavorite(favs, { ...coffee, title: 'FREDDO ESPRESSO', amountCents: 999 })); // case and amount don't matter
+  assert.ok(!isFavorite(favs, { ...coffee, foodType: 'DINE_OUT' })); // another food type is another favourite
+  favs = toggleFavorite(favs, e('2026-11-01', 45000, 'RENT', 100, null, 'Apartment'));
+  assert.deepEqual(favs.map((f) => f.title), ['Apartment', 'Freddo espresso']); // sorted by title
+  favs = toggleFavorite(favs, coffee); // tapping the star again removes it
+  assert.deepEqual(favs.map((f) => f.title), ['Apartment']);
+  assert.equal(favoriteKey({ title: 'Καφές', category: 'OTHER' }), favoriteKey({ title: 'καφες', category: 'OTHER', foodType: null }));
+});
+
+test('favourites are saved and loaded; broken ones are dropped', () => {
+  const mem = new Map();
+  const storage = { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v) };
+  const favorites = [{ title: 'Freddo', category: 'ENTERTAINMENT', foodType: 'DAY_TO_DAY', myPercent: 100 },
+    { title: 'Ghost', category: 'POTIONS', foodType: null, myPercent: 100 }, { title: 'Wine', category: 'BILLS', foodType: 'DINE_OUT' },
+    { title: '  ', category: 'OTHER' }, { title: 'Old', category: 'OTHER' }];
+  save(storage, { ...emptyData(), favorites });
+  assert.deepEqual(load(storage).favorites, [
+    { title: 'Freddo', category: 'ENTERTAINMENT', foodType: 'DAY_TO_DAY', myPercent: 100 },
+    { title: 'Old', category: 'OTHER', foodType: null, myPercent: 100 },
+  ]);
+  assert.deepEqual(emptyData().favorites, []);
+});
+
+test('there can be at most five favourites', () => {
+  assert.equal(MAX_FAVORITES, 5);
+  let favs = [];
+  for (const t of ['A', 'B', 'C', 'D', 'E']) favs = toggleFavorite(favs, e('2026-11-01', 100, 'OTHER', 100, null, t));
+  assert.equal(favs.length, 5);
+  const sixth = e('2026-11-01', 100, 'OTHER', 100, null, 'F');
+  assert.equal(toggleFavorite(favs, sixth), favs); // full: nothing changes
+  const fewer = toggleFavorite(favs, e('2026-11-01', 100, 'OTHER', 100, null, 'C'));
+  assert.equal(toggleFavorite(fewer, sixth).length, 5); // after removing one, there is room again
+});
+
+test('suggestions only fill in the title; favourites live in Quick add and on the expense view', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  const sugg = app.slice(app.indexOf("  'quick-sugg': (el) => {"), app.indexOf("  'edit-cat':"));
+  assert.doesNotMatch(sugg, /quickRecord|makeExpense|amountCents/); // nothing is recorded, no amount copied
+  assert.match(sugg, /ui\.quick\.title = s\.title;/);
+  assert.match(sugg, /draft\.title = suggestions\(/);
+  assert.doesNotMatch(app, /function applySuggestion/);
+  const list = app.slice(app.indexOf('function suggestionList'), app.indexOf('// ---------- ledger and calendar'));
+  assert.doesNotMatch(list, /format\(s\.amountCents\)/); // the list shows no amounts
+  assert.match(app, /\$\{favStar\(e\)\}<\/div>/);
+  assert.match(app, /'fav-record': \(\) => \{[\s\S]*?category: f\.category, foodType: f\.foodType, myPercent: f\.myPercent/);
+  assert.match(app, /\$\{favRow\(q\)\}/);
+  assert.match(app, /prefill = \{ title: q\.title, amount: q\.amount, date: q\.date, category: f\?\.category/);
+});
+
+test('the favourite star is a drawn glyph like the others, bronze by day and gold at night', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  const css = readFileSync(webFile('css/style.css'), 'utf8');
+  const sw = readFileSync(webFile('sw.js'), 'utf8');
+  assert.doesNotMatch(app, /[★☆]/); // no text stars
+  for (const kind of ['on', 'off']) {
+    assert.equal(css.match(new RegExp(`--star-${kind}: url\\('\\.\\./icons/emblems/star_${kind}_light\\.png'\\)`, 'g')).length, 1);
+    assert.equal(css.match(new RegExp(`--star-${kind}: url\\('\\.\\./icons/emblems/star_${kind}_dark\\.png'\\)`, 'g')).length, 2);
+    for (const theme of ['light', 'dark']) {
+      assert.ok(existsSync(webFile(`icons/emblems/star_${kind}_${theme}.png`)));
+      assert.ok(sw.includes(`'icons/emblems/star_${kind}_${theme}.png'`));
+    }
+  }
 });

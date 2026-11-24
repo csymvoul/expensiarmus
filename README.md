@@ -4,7 +4,7 @@ A personal, wizard-themed app for tracking monthly spending in euros: a native A
 
 ## What it does
 
-- **Quick add.** A number pad and big category tiles: type the amount, tap a tile, done (with Undo). Typing a title suggests earlier expenses, and tapping one records it again. The full form is one tap away.
+- **Quick add.** A number pad and big category tiles: type the amount, tap a tile, done (with Undo). Typing a title suggests earlier titles; tapping one fills it in (the amount is always yours to type). Up to five **favourites** (starred on an expense) fill in the title and category in one tap: type the amount and Record. The full form is one tap away.
 - **Record expenses** with a date, title, amount (€) and one of seven categories: Home (rent and shared building costs), Super market, Entertainment, Bills, Shopping (shoes, clothes, jewellery…), Transport (fuel, tickets for planes, trains, the metro and buses, taxis, parking), Other.
 - **Food subgroups.** An Entertainment expense can be marked as food: *Delivery*, *Dine out* or *Day-to-day* (e.g. a coffee at work).
 - **Split expenses.** Mark an expense as shared and set your percentage (50-50 by default). Only your share counts toward totals, charts and goals; the full amount is still shown.

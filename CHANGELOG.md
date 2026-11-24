@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.16.0 (Android), web app 1.16.0 and iPhone app 1.13.0 – unreleased (2026-11-25)
+
+### Added
+- **Favourites.** A star on the expense view (a drawn star like Accio's glass and the Time-Turner: bronze by day, gold at night, filled when starred) keeps that expense's title, category, food type and split, never its amount. Quick add shows them in a **Favourites** row: tap one, type the amount, then **Record · <title>** (its category tile glows; tapping another tile saves it there instead). "More details" carries the favourite's category and split to the full form. Up to five, so they fit one row; starring a sixth says to remove one first. **Edit** on the row shows × to remove them. Stored with the data (`favorites`), so older data loads with none.
+
+### Changed
+- **Suggestions only fill in the title.** Typing a title still offers earlier ones, but tapping one no longer records a copy with the same amount (Quick add) or copies the amount, category and split (full form): it just fills in the title. The list no longer shows amounts, and it hides once the title matches.
+- Tests: Android 188 (4 new: favourites' rules, the cap of five, saving and loading, the star pictures), web 85 (6 new; the storage test now expects an empty favourites list for old data). All passing. Checked in a browser: a suggestion fills the title and records nothing; starring an expense; picking the favourite, typing €3.10 and Record saves it under Day-to-day; Edit → × removes it.
+
+### Known issues
+- Not yet checked on a phone.
+
 ## 1.15.1 (Android), web app 1.15.0 and iPhone app 1.12.1 – unreleased (2026-11-25)
 
 ### Changed

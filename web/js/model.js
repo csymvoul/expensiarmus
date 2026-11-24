@@ -78,7 +78,7 @@ export function makeExpense({ id, date, title, amountCents, category: cat, myPer
   return { id, date, title, amountCents, category: cat, myPercent, foodType: food ?? null };
 }
 
-export const emptyData = () => ({ expenses: [], goals: { entries: [] }, alertsSent: [] });
+export const emptyData = () => ({ expenses: [], goals: { entries: [] }, alertsSent: [], favorites: [] });
 
 export const upsert = (data, e) => ({ ...data, expenses: [...data.expenses.filter((x) => x.id !== e.id), e] });
 export const remove = (data, id) => ({ ...data, expenses: data.expenses.filter((x) => x.id !== id) });

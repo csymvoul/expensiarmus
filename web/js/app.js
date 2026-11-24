@@ -3,7 +3,7 @@ import { CATEGORIES, FOOD_TYPES, TAB_ICONS, EMBLEMS, WHOLE_MONTH, goalKey, witho
 import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
 import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
-import { dailyTotals, onDay, calendarCells, byCategory, inPeriod, search, shiftMonth, suggestions, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
+import { dailyTotals, onDay, calendarCells, byCategory, inPeriod, normalize, isFavorite, toggleFavorite, MAX_FAVORITES, search, shiftMonth, suggestions, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
 import { toCsv, importCsv, importSummary } from './csv.js';
 import { load, save, KEY } from './store.js';
 import { upcomingReminders } from './reminder.js';
@@ -176,17 +176,16 @@ function expenseRow(e, showYear = false) {
   </button>`;
 }
 
-/** Earlier expenses matching a typed title, as tappable suggestions. */
+/** Earlier titles matching what is typed. Tapping one only fills in the title; no amount is copied. */
 function suggestionList(typed, action) {
-  const list = suggestions(data.expenses, typed);
+  const list = suggestions(data.expenses, typed).filter((s) => normalize(s.title) !== normalize(typed));
   if (!list.length) return '';
   return `<div class="suggestions">${list.map((s, i) => {
     const c = category(s.category);
     const f = s.foodType ? foodType(s.foodType) : null;
     return `<button class="suggestion" data-action="${action}" data-i="${i}">
       ${emblem(f ? f.icon : c.icon, 26)}
-      <span class="row-main"><span class="row-title">${esc(s.title)}</span><span class="row-sub">${esc((f ? f.label : c.label) + (s.myPercent < 100 ? ` · split ${s.myPercent}%` : ''))}</span></span>
-      <b>${format(s.amountCents)}</b></button>`;
+      <span class="row-main"><span class="row-title">${esc(s.title)}</span><span class="row-sub">${esc(f ? f.label : c.label)}</span></span></button>`;
   }).join('')}</div>`;
 }
 
@@ -414,8 +413,21 @@ const quickAmountText = () => {
   return settings.money === 'el' ? `${typed} €` : `€${typed}`;
 };
 
+/** Quick add's favourites: tap one to fill the title and category, then type the amount and Record. */
+function favRow(q) {
+  const favs = data.favorites ?? [];
+  if (!favs.length) return '';
+  return `<div class="fav-head"><span class="h-small fav-title"><span class="star-on small-glyph"></span>Favourites</span>
+      <button class="link" data-action="fav-edit">${q.favEdit ? 'Done' : 'Edit'}</button></div>
+    <div class="chips fav-chips">${favs.map((f, i) => {
+      const look = f.foodType ? foodType(f.foodType) : category(f.category);
+      return `<button class="chip ${q.fav === i && !q.favEdit ? 'on' : ''}" data-action="${q.favEdit ? 'fav-remove' : 'fav-pick'}" data-i="${i}">${chipIcon(look)}${esc(f.title)}${q.favEdit ? ' <span class="chip-x">×</span>' : ''}</button>`;
+    }).join('')}</div>`;
+}
+
 function quickSheet() {
   const q = ui.quick;
+  const fav = q.fav != null ? (data.favorites ?? [])[q.fav] : null;
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', decimalKey(), '0', '⌫'];
   const tiles = [
     ...CATEGORIES.map((c) => ({ cat: c.id, food: '', icon: c.icon, label: c.label })),
@@ -428,13 +440,15 @@ function quickSheet() {
       <span class="h-small">${esc(W.newExpense)}</span>
       <button class="link" data-action="quick-more">More details ›</button>
     </div>
+    ${favRow(q)}
     <input class="quick-title" type="text" placeholder="Title (optional)" value="${esc(q.title)}" data-input="quick-title" autocapitalize="sentences">
     <div id="quick-sugg">${suggestionList(q.title, 'quick-sugg')}</div>
     <div class="quick-amount" id="quick-amount">${esc(quickAmountText())}</div>
     <label class="quick-date">${emblem(TAB_ICONS.calendar, 28)}<input type="date" value="${q.date}" data-input="quick-date"></label>
     <div class="numpad">${keys.map((k) => `<button data-action="quick-key" data-key="${k}">${k}</button>`).join('')}</div>
-    <p class="small center ${q.error ? 'error' : 'soft'}" id="quick-help">${q.error ? 'Type an amount first' : 'Tap a category to save'}</p>
-    <div class="tiles">${tiles.map((t) => `<button class="tile" data-action="quick-save" data-cat="${t.cat}" data-food="${t.food}">
+    ${fav ? `<button class="btn wide fav-record" data-action="fav-record"><span class="frame"><span class="frame-inner">Record · ${esc(q.title.trim() || fav.title)}</span></span></button>` : ''}
+    <p class="small center ${q.error ? 'error' : 'soft'}" id="quick-help">${q.error ? 'Type an amount first' : fav ? 'or tap a category to save it there' : 'Tap a category to save'}</p>
+    <div class="tiles">${tiles.map((t) => `<button class="tile ${fav && fav.category === t.cat && (fav.foodType ?? '') === t.food ? 'glow' : ''}" data-action="quick-save" data-cat="${t.cat}" data-food="${t.food}">
       ${emblem(t.icon, 38)}<span>${esc(t.label)}</span></button>`).join('')}</div>
   </div>`;
 }
@@ -456,7 +470,7 @@ function quickKey(key) {
   app.querySelector('#quick-amount').textContent = quickAmountText();
   const help = app.querySelector('#quick-help');
   help.className = 'small center soft';
-  help.textContent = 'Tap a category to save';
+  help.textContent = q.fav != null ? 'or tap a category to save it there' : 'Tap a category to save';
 }
 
 /** Saves an expense from Quick add and offers Undo for a few seconds. */
@@ -494,10 +508,10 @@ function startDraft(id) {
     title: e?.title ?? p?.title ?? '',
     amount: e ? forInput(e.amountCents) : p?.amount ?? '',
     date: e?.date ?? p?.date ?? newExpenseDate(),
-    category: e?.category ?? 'SUPERMARKET',
-    foodType: e?.foodType ?? null,
-    split: e ? isSplit(e) : false,
-    myPercent: e && isSplit(e) ? e.myPercent : 50,
+    category: e?.category ?? p?.category ?? 'SUPERMARKET',
+    foodType: e?.foodType ?? p?.foodType ?? null,
+    split: e ? isSplit(e) : (p?.myPercent ?? 100) < 100,
+    myPercent: e && isSplit(e) ? e.myPercent : (p?.myPercent ?? 100) < 100 ? p.myPercent : 50,
     showErrors: false,
   };
 }
@@ -590,18 +604,6 @@ function editScreen(id) {
 }
 
 /** Fills the form from a suggestion: amount, category, food type and split. */
-function applySuggestion(s) {
-  Object.assign(draft, {
-    title: s.title,
-    amount: forInput(s.amountCents),
-    category: s.category,
-    foodType: s.foodType,
-    split: s.myPercent < 100,
-    myPercent: s.myPercent < 100 ? s.myPercent : 50,
-  });
-  render();
-}
-
 function saveDraft() {
   const d = draft;
   const cents = parseToCents(d.amount);
@@ -642,7 +644,8 @@ function viewScreen(id) {
     ${card(`<div class="legend-row">${emblem(f ? f.icon : c.icon, 52)}
         <span class="row-main"><span class="h-large">${esc(e.title)}</span>
           <span class="total">${format(myShareCents(e))}</span>
-          ${isSplit(e) ? `<span class="small soft">of ${format(e.amountCents)} in full</span>` : ''}</span></div>
+          ${isSplit(e) ? `<span class="small soft">of ${format(e.amountCents)} in full</span>` : ''}</span>
+        ${favStar(e)}</div>
       <hr class="gold-rule">
       ${row('Date', fmt(e.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}
       ${row('Category', `${c.emoji} ${c.label}`, W.nicknames ? c.nickname : '')}
@@ -651,6 +654,13 @@ function viewScreen(id) {
     <button class="btn wide" data-action="amend" data-id="${esc(e.id)}"><span class="frame"><span class="frame-inner">${esc(W.amend)}</span></span></button>
     <button class="link center-link" data-action="ask-delete">${esc(W.deleteLink)}</button>
   </main>${ui.modal ? deleteModal(e.title, e.id) : ''}`;
+}
+
+/** The star on an expense: a favourite keeps its title, category and split for Quick add. */
+function favStar(e) {
+  const on = isFavorite(data.favorites, e);
+  const label = on ? 'Remove from favourites' : 'Add to favourites';
+  return `<button class="icon-btn fav-star" data-action="fav-toggle" data-id="${esc(e.id)}" aria-label="${label}" title="${label}"><span class="${on ? 'star-on' : 'star-off'}"></span></button>`;
 }
 
 // ---------- category ----------
@@ -988,7 +998,9 @@ const actions = {
   'quick-key': (el) => quickKey(el.dataset.key),
   'quick-more': () => {
     const q = ui.quick;
-    prefill = { title: q.title, amount: q.amount, date: q.date };
+    // A picked favourite also carries its category, food type and split to the full form.
+    const f = q.fav != null ? data.favorites[q.fav] : null;
+    prefill = { title: q.title, amount: q.amount, date: q.date, category: f?.category, foodType: f?.foodType, myPercent: f?.myPercent };
     ui.quick = null;
     go('#/edit');
   },
@@ -1006,11 +1018,46 @@ const actions = {
     const food = el.dataset.food || null;
     quickRecord(makeExpense({ id: newId(), date: q.date, title: q.title.trim() || defaultTitle(cat, food), amountCents: cents, category: cat, foodType: food }));
   },
-  'quick-sugg': (el) => {
-    const s = suggestions(data.expenses, ui.quick.title)[Number(el.dataset.i)];
-    quickRecord(makeExpense({ id: newId(), date: ui.quick.date, title: s.title, amountCents: s.amountCents, category: s.category, foodType: s.foodType, myPercent: s.myPercent }));
+  'fav-pick': (el) => { const i = Number(el.dataset.i); ui.quick.fav = ui.quick.fav === i ? null : i; ui.quick.title = ui.quick.fav == null ? '' : data.favorites[i].title; render(); },
+  'fav-edit': () => { ui.quick.favEdit = !ui.quick.favEdit; ui.quick.fav = null; render(); },
+  'fav-remove': (el) => {
+    const f = data.favorites[Number(el.dataset.i)];
+    commit({ ...data, favorites: toggleFavorite(data.favorites, f) });
+    if (!data.favorites.length) ui.quick.favEdit = false;
+    render();
   },
-  'edit-sugg': (el) => applySuggestion(suggestions(data.expenses, draft.title)[Number(el.dataset.i)]),
+  'fav-record': () => {
+    const q = ui.quick;
+    const f = data.favorites[q.fav];
+    const cents = parseToCents(q.amount);
+    if (!(cents > 0)) {
+      q.error = true;
+      const help = app.querySelector('#quick-help');
+      help.className = 'small center error';
+      help.textContent = 'Type an amount first';
+      return;
+    }
+    quickRecord(makeExpense({ id: newId(), date: q.date, title: q.title.trim() || f.title, amountCents: cents, category: f.category, foodType: f.foodType, myPercent: f.myPercent }));
+  },
+  'fav-toggle': (el) => {
+    const e = find(data, el.dataset.id);
+    const next = toggleFavorite(data.favorites, e);
+    if (next === data.favorites) { toast(`You have ${MAX_FAVORITES} favourites already. Remove one first (Edit, in ${W.newExpense}).`); return; }
+    commit({ ...data, favorites: next });
+    toast(isFavorite(next, e) ? `${e.title} is now a favourite` : `${e.title} is no longer a favourite`);
+    render();
+  },
+  'quick-sugg': (el) => {
+    const typed = ui.quick.title;
+    const s = suggestions(data.expenses, typed).filter((x) => normalize(x.title) !== normalize(typed))[Number(el.dataset.i)];
+    ui.quick.title = s.title;
+    render();
+  },
+  'edit-sugg': (el) => {
+    const typed = draft.title;
+    draft.title = suggestions(data.expenses, typed).filter((x) => normalize(x.title) !== normalize(typed))[Number(el.dataset.i)].title;
+    render();
+  },
   'edit-cat': (el) => { draft.category = el.dataset.cat; if (draft.category !== 'ENTERTAINMENT') draft.foodType = null; render(); },
   'edit-food': (el) => { draft.foodType = el.dataset.food || null; render(); },
   'edit-pct': (el) => { draft.myPercent = Number(el.dataset.pct); render(); },

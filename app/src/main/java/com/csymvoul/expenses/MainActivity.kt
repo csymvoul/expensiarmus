@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.csymvoul.expenses.data.AppSettings
 import com.csymvoul.expenses.domain.ExpenseQueries
+import com.csymvoul.expenses.domain.Favorites
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.domain.MonthlySummary
 import com.csymvoul.expenses.domain.PeriodSummary
@@ -293,8 +294,19 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                 )
             }
             route.startsWith(VIEW) -> key(route) {
+                val shown = data.find(route.removePrefix(VIEW))
                 ExpenseDetailScreen(
-                    expense = data.find(route.removePrefix(VIEW)),
+                    expense = shown,
+                    isFavorite = shown != null && Favorites.isFavorite(data.favorites, shown),
+                    onToggleFavorite = { e ->
+                        val was = Favorites.isFavorite(data.favorites, e)
+                        val msg = when {
+                            !vm.toggleFavorite(e) -> "You have ${Favorites.MAX} favourites already. Remove one first (Edit, in ${words.newExpense})."
+                            was -> "${e.title} is no longer a favourite"
+                            else -> "${e.title} is now a favourite"
+                        }
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    },
                     onEdit = { push(EDIT + it) },
                     onDelete = { vm.delete(it); pop() },
                     onBack = ::pop,
@@ -353,7 +365,9 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
     if (quickOpen) {
         QuickAddSheet(
             history = data.expenses,
+            favorites = data.favorites,
             date = newExpenseDate,
+            onRemoveFavorite = vm::removeFavorite,
             onSave = { e ->
                 vm.upsert(e)
                 month = YearMonth.from(e.date)

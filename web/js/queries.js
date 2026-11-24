@@ -139,3 +139,27 @@ export function monthGlance(expenses, month, today) {
   const changePercent = previousCents > 0 ? Math.round(((totalCents - previousCents) * 100) / previousCents) : null;
   return { totalCents, count: mine.length, daysCounted, dailyAverageCents, busiest, previousMonth, previousCents, upToDay, changePercent };
 }
+
+// ---------- favourites ----------
+
+/** A favourite is a starting point for a new expense: its title, category, food type and split, never an amount. */
+export const favoriteOf = (e) => ({ title: e.title.trim(), category: e.category, foodType: e.foodType ?? null, myPercent: e.myPercent ?? 100 });
+
+/** Same title (ignoring case and accents), category and food type: the same favourite. */
+export const favoriteKey = (f) => [normalize(f.title), f.category, f.foodType ?? ''].join('|');
+
+/** Up to five favourites: they fit in one row of Quick add. */
+export const MAX_FAVORITES = 5;
+
+export const isFavorite = (favorites, e) => (favorites ?? []).some((f) => favoriteKey(f) === favoriteKey(e));
+
+/**
+ * Stars or un-stars an expense's title, category and food type. Favourites stay sorted by title.
+ * With five already, starring another changes nothing (the screen says why).
+ */
+export function toggleFavorite(favorites, e) {
+  const list = favorites ?? [];
+  if (isFavorite(list, e)) return list.filter((f) => favoriteKey(f) !== favoriteKey(e));
+  if (list.length >= MAX_FAVORITES) return list;
+  return [...list, favoriteOf(e)].sort((a, b) => normalize(a.title).localeCompare(normalize(b.title)));
+}

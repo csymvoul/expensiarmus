@@ -91,10 +91,11 @@ fun EditExpenseScreen(
     val suggestions = remember(history, title, suggestionPicked) {
         if (existing != null || suggestionPicked) emptyList() else Suggestions.of(history, title)
     }
-    var category by rememberSaveable { mutableStateOf(existing?.category ?: Category.SUPERMARKET) }
-    var foodType by rememberSaveable { mutableStateOf(existing?.foodType) }
-    var split by rememberSaveable { mutableStateOf(existing?.isSplit ?: false) }
-    var myPercent by rememberSaveable { mutableIntStateOf(existing?.takeIf { it.isSplit }?.myPercent ?: 50) }
+    var category by rememberSaveable { mutableStateOf(existing?.category ?: prefill?.category ?: Category.SUPERMARKET) }
+    var foodType by rememberSaveable { mutableStateOf(existing?.foodType ?: prefill?.foodType) }
+    val handedPercent = prefill?.myPercent?.takeIf { existing == null && it < 100 }
+    var split by rememberSaveable { mutableStateOf(existing?.isSplit ?: (handedPercent != null)) }
+    var myPercent by rememberSaveable { mutableIntStateOf(existing?.takeIf { it.isSplit }?.myPercent ?: handedPercent ?: 50) }
     var showErrors by rememberSaveable { mutableStateOf(false) }
     var pickingDate by remember { mutableStateOf(false) }
 
@@ -159,12 +160,8 @@ fun EditExpenseScreen(
             )
             if (suggestions.isNotEmpty()) {
                 SuggestionList(suggestions) { s ->
+                    // Only the title: amount, category and split stay as they are.
                     title = s.title
-                    amount = Money.forInput(s.amountCents)
-                    category = s.category
-                    foodType = s.foodType
-                    split = s.myPercent < 100
-                    myPercent = if (s.myPercent < 100) s.myPercent else 50
                     suggestionPicked = true
                 }
             }

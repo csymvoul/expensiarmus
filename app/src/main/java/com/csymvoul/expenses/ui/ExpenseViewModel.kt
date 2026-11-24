@@ -14,6 +14,8 @@ import com.csymvoul.expenses.domain.GoalAlerts
 import com.csymvoul.expenses.model.AppData
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
+import com.csymvoul.expenses.model.Favorite
+import com.csymvoul.expenses.domain.Favorites
 import com.csymvoul.expenses.reminder.GoalNotifier
 import com.csymvoul.expenses.widget.LedgerWidget
 import kotlinx.coroutines.Dispatchers
@@ -41,6 +43,17 @@ class ExpenseViewModel(app: Application) : AndroidViewModel(app) {
     fun upsert(expense: Expense) = update { it.upsert(expense) }
 
     fun delete(id: String) = update { it.delete(id) }
+
+    /** Stars or un-stars [expense]. False when it couldn't be starred because there are five favourites already. */
+    fun toggleFavorite(expense: Expense): Boolean {
+        val current = _state.value.favorites
+        val next = Favorites.toggle(current, expense)
+        if (next === current) return false
+        update { it.copy(favorites = next) }
+        return true
+    }
+
+    fun removeFavorite(favorite: Favorite) = update { it.copy(favorites = Favorites.toggle(it.favorites, favorite)) }
 
     /** Sets a goal for [category] (null: the whole month) in [month] only, or from [month] onwards. */
     fun setGoal(category: Category?, month: YearMonth, cents: Long, onwards: Boolean) =

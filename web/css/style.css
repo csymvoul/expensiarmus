@@ -30,6 +30,8 @@
   --frame-sparkle: var(--sparkle);
   --search-glyph: url('../icons/emblems/search_light.png');
   --today-glyph: url('../icons/emblems/today_light.png');
+  --star-on: url('../icons/emblems/star_on_light.png');
+  --star-off: url('../icons/emblems/star_off_light.png');
   /* Evanesco and other removing buttons: red by day; at night gold like every other button. */
   --danger-bg: var(--error);
   --on-danger: #fff;
@@ -60,6 +62,8 @@
     --frame-line: #7B1E1E;
     --search-glyph: url('../icons/emblems/search_dark.png');
     --today-glyph: url('../icons/emblems/today_dark.png');
+    --star-on: url('../icons/emblems/star_on_dark.png');
+    --star-off: url('../icons/emblems/star_off_dark.png');
     --danger-bg: var(--primary);
     --on-danger: var(--on-primary);
     --frame-line-soft: rgba(123, 30, 30, 0.7);
@@ -89,6 +93,8 @@
   --frame-line: #7B1E1E;
   --search-glyph: url('../icons/emblems/search_dark.png');
   --today-glyph: url('../icons/emblems/today_dark.png');
+  --star-on: url('../icons/emblems/star_on_dark.png');
+  --star-off: url('../icons/emblems/star_off_dark.png');
   --danger-bg: var(--primary);
   --on-danger: var(--on-primary);
   --frame-line-soft: rgba(123, 30, 30, 0.7);
@@ -455,6 +461,15 @@ main.with-tabs { padding-bottom: calc(170px + env(safe-area-inset-bottom)); }
 .tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; border-radius: 10px; font-size: 11px; text-align: center; line-height: 1.15; }
 .tile:active { background: var(--line); }
+.tile.glow { background: color-mix(in srgb, var(--primary) 14%, transparent); box-shadow: inset 0 0 0 1px var(--gold-soft); }
+.fav-star { flex: none; align-self: flex-start; }
+.star-on, .star-off { display: block; width: 32px; height: 32px; background: var(--star-on) center / contain no-repeat; }
+.star-off { background-image: var(--star-off); }
+.star-on.small-glyph { width: 18px; height: 18px; }
+.fav-title { display: flex; align-items: center; gap: 6px; }
+.fav-head { display: flex; align-items: center; justify-content: space-between; margin: 2px 2px 0; }
+.chip-x { margin-left: 4px; color: var(--error); font-weight: 700; }
+.fav-record { margin: 4px 0 2px; }
 
 /* Suggestions from history */
 .suggestions { display: flex; flex-direction: column; border: 1px solid var(--gold-soft); border-radius: 8px; overflow: hidden; }

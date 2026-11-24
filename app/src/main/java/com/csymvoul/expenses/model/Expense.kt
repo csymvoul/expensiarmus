@@ -108,6 +108,19 @@ data class Goals(
     }
 }
 
+/** A starting point for a new expense: title, category, food type and split, never an amount. */
+@Serializable
+data class Favorite(
+    val title: String,
+    val category: Category,
+    val foodType: FoodType? = null,
+    val myPercent: Int = 100,
+) {
+    /** Usable: a title, food types only under Entertainment, a share of 1–100%. */
+    val isValid: Boolean
+        get() = title.isNotBlank() && (foodType == null || category == Category.ENTERTAINMENT) && myPercent in 1..100
+}
+
 /** Everything the app stores. */
 @Serializable
 data class AppData(
@@ -115,6 +128,8 @@ data class AppData(
     val goals: Goals = Goals(),
     /** Goal warnings already sent, as "CATEGORY|2026-11|80" (or 100), so each comes once. */
     val alertsSent: Set<String> = emptySet(),
+    /** Up to five favourites for Quick add, sorted by title. */
+    val favorites: List<Favorite> = emptyList(),
 ) {
     fun upsert(expense: Expense) = copy(expenses = expenses.filterNot { it.id == expense.id } + expense)
 

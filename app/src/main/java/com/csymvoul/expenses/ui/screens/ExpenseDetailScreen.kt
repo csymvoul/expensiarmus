@@ -37,6 +37,7 @@ import com.csymvoul.expenses.domain.ExpenseDetails
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.ui.components.EmblemBadge
+import com.csymvoul.expenses.ui.components.StarGlyph
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.ParchmentCard
 import com.csymvoul.expenses.ui.components.WizardButton
@@ -55,6 +56,9 @@ private val longDate = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.EN
 @Composable
 fun ExpenseDetailScreen(
     expense: Expense?,
+    /** Whether this expense's title, category and food type are a favourite. */
+    isFavorite: Boolean,
+    onToggleFavorite: (Expense) -> Unit,
     onEdit: (String) -> Unit,
     onDelete: (String) -> Unit,
     onBack: () -> Unit,
@@ -107,6 +111,10 @@ fun ExpenseDetailScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
+                    }
+                    // The star: a favourite keeps the title, category and split for Quick add.
+                    IconButton(onClick = { onToggleFavorite(expense) }, modifier = Modifier.align(Alignment.Top)) {
+                        StarGlyph(on = isFavorite, contentDescription = if (isFavorite) "Remove from favourites" else "Add to favourites", size = 32.dp)
                     }
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
