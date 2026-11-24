@@ -122,7 +122,7 @@ fun SettingsScreen(
                 WizardButton(onClick = onExport) { Text(w.exportButton) }
             }
             ParchmentCard {
-                Text(w.importTitle, style = MaterialTheme.typography.titleMedium)
+                CardTitle(R.drawable.emblem_set_apparate, w.importTitle)
                 Text(
                     "Bring expenses in from a CSV: a Geminio backup, or a spreadsheet with the same columns. " +
                         "You see what will be added first; expenses already in the ledger are skipped.",

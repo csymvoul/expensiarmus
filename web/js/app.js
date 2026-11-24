@@ -791,7 +791,7 @@ function settingsScreen() {
     ${card(`<h3 class="h-medium card-title">${emblem(EMBLEMS.geminio, 36)}${esc(withoutEmoji(W.exportTitle))}</h3>
       <p class="small soft">All your expenses as a CSV file, for a backup or a spreadsheet.</p>
       <button class="btn" data-action="export"><span class="frame"><span class="frame-inner">${esc(W.exportButton)}</span></span></button>`)}
-    ${card(`<h3 class="h-medium">${esc(W.importTitle)}</h3>
+    ${card(`<h3 class="h-medium card-title">${emblem(EMBLEMS.apparate, 36)}${esc(W.importTitle)}</h3>
       <p class="small soft">Bring expenses in from a CSV: a Geminio backup, or a spreadsheet with the same columns. You see what will be added first; expenses already in the ledger are skipped.</p>
       <button class="btn" data-action="import"><span class="frame"><span class="frame-inner">${esc(W.importButton)}</span></span></button>
       <input type="file" id="import-file" accept=".csv,text/csv,text/comma-separated-values,text/plain" data-input="import-file" hidden>`)}

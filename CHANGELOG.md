@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.11.1 (Android), web app 1.10.1 and iPhone app 1.8.1 – unreleased (2026-11-24)
+
+### Changed
+- **Apparate has its own emblem:** a ledger scroll rising out of a swirling gold portal, next to the Apparate card's title in Settings, like Geminio's scrolls and the owl. Drawn as vector art in the same gold-on-burgundy style (`art/emblem-apparate.svg`) and rendered to a 192-pixel picture like the other emblems.
+- Tests: the emblem tests now include it (172 Android, 70 web, all passing).
+
+### Known issues
+- Not yet checked on a phone.
+
 ## Web app 1.10.0 and iPhone app 1.8.0 – unreleased (2026-11-24)
 
 ### Added

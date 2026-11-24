@@ -165,4 +165,10 @@ swiftc -O -o /tmp/cut-glyph art/cut-glyph.swift
 
 Copy both to `web/icons/emblems/` and as `emblem_search_dark.png` / `emblem_search_light.png` to `app/src/main/res/drawable-nodpi/`.
 
+The Apparate emblem is vector art (`art/emblem-apparate.svg`). To redraw its picture, render it at 384 pixels with Quick Look and scale it to 192 (set the SVG's `width` and `height` to 384 first, or Quick Look draws it into a corner):
+
+```bash
+qlmanage -t -s 384 -o /tmp art/emblem-apparate.svg && sips -s format png -z 192 192 /tmp/emblem-apparate.svg.png --out /tmp/set_apparate.png
+```
+
 Copy each `<name>.png` to `web/icons/emblems/<name>.png` and to `app/src/main/res/drawable-nodpi/emblem_<name>.png`. A new emblem also needs a line in `web/sw.js` so it works offline.

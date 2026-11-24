@@ -30,6 +30,7 @@ export const TAB_ICONS = {
 export const EMBLEMS = {
   logo: 'icons/emblems/logo_pouch.png',
   geminio: 'icons/emblems/set_geminio.png',
+  apparate: 'icons/emblems/set_apparate.png',
   reminder: 'icons/emblems/set_reminder.png',
   themeSystem: 'icons/emblems/set_theme_system.png',
   themeLight: 'icons/emblems/set_theme_light.png',

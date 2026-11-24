@@ -600,7 +600,7 @@ test('withoutEmoji drops a leading emoji and keeps plain labels', () => {
 
 test('logo and Settings emblems exist on disk and are cached offline', () => {
   const sw = readFileSync(webFile('sw.js'), 'utf8');
-  assert.deepEqual(Object.keys(EMBLEMS), ['logo', 'geminio', 'reminder', 'themeSystem', 'themeLight', 'themeDark']);
+  assert.deepEqual(Object.keys(EMBLEMS), ['logo', 'geminio', 'apparate', 'reminder', 'themeSystem', 'themeLight', 'themeDark']);
   for (const path of Object.values(EMBLEMS)) {
     assert.ok(existsSync(webFile(path)), `${path} is missing`);
     assert.ok(sw.includes(`'${path}'`), `${path} is not cached`);
@@ -804,6 +804,7 @@ test('Settings has the Apparate card: a CSV picker, a confirmation, and nothing 
   assert.match(app, /data-action="import"><span class="frame"><span class="frame-inner">\$\{esc\(W\.importButton\)\}/);
   assert.match(app, /<input type="file" id="import-file" accept="\.csv,text\/csv[^"]*" data-input="import-file" hidden>/);
   assert.match(app, /const ON_CHANGE = \['import-file',/);
+  assert.match(app, /card-title">\$\{emblem\(EMBLEMS\.apparate, 36\)\}\$\{esc\(W\.importTitle\)\}/);
   // Reading the file only opens the confirmation; the expenses are committed on "Add".
   const read = app.slice(app.indexOf('async function readImport'), app.indexOf('function deleteModal'));
   assert.doesNotMatch(read, /commit\(/);
