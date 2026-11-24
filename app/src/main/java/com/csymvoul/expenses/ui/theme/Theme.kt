@@ -147,7 +147,7 @@ val Category.emoji: String
         Category.ENTERTAINMENT -> "🍽️"
         Category.BILLS -> "⚡"
         Category.SHOPPING -> "🛍️"
-        Category.FUEL -> "⛽"
+        Category.FUEL -> "🚆"
         Category.OTHER -> "🎁"
     }
 

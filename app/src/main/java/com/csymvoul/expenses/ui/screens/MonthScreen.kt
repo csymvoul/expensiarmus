@@ -155,7 +155,7 @@ fun MonthScreen(
             when (view) {
                 MonthView.OVERVIEW -> {
                     item { TotalCard(summary) }
-                    item { BreakdownCard(summary.categories, summary.totalCents, summary.month, onCategory) }
+                    item { BreakdownCard(summary.categories, summary.totalCents, summary.month, onCategory, period = summary.month.toString()) }
                     if (summary.food.totalCents > 0) {
                         item { FoodCard(summary.food) { onCategory(Category.ENTERTAINMENT, it) } }
                     }
@@ -344,6 +344,8 @@ internal fun BreakdownCard(
     totalCents: Long,
     resetKey: Any,
     onCategory: (Category, FoodType?) -> Unit,
+    /** What a tapped category opens for: the month, the year, or "" for all time. */
+    period: String = "",
 ) {
     var highlighted by remember(resetKey) { mutableStateOf<Category?>(null) }
     val glow = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
@@ -431,7 +433,7 @@ internal fun BreakdownCard(
             }
         }
         Text(
-            "Tap a slice to highlight it, or a ${LocalWords.current.vault} to see all its expenses.",
+            "Tap a slice to highlight it, or a ${LocalWords.current.vault} to see its expenses ${ExpenseQueries.periodWords(period)}.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

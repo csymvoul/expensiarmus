@@ -140,7 +140,7 @@ class SuggestionsTest {
     @Test fun `quick add default titles`() {
         assertEquals("Super market", Suggestions.defaultTitle(Category.SUPERMARKET, null))
         assertEquals("Day-to-day", Suggestions.defaultTitle(Category.ENTERTAINMENT, FoodType.DAY_TO_DAY))
-        assertEquals("Fuel", Suggestions.defaultTitle(Category.FUEL, null))
+        assertEquals("Transport", Suggestions.defaultTitle(Category.FUEL, null))
     }
 
     @Test fun `the update check is on unless switched off`() {

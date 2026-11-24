@@ -34,6 +34,12 @@ export function calendarCells(month) {
 }
 
 /** All expenses of a category grouped by month, newest month first; optionally one food type. */
+/**
+ * The expenses of a period: "" is all time, "2026" a year, "2026-11" a month. Category pages use it so a
+ * category opened from a month, a year or all time lists just that span.
+ */
+export const inPeriod = (expenses, period = '') => (period ? expenses.filter((e) => e.date.startsWith(`${period}-`)) : expenses);
+
 export function byCategory(expenses, categoryId, foodTypeId = null) {
   const groups = new Map();
   for (const e of expenses) {

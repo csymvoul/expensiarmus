@@ -1,12 +1,12 @@
 // Categories, food types and expense helpers. Same data shape as the Android app.
 
 export const CATEGORIES = [
-  { id: 'RENT', label: 'Home', hint: 'Rent and shared building costs (κοινόχρηστα)', emoji: '🏰', nickname: 'The Castle Keep', color: '#A33A3A', icon: 'icons/emblems/cat_rent.png' },
+  { id: 'RENT', label: 'Home', hint: 'Rent and shared building costs', emoji: '🏰', nickname: 'The Castle Keep', color: '#A33A3A', icon: 'icons/emblems/cat_rent.png' },
   { id: 'SUPERMARKET', label: 'Super market', hint: 'Groceries and household items', emoji: '🛒', nickname: 'Potion Ingredients', color: '#2F7D4E', icon: 'icons/emblems/cat_supermarket.png' },
   { id: 'ENTERTAINMENT', label: 'Entertainment', hint: 'Food, cinema, theatre, etc.', emoji: '🍽️', nickname: 'Revelry & Feasts', color: '#C8962E', icon: 'icons/emblems/cat_entertainment.png' },
   { id: 'BILLS', label: 'Bills', hint: 'Water, electricity, gas, etc.', emoji: '⚡', nickname: 'Lumos, Aguamenti, Incendio', color: '#3A63A8', icon: 'icons/emblems/cat_bills.png' },
   { id: 'SHOPPING', label: 'Shopping', hint: 'Shoes, clothes, jewellery, etc.', emoji: '🛍️', nickname: 'Diagon Alley', color: '#B5487A', icon: 'icons/emblems/cat_shopping.png' },
-  { id: 'FUEL', label: 'Fuel', hint: 'Petrol (gas), diesel, LPG', emoji: '⛽', nickname: 'Floo Powder', color: '#2E8B8B', icon: 'icons/emblems/cat_fuel.png' },
+  { id: 'FUEL', label: 'Transport', hint: 'Fuel, tickets (plane, train, metro, bus), taxis, parking', emoji: '🚆', nickname: 'Floo Powder', color: '#2E8B8B', icon: 'icons/emblems/cat_fuel.png' },
   { id: 'OTHER', label: 'Other', hint: 'Presents and anything else', emoji: '🎁', nickname: 'Curiosities', color: '#7E5AA6', icon: 'icons/emblems/cat_other.png' },
 ];
 

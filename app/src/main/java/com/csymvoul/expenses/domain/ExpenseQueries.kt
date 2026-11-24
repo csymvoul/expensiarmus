@@ -94,6 +94,27 @@ object ExpenseQueries {
      * All expenses of [category] grouped by month, newest month first. For Entertainment,
      * [foodType] narrows it to one kind of food.
      */
+    /**
+     * The expenses of a period: "" is all time, "2026" a year, "2026-11" a month. Category pages use it so
+     * a category opened from a month, a year or all time lists just that span.
+     */
+    fun inPeriod(expenses: List<Expense>, period: String = ""): List<Expense> =
+        if (period.isEmpty()) expenses else expenses.filter { it.date.toString().startsWith("$period-") }
+
+    /** "for this month" / "in 2026" / "of all time": what a category opened from that card will list. */
+    fun periodWords(period: String): String = when (period.length) {
+        0 -> "of all time"
+        7 -> "for this month"
+        else -> "in $period"
+    }
+
+    /** The category page's heading for a period: "November 2026", "2026" or "All time". */
+    fun periodTitle(period: String): String = when (period.length) {
+        0 -> "All time"
+        7 -> YearMonth.parse(period).format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH))
+        else -> period
+    }
+
     fun byCategory(expenses: List<Expense>, category: Category, foodType: FoodType? = null): List<MonthGroup> =
         expenses.filter { it.category == category && (foodType == null || it.foodType == foodType) }
             .groupBy { YearMonth.from(it.date) }

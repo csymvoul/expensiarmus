@@ -160,7 +160,7 @@ fun AnnalsScreen(
                 }
             }
             item {
-                BreakdownCard(summary.categories, summary.totalCents, "$view-$year", onCategory)
+                BreakdownCard(summary.categories, summary.totalCents, "$view-$year", onCategory, period = if (view == AnnalsView.YEAR) year.toString() else "")
             }
             if (summary.food.totalCents > 0) {
                 item { FoodCard(summary.food) { onCategory(Category.ENTERTAINMENT, it) } }

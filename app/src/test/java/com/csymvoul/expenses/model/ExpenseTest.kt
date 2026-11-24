@@ -51,7 +51,7 @@ class ExpenseTest {
 
     @Test fun `shopping then fuel come just before other`() {
         assertEquals("Shopping", Category.SHOPPING.label)
-        assertEquals("Fuel", Category.FUEL.label)
+        assertEquals("Transport", Category.FUEL.label)
         assertEquals(Category.FUEL.ordinal - 1, Category.SHOPPING.ordinal)
         assertEquals(Category.OTHER.ordinal - 1, Category.FUEL.ordinal)
     }

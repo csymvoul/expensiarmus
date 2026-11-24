@@ -37,6 +37,7 @@ import com.csymvoul.expenses.domain.MonthGroup
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.ui.components.EmblemBadge
+import com.csymvoul.expenses.domain.ExpenseQueries
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.components.ExpenseRow
 import com.csymvoul.expenses.ui.components.LocalWords
@@ -56,6 +57,8 @@ private val monthFormat = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLIS
 fun CategoryScreen(
     category: Category,
     foodType: FoodType?,
+    /** "2026-11", "2026", or "" for all time: the span the page lists. */
+    period: String,
     groups: List<MonthGroup>,
     onFoodType: (FoodType?) -> Unit,
     onOpen: (String) -> Unit,
@@ -102,7 +105,7 @@ fun CategoryScreen(
                         }
                     }
                     Text(
-                        if (foodType == null) "All time" else "All time · ${foodType.label}",
+                        ExpenseQueries.periodTitle(period) + (foodType?.let { " · ${it.label}" } ?: ""),
                         style = MaterialTheme.typography.labelLarge,
                     )
                     Text(
@@ -112,8 +115,8 @@ fun CategoryScreen(
                     )
                     val count = groups.sumOf { it.expenses.size }
                     Text(
-                        "${if (count == 1) "1 expense" else "$count expenses"} in " +
-                            if (groups.size == 1) "1 month" else "${groups.size} months",
+                        (if (count == 1) "1 expense" else "$count expenses") +
+                            if (period.length == 7) "" else " in " + if (groups.size == 1) "1 month" else "${groups.size} months",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

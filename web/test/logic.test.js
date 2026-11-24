@@ -228,7 +228,7 @@ import { yearSummary, allTimeSummary, monthsBetween } from '../js/summary.js';
 test('fuel category sits between shopping and other', () => {
   const ids = CATEGORIES.map((c) => c.id);
   assert.deepEqual(ids.slice(-3), ['SHOPPING', 'FUEL', 'OTHER']);
-  assert.equal(CATEGORIES.find((c) => c.id === 'FUEL').emoji, '⛽');
+  assert.equal(CATEGORIES.find((c) => c.id === 'FUEL').emoji, '🚆');
   assert.throws(() => makeExpense({ id: 'f', date: '2026-11-01', title: 'Diesel', amountCents: 6000, category: 'FUEL', foodType: 'DELIVERY' }));
 });
 
@@ -561,7 +561,7 @@ test('suggestions from history: most used first, latest amount', () => {
 test('quick add default titles', () => {
   assert.equal(defaultTitle('SUPERMARKET', null), 'Super market');
   assert.equal(defaultTitle('ENTERTAINMENT', 'DAY_TO_DAY'), 'Day-to-day');
-  assert.equal(defaultTitle('FUEL', null), 'Fuel');
+  assert.equal(defaultTitle('FUEL', null), 'Transport');
 });
 
 // --- painted emblems ---
@@ -816,7 +816,7 @@ test('Settings has the Apparate card: a CSV picker, a confirmation, and nothing 
 
 test('Home was called Rent, and old backups still come back in', () => {
   assert.equal(CATEGORIES.find((c) => c.id === 'RENT').label, 'Home');
-  assert.match(CATEGORIES.find((c) => c.id === 'RENT').hint, /κοινόχρηστα/);
+  assert.equal(CATEGORIES.find((c) => c.id === 'RENT').hint, 'Rent and shared building costs');
   const r = importCsv('date,title,category,amount_eur\n2026-10-01,October rent,Rent,450\n2026-11-01,Κοινόχρηστα,Home,35\n', [], ids);
   assert.deepEqual(r.problems, []);
   assert.deepEqual(r.added.map((x) => x.category), ['RENT', 'RENT']);
@@ -833,4 +833,43 @@ test('Evanesco is red by day and gold at night, like the other buttons', () => {
     assert.match(dark, /--danger-bg: var\(--primary\);/);
     assert.match(dark, /--on-danger: var\(--on-primary\);/);
   }
+});
+
+// --- category pages follow where they were opened from ---
+import { inPeriod } from '../js/queries.js';
+
+test('a category page lists the month, the year or all time it was opened for', () => {
+  const list = [
+    e('2026-11-03', 100, 'OTHER'), e('2026-11-28', 200, 'OTHER'), e('2026-10-30', 400, 'OTHER'),
+    e('2025-11-03', 800, 'OTHER'), e('2026-01-01', 1600, 'RENT'),
+  ];
+  assert.equal(inPeriod(list, '').length, 5);
+  assert.deepEqual(inPeriod(list, '2026-11').map((x) => x.amountCents), [100, 200]);
+  assert.deepEqual(inPeriod(list, '2026').map((x) => x.amountCents), [100, 200, 400, 1600]);
+  assert.deepEqual(inPeriod(list, '2025').map((x) => x.amountCents), [800]);
+  // November of this year only, grouped by month: one group.
+  assert.deepEqual(byCategory(inPeriod(list, '2026-11'), 'OTHER').map((g) => [g.month, g.totalCents]), [['2026-11', 300]]);
+  // The year: its months only, newest first.
+  assert.deepEqual(byCategory(inPeriod(list, '2026'), 'OTHER').map((g) => g.month), ['2026-11', '2026-10']);
+});
+
+test('the Ledger opens categories for its month, Annals for the year or all time', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  assert.match(app, /\$\{breakdownCard\(s, ui\.month\)\}\n\s*\$\{s\.food\.totalCents > 0 \? foodCard\(s\.food, ui\.month\)/);
+  assert.match(app, /breakdownCard\(s, a\.view === 'year' \? String\(a\.year\) : ''\)/);
+  assert.match(app, /foodCard\(s\.food, a\.view === 'year' \? String\(a\.year\) : ''\)/);
+  assert.match(app, /data-cat="\$\{cat\.id\}" data-period="\$\{period\}"/);
+  assert.match(app, /categoryScreen\(r\.a, r\.b, r\.c \?\? ''\)/);
+  assert.match(app, /'cat-food': \(el\) => location\.replace\(categoryPath\(route\(\)\.a, el\.dataset\.food, route\(\)\.c\)\)/);
+  assert.match(app, /byCategory\(inPeriod\(data\.expenses, period\), cat\.id, foodId\)/);
+});
+
+test('Transport was called Fuel, and old backups still come back in', () => {
+  const fuel = CATEGORIES.find((c) => c.id === 'FUEL');
+  assert.equal(fuel.label, 'Transport');
+  assert.equal(fuel.nickname, 'Floo Powder');
+  assert.equal(fuel.hint, 'Fuel, tickets (plane, train, metro, bus), taxis, parking');
+  const r = importCsv('date,title,category,amount_eur\n2026-10-01,Diesel,Fuel,60\n2026-11-02,Metro card,Transport,30\n', [], ids);
+  assert.deepEqual(r.problems, []);
+  assert.deepEqual(r.added.map((x) => x.category), ['FUEL', 'FUEL']);
 });

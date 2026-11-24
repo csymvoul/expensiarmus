@@ -37,8 +37,8 @@ export function parseCsv(text, delimiter = ',') {
 }
 
 const squash = (v) => String(v ?? '').toLowerCase().replace(/[\s_-]/g, '');
-/** Earlier names still read, so old backups come back in: Home was called Rent before web 1.11. */
-const OLD_NAMES = { rent: 'RENT' };
+/** Earlier names still read, so old backups come back in: Home was Rent before web 1.11, Transport was Fuel before web 1.13. */
+const OLD_NAMES = { rent: 'RENT', fuel: 'FUEL' };
 const findCategory = (v) => CATEGORIES.find((c) => squash(c.label) === squash(v) || squash(c.id) === squash(v)) ?? category(OLD_NAMES[squash(v)]);
 const findFood = (v) => FOOD_TYPES.find((f) => squash(f.label) === squash(v) || squash(f.id) === squash(v));
 

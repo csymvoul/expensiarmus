@@ -110,7 +110,10 @@ private const val SETTINGS = "settings"
 private const val SEARCH = "search"
 private const val EDIT = "edit:" // + expense id, empty for a new expense
 private const val VIEW = "view:" // + expense id: read-only view
-private const val CATEGORY = "category:" // + category name, optionally + ":" + food type name
+private const val CATEGORY = "category:" // + category name, ":" + food type name (or nothing), ":" + period ("2026-11", "2026", or nothing for all time)
+
+/** The route of a category page for a food type (or none) and a period (a month, a year, or "" for all time). */
+private fun categoryRoute(category: Category, food: FoodType?, period: String) = CATEGORY + category.name + ":" + (food?.name ?: "") + ":" + period
 
 private val TAB_ROUTES = mapOf(Tab.LEDGER to MONTH, Tab.CALENDAR to CALENDAR, Tab.ANNALS to ANNALS, Tab.GOALS to GOALS, Tab.SETTINGS to SETTINGS)
 
@@ -238,7 +241,7 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                         annalsYear = it
                         annalsView = AnnalsView.YEAR
                     },
-                    onCategory = { c, t -> push(CATEGORY + c.name + (t?.let { ":" + it.name } ?: "")) },
+                    onCategory = { c, t -> push(categoryRoute(c, t, month.toString())) },
                     bottomBar = { tabBar(Tab.ANNALS) },
                 )
             }
@@ -271,15 +274,17 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
             route.startsWith(CATEGORY) -> {
                 val parts = route.removePrefix(CATEGORY).split(':')
                 val category = Category.valueOf(parts[0])
-                val foodType = parts.getOrNull(1)?.let { FoodType.valueOf(it) }
-                val groups = remember(data, category, foodType) {
-                    ExpenseQueries.byCategory(data.expenses, category, foodType)
+                val foodType = parts.getOrNull(1)?.takeIf { it.isNotEmpty() }?.let { FoodType.valueOf(it) }
+                val period = parts.getOrNull(2).orEmpty()
+                val groups = remember(data, category, foodType, period) {
+                    ExpenseQueries.byCategory(ExpenseQueries.inPeriod(data.expenses, period), category, foodType)
                 }
                 CategoryScreen(
                     category = category,
                     foodType = foodType,
+                    period = period,
                     groups = groups,
-                    onFoodType = { t -> replaceTop(CATEGORY + category.name + (t?.let { ":" + it.name } ?: "")) },
+                    onFoodType = { t -> replaceTop(categoryRoute(category, t, period)) },
                     onOpen = { push(VIEW + it) },
                     onBack = ::pop,
                 )
@@ -329,7 +334,7 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                     onNextMonth = { month = month.plusMonths(1) },
                     onAdd = { quickOpen = true },
                     onOpen = { push(VIEW + it) },
-                    onCategory = { c, t -> push(CATEGORY + c.name + (t?.let { ":" + it.name } ?: "")) },
+                    onCategory = { c, t -> push(categoryRoute(c, t, if (annalsView == AnnalsView.YEAR) annalsYear.toString() else "")) },
                     onSearch = { push(SEARCH) },
                     reminderOn = settings.reminderOn,
                     owlsBlocked = owlsBlocked,

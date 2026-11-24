@@ -5,14 +5,14 @@ A personal, wizard-themed app for tracking monthly spending in euros: a native A
 ## What it does
 
 - **Quick add.** A number pad and big category tiles: type the amount, tap a tile, done (with Undo). Typing a title suggests earlier expenses, and tapping one records it again. The full form is one tap away.
-- **Record expenses** with a date, title, amount (€) and one of seven categories: Home (rent and shared building costs, κοινόχρηστα), Super market, Entertainment, Bills, Shopping (shoes, clothes, jewellery…), Fuel (petrol, diesel, LPG), Other.
+- **Record expenses** with a date, title, amount (€) and one of seven categories: Home (rent and shared building costs), Super market, Entertainment, Bills, Shopping (shoes, clothes, jewellery…), Transport (fuel, tickets for planes, trains, the metro and buses, taxis, parking), Other.
 - **Food subgroups.** An Entertainment expense can be marked as food: *Delivery*, *Dine out* or *Day-to-day* (e.g. a coffee at work).
 - **Split expenses.** Mark an expense as shared and set your percentage (50-50 by default). Only your share counts toward totals, charts and goals; the full amount is still shown.
 - **Expense view.** Tapping an expense shows it read-only (amounts, date, category, food type, split); Amend opens the edit form.
 - **Monthly overview.** Total spent, a donut chart and table per category (tap a slice to highlight that category), a food breakdown and the month's latest 5 expenses (Show all lists the rest). Browse month by month.
 - **Annals.** Totals per year and for all time: a month-by-month or year-by-year bar chart, monthly average, comparison with the previous year, biggest expense, and the category and food breakdowns for the period.
 - **Calendar.** The month at a glance (total, change from the month before up to the same day, number of expenses, average a day, busiest day), then a month grid showing what you spent each day, with busier days in deeper ink. Move through months with the month switcher at the top. Tap a day to see its expenses.
-- **Category pages.** Tap a category, or a food subgroup, to see all its expenses, grouped by month with monthly totals.
+- **Category pages.** Tap a category, or a food subgroup, to see its expenses grouped by month with monthly totals: from the Ledger, that month's; from Annals by year, that year's; from Annals all time, all of them.
 - **Search.** Find expenses by part of the title, by category or food-type name, and/or by picking categories. Case and Greek accents are ignored.
 - **Goals (Protego).** Pick the categories you want to watch and set a goal for the month you're viewing, or for that month and every month after. Progress bars turn amber at 80% and red when over, and the app warns you at 80% and when a goal is passed (a notification on Android and in the iPhone app, a card on github.io).
 - **Evening reminder.** A notification each evening (21:30 by default, any time in Settings) reminds you to record the day's expenses and shows what you've recorded so far. Tap it to go straight to "Record expense". It can be turned off or moved in Settings, and a banner warns if notifications are switched off for the app.

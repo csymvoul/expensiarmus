@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.14.0 (Android), web app 1.13.0 and iPhone app 1.11.0 – unreleased (2026-11-24)
+
+### Changed
+- **Fuel is now Transport**, for every way of getting about: "Fuel, tickets (plane, train, metro, bus), taxis, parking". It stays Floo Powder, keeps its cauldron emblem, colour, goals and every expense already in it (the code is still `FUEL`). Where the category is written as text (the expense view, the Android widget) its emoji is now 🚆 instead of ⛽. Geminio exports now write "Transport"; Apparate still reads "Fuel", so older backups import into Transport.
+- "Transport" rather than "Transportation", so it fits on the Quick add tiles next to Entertainment.
+- Tests: Android 178 (1 new), web 75 (1 new); the tests that named Fuel now expect Transport. All passing.
+
+### Known issues
+- Not yet checked on a phone.
+
+## 1.13.0 (Android), web app 1.12.0 and iPhone app 1.10.0 – unreleased (2026-11-24)
+
+### Changed
+- **Category pages follow where you opened them.** Tapping a category in "Where the gold went", or a food type in "Feasts & Food":
+  - on the Ledger lists only that month's expenses (headed "November 2026");
+  - in Annals → By year lists that year's, grouped by month (headed "2026");
+  - in Annals → All time lists all of them, as before (headed "All time").
+  The food chips on the Entertainment page stay within the same span, and the hint under the card says what a tap opens ("…to see its expenses for this month"). Done with `inPeriod` (web `queries.js`, Android `ExpenseQueries`), which the category page applies before grouping by month.
+- **Home's description** is now "Rent and shared building costs", without the Greek word.
+- Tests: Android 177 (2 new), web 74 (2 new; the Home test updated), all passing. Checked in a browser: Ledger → Entertainment and → Delivery show November only, the All chip stays in November, Annals by year shows 2026's months, all time shows everything.
+
+### Known issues
+- Not yet checked on a phone.
+
 ## Web app 1.11.1 and iPhone app 1.9.1 – unreleased (2026-11-24)
 
 ### Fixed

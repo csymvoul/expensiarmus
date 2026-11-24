@@ -3,7 +3,7 @@ import { CATEGORIES, FOOD_TYPES, TAB_ICONS, EMBLEMS, withoutEmoji, category, foo
 import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
 import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
-import { dailyTotals, onDay, calendarCells, byCategory, search, shiftMonth, suggestions, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
+import { dailyTotals, onDay, calendarCells, byCategory, inPeriod, search, shiftMonth, suggestions, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
 import { toCsv, importCsv, importSummary } from './csv.js';
 import { load, save, KEY } from './store.js';
 import { upcomingReminders } from './reminder.js';
@@ -105,8 +105,9 @@ function showGoalAlert(a) {
 const TABS = ['month', 'calendar', 'annals', 'goals', 'settings'];
 
 function route() {
-  const [name, a, b] = location.hash.replace(/^#\/?/, '').split('/');
-  return { name: name || 'month', a: a ? decodeURIComponent(a) : null, b: b ? decodeURIComponent(b) : null };
+  const [name, a, b, c] = location.hash.replace(/^#\/?/, '').split('/');
+  const part = (x) => (x ? decodeURIComponent(x) : null);
+  return { name: name || 'month', a: part(a), b: part(b), c: part(c) };
 }
 function go(path) {
   navDepth++;
@@ -240,11 +241,12 @@ function totalCard(s) {
     ${s.paidTotalCents !== s.totalCents ? `<p class="small soft">Your share. Full bills came to ${format(s.paidTotalCents)}.</p>` : ''}`);
 }
 
-function breakdownCard(s) {
+/** [period] is what a tapped category opens for: the month, the year, or "" for all time. */
+function breakdownCard(s, period = '') {
   const rows = s.categories.map((c) => {
     const cat = category(c.category);
     const dim = (c.spentCents === 0 && !c.goal) || (ui.highlighted && ui.highlighted !== c.category);
-    return `<button class="legend ${ui.highlighted === c.category ? 'glow' : ''} ${dim ? 'dim' : ''}" data-action="category" data-cat="${cat.id}">
+    return `<button class="legend ${ui.highlighted === c.category ? 'glow' : ''} ${dim ? 'dim' : ''}" data-action="category" data-cat="${cat.id}" data-period="${period}">
       <span class="legend-row">
         ${emblem(cat.icon)}
         <span class="row-main"><span class="h-small">${esc(cat.label)}</span>${W.nicknames ? `<span class="row-sub italic">${esc(cat.nickname)}</span>` : ''}</span>
@@ -257,16 +259,16 @@ function breakdownCard(s) {
     <h3 class="h-medium">${W.whereWent}</h3>
     ${s.totalCents > 0 ? donut(s) : ''}
     ${rows.join('')}
-    <p class="small soft">Tap a slice to highlight it, or a ${W.vault} to see all its expenses.</p>`);
+    <p class="small soft">Tap a slice to highlight it, or a ${W.vault} to see its expenses ${periodWords(period)}.</p>`);
 }
 
-function foodCard(food) {
+function foodCard(food, period = '') {
   const bar = food.types.filter((t) => t.spentCents > 0)
     .map((t) => `<span style="flex:${t.spentCents};background:${foodType(t.type).color}"></span>`).join('');
   const rows = food.types.map((t) => {
     const f = foodType(t.type);
     const times = t.count === 1 ? '1 time' : `${t.count} times`;
-    return `<button class="legend" data-action="category" data-cat="ENTERTAINMENT" data-food="${f.id}"><span class="legend-row">
+    return `<button class="legend" data-action="category" data-cat="ENTERTAINMENT" data-food="${f.id}" data-period="${period}"><span class="legend-row">
       ${emblem(f.icon)}
       <span class="row-main"><span class="h-small">${f.label}</span><span class="row-sub">${W.nicknames ? `${f.nickname} · ` : ''}${times}</span></span>
       <span class="row-amount"><b>${format(t.spentCents)}</b><small>${Math.round(t.shareOfFood * 100)}%</small></span><span class="chev">${ICON.right}</span>
@@ -355,8 +357,8 @@ function monthScreen(calendar) {
   let body;
   if (!calendar) {
     body = `${totalCard(s)}
-      ${breakdownCard(s)}
-      ${s.food.totalCents > 0 ? foodCard(s.food) : ''}
+      ${breakdownCard(s, ui.month)}
+      ${s.food.totalCents > 0 ? foodCard(s.food, ui.month) : ''}
       ${ornament(W.ledger)}
       ${s.expenses.length ? ledgerList(s.expenses) : hint(W.ledgerEmpty)}`;
   } else {
@@ -636,9 +638,16 @@ function viewScreen(id) {
 
 // ---------- category ----------
 
-function categoryScreen(catId, foodId) {
+/** "this month" / "in 2026" / "of all time": what a category opened from that card will list. */
+const periodWords = (period) => (!period ? 'of all time' : period.length === 7 ? 'for this month' : `in ${period}`);
+const periodTitle = (period) => (!period ? 'All time' : period.length === 7 ? monthTitle(period) : period);
+/** The address of a category page, keeping the food type and the period when there are any. */
+const categoryPath = (cat, food, period) => `#/category/${cat}${food || period ? `/${food ?? ''}` : ''}${period ? `/${period}` : ''}`;
+
+/** A category's expenses for the period it was opened from (a month, a year, or all time), grouped by month. */
+function categoryScreen(catId, foodId, period = '') {
   const cat = category(catId) ?? CATEGORIES[0];
-  const groups = byCategory(data.expenses, cat.id, foodId);
+  const groups = byCategory(inPeriod(data.expenses, period), cat.id, foodId);
   const count = groups.reduce((a, g) => a + g.expenses.length, 0);
   const foodChips = cat.id === 'ENTERTAINMENT'
     ? `<div class="chips">
@@ -650,9 +659,9 @@ function categoryScreen(catId, foodId) {
   <main>
     ${card(`<div class="legend-row">${emblem(cat.icon, 44)}
         <span class="row-main">${W.nicknames ? `<span class="h-small italic">${esc(cat.nickname)}</span>` : ''}<span>${esc(cat.hint)}</span></span></div>
-      <span class="label">All time${foodId ? ` · ${foodType(foodId).label}` : ''}</span>
+      <span class="label">${esc(periodTitle(period))}${foodId ? ` · ${foodType(foodId).label}` : ''}</span>
       <p class="total">${format(groups.reduce((a, g) => a + g.totalCents, 0))}</p>
-      <p class="small soft">${count === 1 ? '1 expense' : `${count} expenses`} in ${groups.length === 1 ? '1 month' : `${groups.length} months`}</p>`)}
+      <p class="small soft">${count === 1 ? '1 expense' : `${count} expenses`}${period.length === 7 ? '' : ` in ${groups.length === 1 ? '1 month' : `${groups.length} months`}`}</p>`)}
     ${foodChips}
     ${groups.length ? '' : hint(W.categoryEmpty)}
     ${groups.map((g) => `<div class="group-head"><span class="h-small">${monthTitle(g.month)}</span><b>${format(g.totalCents)}</b></div>
@@ -855,8 +864,8 @@ function annalsScreen() {
       <p class="small soft">${esc(facts)}</p>`)}
     ${card(`<h3 class="h-medium">${a.view === 'year' ? 'Month by month' : 'Year by year'}</h3>
       ${s.bars.length ? barChart(s.bars, a.bar) + barInfo : '<p class="soft">Nothing recorded yet.</p>'}`)}
-    ${breakdownCard(s)}
-    ${s.food.totalCents > 0 ? foodCard(s.food) : ''}
+    ${breakdownCard(s, a.view === 'year' ? String(a.year) : '')}
+    ${s.food.totalCents > 0 ? foodCard(s.food, a.view === 'year' ? String(a.year) : '') : ''}
   </main>${tabBar('annals')}`;
 }
 
@@ -905,7 +914,7 @@ function render() {
   switch (r.name) {
     case 'edit': app.innerHTML = editScreen(r.a); break;
     case 'view': app.innerHTML = viewScreen(r.a); break;
-    case 'category': app.innerHTML = categoryScreen(r.a, r.b); break;
+    case 'category': app.innerHTML = categoryScreen(r.a, r.b, r.c ?? ''); break;
     case 'search': app.innerHTML = searchScreen(); break;
     case 'goals': app.innerHTML = goalsScreen(); break;
     case 'settings':
@@ -936,8 +945,8 @@ const actions = {
   'open-month': (el) => { ui.month = el.dataset.month; ui.highlighted = null; navDepth = 0; location.replace('#/'); },
   'open-year': (el) => { ui.annals = { view: 'year', year: Number(el.dataset.year), bar: null }; ui.highlighted = null; render(); },
   day: (el) => { ui.day = el.dataset.day; render(); },
-  category: (el) => go(`#/category/${el.dataset.cat}${el.dataset.food ? `/${el.dataset.food}` : ''}`),
-  'cat-food': (el) => location.replace(`#/category/${route().a}${el.dataset.food ? `/${el.dataset.food}` : ''}`),
+  category: (el) => go(categoryPath(el.dataset.cat, el.dataset.food, el.dataset.period)),
+  'cat-food': (el) => location.replace(categoryPath(route().a, el.dataset.food, route().c)),
   open: (el) => go(`#/view/${encodeURIComponent(el.dataset.id)}`),
   amend: (el) => go(`#/edit/${encodeURIComponent(el.dataset.id)}`),
   export: () => exportCsv(),

@@ -2,12 +2,13 @@ package com.csymvoul.expenses.model
 
 /** [RENT] keeps its code so saved data still loads; on screen it is "Home" (until 1.12 it was "Rent"). */
 enum class Category(val label: String, val hint: String) {
-    RENT("Home", "Rent and shared building costs (κοινόχρηστα)"),
+    RENT("Home", "Rent and shared building costs"),
     SUPERMARKET("Super market", "Groceries and household items"),
     ENTERTAINMENT("Entertainment", "Food, cinema, theatre, etc."),
     BILLS("Bills", "Water, electricity, gas, etc."),
     SHOPPING("Shopping", "Shoes, clothes, jewellery, etc."),
-    FUEL("Fuel", "Petrol (gas), diesel, LPG"),
+    /** Keeps its code so saved data still loads; "Fuel" until 1.14, now all getting about. */
+    FUEL("Transport", "Fuel, tickets (plane, train, metro, bus), taxis, parking"),
     OTHER("Other", "Presents and anything else"),
 }
 
