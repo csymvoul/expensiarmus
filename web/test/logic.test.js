@@ -1334,9 +1334,9 @@ test('Cinzel is drawn at its regular weight everywhere, as on Android (no bold, 
   }
 });
 
-test('the Record expense button is a step smaller: a 24px quill and less padding', () => {
+test('the Record expense button: a 24px quill, as tall as before (13px above and below, 54px in all) and narrower (14px at the sides)', () => {
   const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
   assert.match(css, /\.fab-glyph \{[^}]*width: 24px; height: 24px;/);
-  assert.match(css, /\.fab \.frame-inner\.with-emblem \{ padding-top: 8px; padding-bottom: 8px;/);
-  assert.match(css, /\.fab \.frame-inner \{ --cut: 13px; padding: 13px 20px; \}/);
+  assert.match(css, /\.fab \.frame-inner\.with-emblem \{ padding-top: 13px; padding-bottom: 13px; gap: 6px; \}/);
+  assert.match(css, /\.fab \.frame-inner \{ --cut: 13px; padding: 14px 14px; \}/);
 });

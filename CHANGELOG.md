@@ -1,5 +1,15 @@
 # Changelog
 
+## Web app 1.23.1 and iPhone app 1.20.1 – unreleased (2026-11-26)
+
+Android stays at 1.22.0.
+
+### Changed
+- **Record expense is as tall as it was before 1.23.0 but shorter in length:** 13px above and below the 24px quill (54px in all, as with the old 30px quill), 14px at the sides (was 20px) and 6px between the quill and the words (was 8px).
+
+### Tests
+- Web 104 (the button's test updated). All passing. Not checked in a browser this time: the local web server couldn't be started.
+
 ## Web app 1.23.0 and iPhone app 1.20.0 – unreleased (2026-11-26)
 
 Android stays at 1.22.0 (nothing changes there).

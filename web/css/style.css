@@ -358,10 +358,10 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.45)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
 }
 .fab .frame { --cut: 14px; }
-.fab .frame-inner { --cut: 13px; padding: 13px 20px; }
+.fab .frame-inner { --cut: 13px; padding: 14px 14px; }
 .fab .frame-inner::before { --cut: 10px; }
 /* Record expense's quill, drawn without a badge: gold on the burgundy button by day, bronze on the gold one at night. */
-.fab .frame-inner.with-emblem { padding-top: 8px; padding-bottom: 8px; gap: 8px; }
+.fab .frame-inner.with-emblem { padding-top: 13px; padding-bottom: 13px; gap: 6px; }
 .fab-glyph { flex: none; display: block; width: 24px; height: 24px; background: var(--fab-glyph) center / contain no-repeat; }
 
 /* Forms */
