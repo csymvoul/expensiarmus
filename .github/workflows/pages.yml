@@ -38,5 +38,9 @@ jobs:
       - uses: actions/upload-pages-artifact@v5
         with:
           path: web
+      # GitHub can take a few seconds to list a freshly uploaded artifact; deploying at once then
+      # fails with "No artifacts named github-pages were found". Give it time first.
+      - name: Wait for the artifact to be listed
+        run: sleep 15
       - id: deployment
         uses: actions/deploy-pages@v5

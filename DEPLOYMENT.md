@@ -57,7 +57,7 @@ The first in-app update asks once to allow installs from Expensiarmus (Android's
 
 ## Web app (iPhone)
 
-The web app in `web/` is published to GitHub Pages at https://csymvoul.github.io/expensiarmus/ by the workflow `.github/workflows/pages.yml`. Every push to `main` that changes `web/` runs the tests and then deploys. It can also be started by hand from the repository's **Actions** tab ("Deploy web app to GitHub Pages" → Run workflow).
+The web app in `web/` is published to GitHub Pages at https://csymvoul.github.io/expensiarmus/ by the workflow `.github/workflows/pages.yml`. Every push to `main` that changes `web/` runs the tests and then deploys (waiting 15 seconds after uploading, so GitHub has listed the upload before it is deployed). It can also be started by hand from the repository's **Actions** tab ("Deploy web app to GitHub Pages" → Run workflow).
 
 One-time setup (already done): in the repository's **Settings → Pages**, the source is **GitHub Actions**.
 

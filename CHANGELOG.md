@@ -1,5 +1,13 @@
 # Changelog
 
+## Deployment (2026-11-26)
+
+### Fixed
+- **github.io deploys failing with "No artifacts named github-pages were found".** The upload worked, but GitHub listed the new artifact a few seconds late and the deploy step gave up first. The workflow now waits 15 seconds between the upload and the deploy. Web 1.23.1 (the shorter Record expense button) was stuck behind this.
+
+### Tests
+- Web 105 (1 new: the wait sits between the upload and the deploy). All passing.
+
 ## Web app 1.23.1 and iPhone app 1.20.1 – unreleased (2026-11-26)
 
 Android stays at 1.22.0.

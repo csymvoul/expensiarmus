@@ -1340,3 +1340,11 @@ test('the Record expense button: a 24px quill, as tall as before (13px above and
   assert.match(css, /\.fab \.frame-inner\.with-emblem \{ padding-top: 13px; padding-bottom: 13px; gap: 6px; \}/);
   assert.match(css, /\.fab \.frame-inner \{ --cut: 13px; padding: 14px 14px; \}/);
 });
+
+test('the Pages workflow waits for the uploaded artifact before deploying it', () => {
+  const wf = readFileSync(new URL('../../.github/workflows/pages.yml', import.meta.url), 'utf8');
+  const upload = wf.indexOf('actions/upload-pages-artifact');
+  const wait = wf.indexOf('run: sleep 15');
+  const deploy = wf.indexOf('actions/deploy-pages');
+  assert.ok(upload > 0 && wait > upload && deploy > wait, 'upload, then wait, then deploy');
+});
