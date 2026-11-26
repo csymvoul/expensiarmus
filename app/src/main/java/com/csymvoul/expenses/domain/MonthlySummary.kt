@@ -86,14 +86,6 @@ data class MonthlySummary(
     val totalGoal: GoalProgress? = null,
 ) {
     companion object {
-        /**
-         * The month as the full list shows it: everything, or without the trips' expenses. Without them the
-         * wards are left out, since a ward always counts everything spent and would read wrong against part of it.
-         */
-        fun forList(data: AppData, month: YearMonth, leaveTripsOut: Boolean): MonthlySummary =
-            if (!leaveTripsOut) of(data, month)
-            else of(data.copy(expenses = data.expenses.filter { it.tripId == null }, goals = com.csymvoul.expenses.model.Goals()), month)
-
         fun of(data: AppData, month: YearMonth): MonthlySummary {
             val inMonth = data.expenses
                 .filter { YearMonth.from(it.date) == month }

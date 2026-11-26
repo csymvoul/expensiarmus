@@ -1,7 +1,7 @@
 // Expensiarmus web app: screens, navigation and event handling. Logic lives in the other modules.
 import { CATEGORIES, FOOD_TYPES, TAB_ICONS, EMBLEMS, WHOLE_MONTH, goalKey, withoutEmoji, category, foodType, makeExpense, myShareCents, isSplit, splitLine, upsert, remove, find, monthOf } from './model.js';
 import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
-import { monthlySummary, listSummary, describeGoal, goalProgress, yearSummary, allTimeSummary, monthRecap, recapText, recapMonthFor } from './summary.js';
+import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary, monthRecap, recapText, recapMonthFor } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
 import { dailyTotals, onDay, calendarCells, byCategory, byDay, inPeriod, isFavorite, toggleFavorite, MAX_FAVORITES, saveFavorite, removeFavoriteAt, search, shiftMonth, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
 import { toCsv, importCsv, importSummary } from './csv.js';
@@ -326,7 +326,7 @@ function listDay(d) {
     ${open ? `<div class="list">${d.expenses.map((e) => expenseRow(e)).join('')}</div>` : ''}`;
 }
 
-/** A month's full list: where the gold went, then the days (closed until tapped), with or without trips. */
+/** A month's full list: the days (closed until tapped), with or without trips. The categories are on the Ledger. */
 function monthListScreen(month) {
   const m = /^\d{4}-\d{2}$/.test(month ?? '') ? month : ui.month;
   const all = data.expenses.filter((e) => monthOf(e.date) === m);
@@ -335,7 +335,6 @@ function monthListScreen(month) {
   const hasTrips = without.length !== all.length;
   const shown = hasTrips && ui.monthListTrips === 'without' ? without : all;
   const days = byDay(shown);
-  const s = listSummary(data, m, hasTrips && ui.monthListTrips === 'without');
   const toggle = hasTrips
     ? `<div class="segmented small-seg"><button class="${ui.monthListTrips !== 'without' ? 'on' : ''}" data-action="month-trips" data-v="with">With ${W.trips.toLowerCase()} · ${format(sum(all))}</button>
         <button class="${ui.monthListTrips === 'without' ? 'on' : ''}" data-action="month-trips" data-v="without">Without · ${format(sum(without))}</button></div>`
@@ -346,7 +345,6 @@ function monthListScreen(month) {
       <p class="total">${format(sum(shown))}</p>
       <p class="small soft">${shown.length === 1 ? '1 expense' : `${shown.length} expenses`}${hasTrips && ui.monthListTrips === 'without' ? `, without ${W.trips.toLowerCase()}` : ''}</p>`)}
     ${toggle}
-    ${s.totalCents > 0 ? breakdownCard(s, m) : ''}
     ${days.length ? days.map(listDay).join('') : hint(W.ledgerEmpty)}
   </main>`;
 }

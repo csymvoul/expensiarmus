@@ -9,10 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.rotate
 import com.csymvoul.expenses.domain.DayGroup
-import com.csymvoul.expenses.domain.MonthlySummary
 import com.csymvoul.expenses.model.AppData
-import com.csymvoul.expenses.model.Category
-import com.csymvoul.expenses.model.FoodType
 import java.time.LocalDate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -57,8 +54,8 @@ private val monthTitle = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH
 private val dayTitle = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH)
 
 /**
- * A month's full list: where the gold went (the Ledger's category card), then the days, each closed until
- * tapped, with or without the expenses of trips. [openDays] is kept by the caller so it survives a visit to an expense.
+ * A month's full list: the days, each closed until tapped, with or without the expenses of trips
+ * (the categories are on the Ledger). [openDays] is kept by the caller so it survives a visit to an expense.
  */
 @Composable
 fun MonthListScreen(
@@ -67,7 +64,6 @@ fun MonthListScreen(
     openDays: Set<LocalDate>,
     onToggleDay: (LocalDate) -> Unit,
     onOpen: (String) -> Unit,
-    onCategory: (Category, FoodType?) -> Unit,
     onBack: () -> Unit,
 ) {
     val w = LocalWords.current
@@ -78,7 +74,6 @@ fun MonthListScreen(
     val leaveOut = hasTrips && !withTrips
     val shown = if (leaveOut) without else expenses
     val days = remember(shown) { ExpenseQueries.byDay(shown) }
-    val summary = remember(data, month, leaveOut) { MonthlySummary.forList(data, month, leaveOut) }
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
@@ -116,9 +111,6 @@ fun MonthListScreen(
                         }
                     }
                 }
-            }
-            if (summary.totalCents > 0) {
-                item(key = "where") { BreakdownCard(summary.categories, summary.totalCents, "$month-$leaveOut", onCategory, period = month.toString()) }
             }
             if (days.isEmpty()) {
                 item { Text(w.ledgerEmpty, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp)) }

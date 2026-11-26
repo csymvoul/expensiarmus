@@ -32,36 +32,13 @@ class MonthListTest {
         assertTrue(detail.contains("expense.category.icon)") && detail.contains("it.icon)") && detail.contains("R.drawable.emblem_trip)"))
     }
 
-    @Test fun `the full list sums the month by category, leaving the wards out when trips are left out`() {
-        val goals = com.csymvoul.expenses.model.Goals().set(Category.OTHER, java.time.YearMonth.of(2026, 11), 5_000, onwards = true)
-        val data = com.csymvoul.expenses.model.AppData(
-            expenses = listOf(
-                Expense("a", LocalDate.parse("2026-11-21"), "Trattoria", 6_000, Category.ENTERTAINMENT, 100, FoodType.DINE_OUT, "rome"),
-                Expense("c", LocalDate.parse("2026-11-05"), "Gift", 2_000, Category.OTHER),
-            ),
-            goals = goals,
-        )
-        val nov = java.time.YearMonth.of(2026, 11)
-        val all = MonthlySummary.forList(data, nov, leaveTripsOut = false)
-        assertEquals(8_000L, all.totalCents)
-        assertEquals(6_000L, all.categories.first { it.category == Category.ENTERTAINMENT }.spentCents)
-        assertEquals(5_000L, all.categories.first { it.category == Category.OTHER }.goal?.goalCents)
-        val without = MonthlySummary.forList(data, nov, leaveTripsOut = true)
-        assertEquals(2_000L, without.totalCents)
-        assertEquals(0L, without.categories.first { it.category == Category.ENTERTAINMENT }.spentCents)
-        assertEquals(null, without.categories.first { it.category == Category.OTHER }.goal)
-        assertEquals(null, without.totalGoal)
-    }
-
-    @Test fun `the full list shows the category card and days that open when tapped, kept across an expense visit`() {
+    @Test fun `the full list has no category card (that is on the Ledger), and its days open when tapped, kept across an expense visit`() {
         val screen = File("src/main/java/com/csymvoul/expenses/ui/screens/MonthListScreen.kt").readText()
-        assertTrue(screen.contains("MonthlySummary.forList(data, month, leaveOut)"))
-        assertTrue(screen.contains("BreakdownCard(summary.categories, summary.totalCents"))
+        assertFalse(screen.contains("BreakdownCard") || screen.contains("DonutChart"))
         // A day's expenses are listed only while it is open.
         assertTrue(Regex("""if \(open\) \{\s+items\(d\.expenses""").containsMatchIn(screen))
         val main = File("src/main/java/com/csymvoul/expenses/MainActivity.kt").readText()
         assertTrue(main.contains("onToggleDay = { d -> listOpenDays = if (d in listOpenDays) listOpenDays - d else listOpenDays + d }"))
         assertTrue(main.contains("onOpenMonthList = { listOpenDays = emptySet(); push(ALL + it) }"))
-        assertTrue(main.contains("onCategory = { c, t -> push(categoryRoute(c, t, listMonth.toString())) }"))
     }
 }

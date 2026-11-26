@@ -1349,30 +1349,10 @@ test('the Pages workflow waits for the uploaded artifact before deploying it', (
   assert.ok(upload > 0 && wait > upload && deploy > wait, 'upload, then wait, then deploy');
 });
 
-test('the full list sums the month by category, leaving the wards out when trips are left out', async () => {
-  const { listSummary } = await import('../js/summary.js');
-  const { setGoal } = await import('../js/goals.js');
-  const data = {
-    ...emptyData(),
-    expenses: [{ ...e('2026-11-21', 6000, 'ENTERTAINMENT', 100, 'DINE_OUT', 'Trattoria'), tripId: 'rome' }, e('2026-11-05', 2000, 'OTHER', 100, null, 'Gift')],
-    goals: setGoal(emptyData().goals, 'OTHER', '2026-11', 5000, true),
-  };
-  const all = listSummary(data, '2026-11', false);
-  assert.equal(all.totalCents, 8000);
-  assert.equal(all.categories.find((c) => c.category === 'ENTERTAINMENT').spentCents, 6000);
-  assert.equal(all.categories.find((c) => c.category === 'OTHER').goal.goalCents, 5000);
-  const without = listSummary(data, '2026-11', true);
-  assert.equal(without.totalCents, 2000);
-  assert.equal(without.categories.find((c) => c.category === 'ENTERTAINMENT').spentCents, 0);
-  assert.equal(without.categories.find((c) => c.category === 'OTHER').goal, null);
-  assert.equal(without.totalGoal, null);
-});
-
-test('the full list shows the category card and days that open when tapped', () => {
+test('the full list has no category card (that is on the Ledger), and its days open when tapped', () => {
   const app = readFileSync(webFile('js/app.js'), 'utf8');
   const screen = app.slice(app.indexOf('function listDay('), app.indexOf('function glanceCard('));
-  assert.match(screen, /const s = listSummary\(data, m, hasTrips && ui\.monthListTrips === 'without'\);/);
-  assert.match(screen, /\$\{s\.totalCents > 0 \? breakdownCard\(s, m\) : ''\}/);
+  assert.doesNotMatch(screen, /breakdownCard|donut\(/);
   assert.match(screen, /days\.map\(listDay\)/);
   // A day's expenses are drawn only when it is open; the header always shows the count and total.
   assert.match(screen, /\$\{open \? `<div class="list">\$\{d\.expenses\.map\(\(e\) => expenseRow\(e\)\)\.join\(''\)\}<\/div>` : ''\}/);

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.23.1 (Android), web app 1.24.1 and iPhone app 1.21.1 – unreleased (2026-11-26)
+
+### Changed
+- **The full list no longer repeats the category card.** The chart and categories added in 1.23.0 are taken out again (the Ledger already has them); the list keeps its total, the With / Without trips switch and the days that fold up.
+
+### Tests
+- Android 212, web 106 (the two summary tests removed with the card; the wiring tests now check the card is absent). All passing. Checked in a browser at phone size.
+
 ## 1.23.0 (Android), web app 1.24.0 and iPhone app 1.21.0 – unreleased (2026-11-26)
 
 ### Changed

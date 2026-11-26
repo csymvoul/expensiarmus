@@ -238,8 +238,6 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                     openDays = listOpenDays,
                     onToggleDay = { d -> listOpenDays = if (d in listOpenDays) listOpenDays - d else listOpenDays + d },
                     onOpen = { push(VIEW + it) },
-                    // As on the Ledger: a category opens for that month.
-                    onCategory = { c, t -> push(categoryRoute(c, t, listMonth.toString())) },
                     onBack = ::pop,
                 )
             }
