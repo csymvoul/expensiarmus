@@ -1,5 +1,7 @@
 package com.csymvoul.expenses.ui.screens
 
+import com.csymvoul.expenses.ui.components.EmblemBadge
+import com.csymvoul.expenses.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,6 +18,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import com.csymvoul.expenses.ui.components.ChipEmblem
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.lazy.items
+import com.csymvoul.expenses.ui.components.WizardButton
+import com.csymvoul.expenses.domain.TripSummary
 import com.csymvoul.expenses.ui.components.Tab
 import com.csymvoul.expenses.ui.components.TodayGlyph
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -45,7 +52,7 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-enum class AnnalsView { YEAR, ALL_TIME }
+enum class AnnalsView { YEAR, ALL_TIME, TRIPS }
 
 private val monthFormat = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)
 private val shortMonth = DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH)
@@ -66,6 +73,10 @@ fun AnnalsScreen(
     onOpenMonth: (YearMonth) -> Unit,
     onOpenYear: (Int) -> Unit,
     onCategory: (Category, FoodType?) -> Unit,
+    /** Annals → Trips: every trip, newest first. */
+    trips: List<TripSummary>,
+    onOpenTrip: (String) -> Unit,
+    onEditTrips: () -> Unit,
     bottomBar: @Composable () -> Unit,
 ) {
     val w = LocalWords.current
@@ -104,10 +115,41 @@ fun AnnalsScreen(
                             selected = view == v,
                             onClick = { onViewChange(v) },
                             shape = SegmentedButtonDefaults.itemShape(i, AnnalsView.entries.size),
-                            icon = { ChipEmblem(if (v == AnnalsView.YEAR) Tab.CALENDAR.icon else Tab.ANNALS.icon) },
-                        ) { Text(if (v == AnnalsView.YEAR) "By year" else "All time") }
+                            icon = {
+                                when (v) {
+                                    AnnalsView.YEAR -> ChipEmblem(Tab.CALENDAR.icon)
+                                    AnnalsView.ALL_TIME -> ChipEmblem(Tab.ANNALS.icon)
+                                    AnnalsView.TRIPS -> ChipEmblem(R.drawable.emblem_trip)
+                                }
+                            },
+                        ) {
+                            Text(
+                                when (v) {
+                                    AnnalsView.YEAR -> "By year"
+                                    AnnalsView.ALL_TIME -> "All time"
+                                    AnnalsView.TRIPS -> w.trips
+                                },
+                                maxLines = 1,
+                            )
+                        }
                     }
                 }
+            }
+            if (view == AnnalsView.TRIPS) {
+                if (trips.isEmpty()) {
+                    item {
+                        Text("No ${w.trips.lowercase()} yet. Add one in Settings → ${w.trips}.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp))
+                    }
+                }
+                items(trips, key = { it.trip.id }) { s -> TripCard(s, onClick = { onOpenTrip(s.trip.id) }) }
+                item {
+                    WizardButton(onClick = onEditTrips, modifier = Modifier.fillMaxWidth()) {
+                        EmblemBadge(R.drawable.emblem_trip, size = 24.dp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(if (trips.isEmpty()) w.newTrip else "Edit ${w.trips.lowercase()}")
+                    }
+                }
+                return@LazyColumn
             }
             if (view == AnnalsView.YEAR) {
                 item {

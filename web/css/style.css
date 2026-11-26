@@ -161,6 +161,11 @@ p { margin: 4px 0; }
 .bar h1 { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
 .bar h1 span { overflow: hidden; text-overflow: ellipsis; }
 .bar-icon { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--gold); object-fit: cover; }
+.trip-chips { align-items: center; }
+.trip-label { display: inline-flex; align-items: center; margin-right: 2px; }
+.two-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.small-seg button { font-size: 12px; padding: 8px 6px; }
+.trip-cats { display: flex; flex-direction: column; gap: 8px; }
 .check-glyph { flex: none; display: block; width: 32px; height: 32px; background: var(--check-glyph) center / contain no-repeat; }
 .star-on.title-glyph { width: 26px; height: 26px; }
 .today-glyph { flex: none; display: block; width: 30px; height: 30px; background: var(--today-glyph) center / contain no-repeat; }

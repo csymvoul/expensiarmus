@@ -37,6 +37,7 @@ import com.csymvoul.expenses.domain.ExpenseDetails
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.ui.components.EmblemBadge
+import com.csymvoul.expenses.ui.components.LocalTripNames
 import com.csymvoul.expenses.ui.components.StarGlyph
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.ParchmentCard
@@ -122,6 +123,7 @@ fun ExpenseDetailScreen(
                 DetailRow("Category", "${expense.category.emoji} ${expense.category.label}", expense.category.nickname.takeIf { w.nicknames })
                 expense.foodType?.let { DetailRow("Food", "${it.emoji} ${it.label}", it.nickname.takeIf { w.nicknames }) }
                 DetailRow("Split", ExpenseDetails.splitLine(expense))
+                expense.tripId?.let { LocalTripNames.current[it] }?.let { DetailRow(w.trip, it, null) }
             }
             WizardButton(onClick = { onEdit(expense.id) }, modifier = Modifier.fillMaxWidth()) {
                 Text(w.amend)

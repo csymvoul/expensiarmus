@@ -23,6 +23,8 @@ data class Expense(
     val myPercent: Int = 100,
     /** Set only for food expenses, which are always [Category.ENTERTAINMENT]. */
     val foodType: FoodType? = null,
+    /** The trip this expense also belongs to (it keeps its category and month), or null. */
+    val tripId: String? = null,
 ) {
     init {
         require(amountCents >= 0) { "amount must not be negative" }
@@ -108,6 +110,16 @@ data class Goals(
     }
 }
 
+/** A trip: a name, its first and last day, and an optional total budget. Expenses point to it by [id]. */
+@Serializable
+data class Trip(
+    val id: String,
+    val name: String,
+    @Serializable(with = LocalDateSerializer::class) val start: LocalDate,
+    @Serializable(with = LocalDateSerializer::class) val end: LocalDate,
+    val budgetCents: Long? = null,
+)
+
 /** A starting point for a new expense: title, category, food type and split, never an amount. */
 @Serializable
 data class Favorite(
@@ -132,6 +144,8 @@ data class AppData(
     val favorites: List<Favorite> = emptyList(),
     /** The month ("2026-10") whose recap card was dismissed on the Ledger. */
     val recapDismissed: String? = null,
+    /** Trips, newest first. */
+    val trips: List<Trip> = emptyList(),
 ) {
     fun upsert(expense: Expense) = copy(expenses = expenses.filterNot { it.id == expense.id } + expense)
 

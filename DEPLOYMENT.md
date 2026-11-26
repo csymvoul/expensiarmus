@@ -165,7 +165,7 @@ swiftc -O -o /tmp/cut-glyph art/cut-glyph.swift
 
 Copy both to `web/icons/emblems/` and as `emblem_search_dark.png` / `emblem_search_light.png` to `app/src/main/res/drawable-nodpi/`.
 
-The Apparate emblem is vector art (`art/emblem-apparate.svg`). To redraw its picture, render it at 384 pixels with Quick Look and scale it to 192 (set the SVG's `width` and `height` to 384 first, or Quick Look draws it into a corner):
+The Apparate and trip emblems are vector art (`art/emblem-apparate.svg`, `art/emblem-trip.svg`). To redraw its picture, render it at 384 pixels with Quick Look and scale it to 192 (set the SVG's `width` and `height` to 384 first, or Quick Look draws it into a corner):
 
 ```bash
 qlmanage -t -s 384 -o /tmp art/emblem-apparate.svg && sips -s format png -z 192 192 /tmp/emblem-apparate.svg.png --out /tmp/set_apparate.png

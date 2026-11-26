@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="384" height="384">
+<defs>
+ <radialGradient id="bg" cx="50%" cy="45%" r="70%"><stop offset="0" stop-color="#4A1016"/><stop offset="1" stop-color="#2A070A"/></radialGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7DE94"/><stop offset=".55" stop-color="#D9A441"/><stop offset="1" stop-color="#9C6A1C"/></linearGradient>
+ <linearGradient id="leather" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9A5A2A"/><stop offset=".6" stop-color="#6E3B17"/><stop offset="1" stop-color="#4A250C"/></linearGradient>
+ <radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFE7A3" stop-opacity=".8"/><stop offset=".5" stop-color="#E0B656" stop-opacity=".3"/><stop offset="1" stop-color="#E0B656" stop-opacity="0"/></radialGradient>
+ <radialGradient id="spark" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFF6D6"/><stop offset="1" stop-color="#E0B656"/></radialGradient>
+</defs>
+<rect width="192" height="192" fill="url(#bg)"/>
+<ellipse cx="96" cy="156" rx="66" ry="14" fill="url(#glow)"/>
+<!-- the trail it apparated along -->
+<path d="M24,128 C40,70 120,40 170,60" fill="none" stroke="url(#gold)" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 9" opacity=".85"/>
+<!-- handle -->
+<path d="M78,74 V64 Q78,56 86,56 H106 Q114,56 114,64 V74" fill="none" stroke="url(#gold)" stroke-width="7" stroke-linecap="round"/>
+<!-- trunk -->
+<rect x="38" y="74" width="116" height="78" rx="12" fill="url(#leather)" stroke="#9C6A1C" stroke-width="2.5"/>
+<rect x="38" y="104" width="116" height="9" fill="url(#gold)"/>
+<rect x="62" y="74" width="10" height="78" fill="url(#gold)"/><rect x="120" y="74" width="10" height="78" fill="url(#gold)"/>
+<path d="M38,88 V86 Q38,74 50,74 H54 V82 Q46,82 46,90 V92 H38Z" fill="url(#gold)"/>
+<path d="M154,88 V86 Q154,74 142,74 H138 V82 Q146,82 146,90 V92 H154Z" fill="url(#gold)"/>
+<path d="M38,138 V140 Q38,152 50,152 H54 V144 Q46,144 46,136 V134 H38Z" fill="url(#gold)"/>
+<path d="M154,138 V140 Q154,152 142,152 H138 V144 Q146,144 146,136 V134 H154Z" fill="url(#gold)"/>
+<rect x="88" y="98" width="16" height="20" rx="3" fill="url(#gold)" stroke="#7A4E12" stroke-width="1.5"/>
+<circle cx="96" cy="108" r="2.5" fill="#4A250C"/>
+<!-- luggage tag -->
+<path d="M130,74 C138,68 146,70 150,64" fill="none" stroke="url(#gold)" stroke-width="2"/>
+<path d="M146,50 L162,56 L158,70 L142,64 Z" fill="#F3E2B3" stroke="#9C6A1C" stroke-width="1.5"/>
+<circle cx="149" cy="57" r="1.8" fill="#9C6A1C"/>
+<path d="M150,62 L157,65" stroke="#8A6A3A" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M36.0,36.0 L38.0,44.0 L46.0,46.0 L38.0,48.0 L36.0,56.0 L34.0,48.0 L26.0,46.0 L34.0,44.0Z" fill="url(#spark)"/><path d="M158.0,32.0 L159.6,38.4 L166.0,40.0 L159.6,41.6 L158.0,48.0 L156.4,41.6 L150.0,40.0 L156.4,38.4Z" fill="url(#spark)"/><path d="M166.0,90.5 L167.1,94.9 L171.5,96.0 L167.1,97.1 L166.0,101.5 L164.9,97.1 L160.5,96.0 L164.9,94.9Z" fill="url(#spark)"/><path d="M28.0,99.0 L29.0,103.0 L33.0,104.0 L29.0,105.0 L28.0,109.0 L27.0,105.0 L23.0,104.0 L27.0,103.0Z" fill="url(#spark)"/><path d="M132.0,17.5 L132.9,21.1 L136.5,22.0 L132.9,22.9 L132.0,26.5 L131.1,22.9 L127.5,22.0 L131.1,21.1Z" fill="url(#spark)"/><circle cx="60" cy="26" r="1.7" fill="#F6E3A8"/><circle cx="150" cy="66" r="1.5" fill="#F6E3A8"/><circle cx="44" cy="78" r="1.3" fill="#F6E3A8"/><circle cx="172" cy="72" r="1.2" fill="#F6E3A8"/><circle cx="22" cy="74" r="1.1" fill="#F6E3A8"/>
+</svg>

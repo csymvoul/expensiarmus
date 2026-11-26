@@ -15,6 +15,8 @@ import com.csymvoul.expenses.model.AppData
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.Favorite
+import com.csymvoul.expenses.model.Trip
+import com.csymvoul.expenses.domain.Trips
 import com.csymvoul.expenses.domain.Favorites
 import com.csymvoul.expenses.reminder.GoalNotifier
 import com.csymvoul.expenses.widget.LedgerWidget
@@ -61,6 +63,16 @@ class ExpenseViewModel(app: Application) : AndroidViewModel(app) {
         r.list?.let { list -> update { it.copy(favorites = list) } }
         return r.error
     }
+
+    /** Adds or changes a trip; returns what to fix, or null when saved. */
+    fun saveTrip(trip: Trip): String? {
+        val r = Trips.save(_state.value.trips, trip)
+        r.list?.let { list -> update { it.copy(trips = list) } }
+        return r.error
+    }
+
+    /** Deletes a trip; its expenses stay, no longer tied to it. */
+    fun deleteTrip(id: String) = update { Trips.delete(it, id) }
 
     /** Hides the Ledger's recap card for [month] ("2026-10"). */
     fun dismissRecap(month: String) = update { it.copy(recapDismissed = month) }

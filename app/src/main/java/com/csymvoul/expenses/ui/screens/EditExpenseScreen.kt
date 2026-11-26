@@ -4,6 +4,7 @@ import com.csymvoul.expenses.ui.components.ChipEmblem
 import com.csymvoul.expenses.ui.components.StarGlyph
 import com.csymvoul.expenses.ui.components.CheckGlyph
 import com.csymvoul.expenses.model.Favorite
+import com.csymvoul.expenses.model.Trip
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -81,6 +82,9 @@ fun EditExpenseScreen(
     prefill: QuickPrefill?,
     /** Shown for a new expense: one tap fills in a favourite's title, category and split. */
     favorites: List<Favorite>,
+    /** Trips to offer (not over yet, plus the expense's own); [defaultTrip] is the one on today. */
+    trips: List<Trip>,
+    defaultTrip: String?,
     onSave: (Expense) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -93,6 +97,7 @@ fun EditExpenseScreen(
     val handedPercent = prefill?.myPercent?.takeIf { existing == null && it < 100 }
     var split by rememberSaveable { mutableStateOf(existing?.isSplit ?: (handedPercent != null)) }
     var myPercent by rememberSaveable { mutableIntStateOf(existing?.takeIf { it.isSplit }?.myPercent ?: handedPercent ?: 50) }
+    var tripId by rememberSaveable { mutableStateOf(if (existing != null) existing.tripId else if (prefill != null) prefill.tripId else defaultTrip) }
     var showErrors by rememberSaveable { mutableStateOf(false) }
     var pickingDate by remember { mutableStateOf(false) }
 
@@ -111,6 +116,7 @@ fun EditExpenseScreen(
                     category = category,
                     myPercent = if (split) myPercent.coerceIn(1, 99) else 100,
                     foodType = if (category == Category.ENTERTAINMENT) foodType else null,
+                    tripId = tripId,
                 ),
             )
         } else {
@@ -199,6 +205,7 @@ fun EditExpenseScreen(
                 Text(date.format(dateFormat))
             }
 
+            TripChips(trips, tripId) { tripId = it }
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Category", style = MaterialTheme.typography.titleSmall)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

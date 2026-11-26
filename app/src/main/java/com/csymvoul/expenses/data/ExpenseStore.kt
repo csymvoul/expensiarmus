@@ -1,6 +1,7 @@
 package com.csymvoul.expenses.data
 
 import com.csymvoul.expenses.domain.Favorites
+import com.csymvoul.expenses.domain.Trips
 
 import com.csymvoul.expenses.model.AppData
 import kotlinx.serialization.json.Json
@@ -19,7 +20,7 @@ class ExpenseStore(private val file: File) {
         if (!file.exists()) return AppData()
         return try {
             json.decodeFromString(AppData.serializer(), file.readText())
-                .let { it.copy(goals = it.goals.migrated(), favorites = Favorites.cleaned(it.favorites)) }
+                .let { Trips.cleaned(it.copy(goals = it.goals.migrated(), favorites = Favorites.cleaned(it.favorites))) }
         } catch (e: Exception) {
             // Keep the unreadable file so the next save does not destroy it.
             file.copyTo(File(file.parentFile, "${file.name}.corrupt-${System.currentTimeMillis()}"), overwrite = true)

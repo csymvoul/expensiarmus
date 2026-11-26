@@ -1,5 +1,6 @@
 import { emptyData, makeExpense, category, foodType } from './model.js';
 import { migrateGoals } from './goals.js';
+import { loadTrips } from './trips.js';
 
 const KEY = 'expensiarmus.data.v1';
 
@@ -20,8 +21,15 @@ export function load(storage) {
         // skip a broken entry rather than losing everything
       }
     }
+    // Trips, and expenses tied to a trip that no longer exists lose the tie.
+    const trips = loadTrips(parsed.trips);
+    const tripIds = new Set(trips.map((t) => t.id));
+    for (let i = 0; i < expenses.length; i++) {
+      if (expenses[i].tripId && !tripIds.has(expenses[i].tripId)) expenses[i] = (({ tripId, ...rest }) => rest)(expenses[i]);
+    }
     return {
       expenses,
+      trips,
       goals: migrateGoals(parsed.goals),
       alertsSent: Array.isArray(parsed.alertsSent) ? parsed.alertsSent : [],
       // The month whose recap card was dismissed on the Ledger.

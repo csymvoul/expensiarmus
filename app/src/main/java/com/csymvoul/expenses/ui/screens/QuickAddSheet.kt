@@ -58,6 +58,7 @@ import com.csymvoul.expenses.ui.components.WizardButton
 import com.csymvoul.expenses.ui.components.ChipEmblem
 import com.csymvoul.expenses.ui.components.StarGlyph
 import com.csymvoul.expenses.model.Favorite
+import com.csymvoul.expenses.model.Trip
 import com.csymvoul.expenses.ui.components.Tab
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.theme.color
@@ -79,6 +80,8 @@ data class QuickPrefill(
     val category: Category? = null,
     val foodType: FoodType? = null,
     val myPercent: Int? = null,
+    /** The trip Quick add had ticked (null: none). */
+    val tripId: String? = null,
 )
 
 /**
@@ -90,6 +93,9 @@ data class QuickPrefill(
 @Composable
 fun QuickAddSheet(
     favorites: List<Favorite>,
+    /** Trips not over yet; [initialTrip] (the one on today) starts ticked. */
+    trips: List<Trip>,
+    initialTrip: String?,
     date: LocalDate,
     onSave: (Expense) -> Unit,
     onMore: (QuickPrefill) -> Unit,
@@ -106,6 +112,7 @@ fun QuickAddSheet(
     var pickedFood by rememberSaveable { mutableStateOf<FoodType?>(null) }
     var share by rememberSaveable { mutableIntStateOf(100) }
     var favIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    var tripId by rememberSaveable { mutableStateOf(initialTrip) }
     val greek = Money.style == MoneyStyle.GREEK
 
     fun key(k: String) {
@@ -150,6 +157,7 @@ fun QuickAddSheet(
                 category = category,
                 myPercent = share,
                 foodType = pickedFood,
+                tripId = tripId,
             ),
         )
     }
@@ -220,6 +228,7 @@ fun QuickAddSheet(
                 Spacer(Modifier.width(8.dp))
                 Text(day.format(dayFormat))
             }
+            TripChips(trips, tripId) { tripId = it }
             listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf(Money.decimalKey(), "0", "⌫")).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                     row.forEach { k ->
@@ -266,7 +275,7 @@ fun QuickAddSheet(
                 }
             }
             TextButton(
-                onClick = { onMore(QuickPrefill(title, amount, day, picked, pickedFood, share.takeIf { it < 100 })) },
+                onClick = { onMore(QuickPrefill(title, amount, day, picked, pickedFood, share.takeIf { it < 100 }, tripId)) },
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             ) { Text("More details ›") }
         }

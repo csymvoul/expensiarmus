@@ -37,6 +37,13 @@ import com.csymvoul.expenses.domain.MonthGroup
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.FoodType
 import com.csymvoul.expenses.ui.components.EmblemBadge
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SegmentedButton
 import com.csymvoul.expenses.domain.ExpenseQueries
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.components.ExpenseRow
@@ -59,7 +66,9 @@ fun CategoryScreen(
     foodType: FoodType?,
     /** "2026-11", "2026", or "" for all time: the span the page lists. */
     period: String,
-    groups: List<MonthGroup>,
+    /** The span's expenses grouped by month, with trips and without them. */
+    groupsAll: List<MonthGroup>,
+    groupsWithoutTrips: List<MonthGroup>,
     onFoodType: (FoodType?) -> Unit,
     onOpen: (String) -> Unit,
     onBack: () -> Unit,
@@ -79,6 +88,10 @@ fun CategoryScreen(
             )
         },
     ) { padding ->
+        // With or without trip expenses: shown only when some of the list belongs to a trip.
+        var withTrips by rememberSaveable(category, foodType, period) { mutableStateOf(true) }
+        val hasTrips = groupsAll.any { g -> g.expenses.any { it.tripId != null } }
+        val groups = if (hasTrips && !withTrips) groupsWithoutTrips else groupsAll
         LazyColumn(
             contentPadding = PaddingValues(
                 start = 16.dp,
@@ -120,6 +133,19 @@ fun CategoryScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+            }
+            if (hasTrips) {
+                item {
+                    val w = LocalWords.current
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        SegmentedButton(selected = withTrips, onClick = { withTrips = true }, shape = SegmentedButtonDefaults.itemShape(0, 2)) {
+                            Text("With ${w.trips.lowercase()} · ${Money.format(groupsAll.sumOf { it.totalCents })}", maxLines = 1)
+                        }
+                        SegmentedButton(selected = !withTrips, onClick = { withTrips = false }, shape = SegmentedButtonDefaults.itemShape(1, 2)) {
+                            Text("Without · ${Money.format(groupsWithoutTrips.sumOf { it.totalCents })}", maxLines = 1)
+                        }
+                    }
                 }
             }
             if (category == Category.ENTERTAINMENT) {

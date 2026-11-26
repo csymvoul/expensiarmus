@@ -200,7 +200,7 @@ test('storage round trip', () => {
   assert.deepEqual(load(s), emptyData());
   save(s, data);
   // Data saved before favourites existed loads with none.
-  assert.deepEqual(load(s), { ...data, favorites: [] });
+  assert.deepEqual(load(s), { ...data, favorites: [], trips: [] });
 });
 
 test('corrupt storage is backed up, broken entries are skipped', () => {
@@ -604,7 +604,7 @@ test('withoutEmoji drops a leading emoji and keeps plain labels', () => {
 
 test('logo and Settings emblems exist on disk and are cached offline', () => {
   const sw = readFileSync(webFile('sw.js'), 'utf8');
-  assert.deepEqual(Object.keys(EMBLEMS), ['logo', 'geminio', 'apparate', 'reminder', 'themeSystem', 'themeLight', 'themeDark']);
+  assert.deepEqual(Object.keys(EMBLEMS), ['logo', 'geminio', 'apparate', 'trip', 'reminder', 'themeSystem', 'themeLight', 'themeDark']);
   for (const path of Object.values(EMBLEMS)) {
     assert.ok(existsSync(webFile(path)), `${path} is missing`);
     assert.ok(sw.includes(`'${path}'`), `${path} is not cached`);
@@ -807,7 +807,7 @@ test('Settings has the Apparate card: a CSV picker, a confirmation, and nothing 
   const app = readFileSync(webFile('js/app.js'), 'utf8');
   assert.match(app, /data-action="import"><span class="frame"><span class="frame-inner">\$\{esc\(W\.importButton\)\}/);
   assert.match(app, /<input type="file" id="import-file" accept="\.csv,text\/csv[^"]*" data-input="import-file" hidden>/);
-  assert.match(app, /const ON_CHANGE = \['import-file',/);
+  assert.match(app, /const ON_CHANGE = \[[^\]]*'import-file',/);
   assert.match(app, /card-title">\$\{emblem\(EMBLEMS\.apparate, 36\)\}\$\{esc\(W\.importTitle\)\}/);
   // Reading the file only opens the confirmation; the expenses are committed on "Add".
   const read = app.slice(app.indexOf('async function readImport'), app.indexOf('function deleteModal'));
@@ -1004,7 +1004,7 @@ test('no title suggestions when recording; favourites live in Quick add and on t
   assert.doesNotMatch(app, /function applySuggestion/);
   assert.match(app, /\$\{favStar\(e\)\}<\/div>/);
   assert.match(app, /\$\{favRow\(q\)\}/);
-  assert.match(app, /prefill = \{ title: q\.title, amount: q\.amount, date: q\.date, category: q\.cat, foodType: q\.food, myPercent: q\.pct \}/);
+  assert.match(app, /prefill = \{ title: q\.title, amount: q\.amount, date: q\.date, category: q\.cat, foodType: q\.food, myPercent: q\.pct, tripId: q\.trip \?\? null \}/);
 });
 
 test('Quick add is compact: smaller amount, keys and tiles', () => {
@@ -1082,10 +1082,10 @@ test('favourites have their own page, a Settings card, and show in the full form
   assert.match(app, /'edit-fav': \(el\) => \{[\s\S]*?category: f\.category, foodType: f\.foodType \?\? null, split:/);
 });
 
-test('Settings cards come in the chosen order: Favourites, Owl reminder, Wizard words, Number format, Theme, Geminio, Apparate', () => {
+test('Settings cards come in the chosen order: Favourites, Trips, Owl reminder, Wizard words, Number format, Theme, Geminio, Apparate', () => {
   const app = readFileSync(webFile('js/app.js'), 'utf8');
   const screen = app.slice(app.indexOf('function settingsScreen()'), app.indexOf('// ---------- annals'));
-  const at = ['Favourites</h3>', 'EMBLEMS.reminder', 'Wizard words</h3>', 'Number format</h3>', 'Theme</h3>', 'EMBLEMS.geminio', 'EMBLEMS.apparate'].map((m) => screen.indexOf(m));
+  const at = ['Favourites</h3>', '${esc(W.trips)}</h3>', 'EMBLEMS.reminder', 'Wizard words</h3>', 'Number format</h3>', 'Theme</h3>', 'EMBLEMS.geminio', 'EMBLEMS.apparate'].map((m) => screen.indexOf(m));
   assert.ok(at.every((i) => i > 0), 'every card is there');
   assert.deepEqual([...at].sort((a, b) => a - b), at);
 });
@@ -1113,7 +1113,7 @@ test('the month recap: total, change from the month before, and where most went'
 
 test('the recap card shows on the current Ledger until dismissed, and the iPhone owl brings it on the 1st', () => {
   const app = readFileSync(webFile('js/app.js'), 'utf8');
-  assert.match(app, /body = `\$\{recapCard\(\)\}\$\{totalCard\(s\)\}/);
+  assert.match(app, /body = `\$\{recapCard\(\)\}\$\{tripCard\(\)\}\$\{totalCard\(s\)\}/);
   assert.match(app, /if \(ui\.month !== today\(\)\.slice\(0, 7\)\) return '';/);
   assert.match(app, /if \(data\.recapDismissed === month\) return '';/);
   assert.match(app, /'recap-dismiss': \(el\) => \{ commit\(\{ \.\.\.data, recapDismissed: el\.dataset\.month \}\)/);
@@ -1125,4 +1125,91 @@ test('the recap card shows on the current Ledger until dismissed, and the iPhone
   save(storage, { ...emptyData(), recapDismissed: '2026-10' });
   assert.equal(load(storage).recapDismissed, '2026-10');
   assert.equal(wordsFor(true).recapTitle('October'), "🦉 Owl post: October's ledger is closed");
+});
+
+// --- trips ---
+import { checkTrip, saveTrip, deleteTrip, tripStatus, tripsToOffer, ongoingTrip, withoutTrips, tripSummary } from '../js/trips.js';
+
+const crete = { id: 'crete', name: 'Crete 2027', start: '2027-07-10', end: '2027-07-16', budgetCents: 120000 };
+const rome = { id: 'rome', name: 'Rome', start: '2026-11-20', end: '2026-11-28', budgetCents: null };
+
+test('trips need a name, real dates in order, and a sensible budget; names are unique', () => {
+  assert.equal(checkTrip({ ...crete, name: ' ' }).error, 'Give it a name.');
+  assert.equal(checkTrip({ ...crete, start: '2027-02-30' }).error, 'Pick the first and last day.');
+  assert.equal(checkTrip({ ...crete, end: '2027-07-09' }).error, 'The last day is before the first.');
+  assert.equal(checkTrip({ ...crete, budgetCents: -1 }).error, 'The budget must be an amount, or left empty.');
+  assert.equal(checkTrip({ ...crete, budgetCents: 0 }).trip.budgetCents, null); // 0 means no budget
+  let list = saveTrip([], crete).list;
+  list = saveTrip(list, rome).list;
+  assert.deepEqual(list.map((t) => t.id), ['crete', 'rome']); // newest first
+  assert.equal(saveTrip(list, { ...rome, id: 'other', name: 'ROME' }).error, 'You already have a trip with that name.');
+  assert.equal(saveTrip(list, { ...rome, name: 'Rome & Florence' }).list.find((t) => t.id === 'rome').name, 'Rome & Florence'); // editing keeps the id
+});
+
+test('a trip is upcoming, on (day x of n) or done; ongoing trips are ticked when recording', () => {
+  assert.deepEqual(tripStatus(rome, '2026-11-19'), { state: 'upcoming', days: 9, day: 0, inDays: 1 });
+  assert.deepEqual(tripStatus(rome, '2026-11-22'), { state: 'ongoing', days: 9, day: 3 });
+  assert.deepEqual(tripStatus(rome, '2026-11-29'), { state: 'done', days: 9, day: 9 });
+  assert.deepEqual(tripsToOffer([crete, rome], '2026-11-24').map((t) => t.id), ['rome', 'crete']);
+  assert.deepEqual(tripsToOffer([crete, rome], '2026-12-01').map((t) => t.id), ['crete']);
+  assert.equal(ongoingTrip([crete, rome], '2026-11-24').id, 'rome');
+  assert.equal(ongoingTrip([crete, rome], '2026-12-01'), null);
+});
+
+test('trip expenses count in their category and month, and can be left out', () => {
+  const dinner = e('2026-11-21', 6000, 'ENTERTAINMENT', 50, 'DINE_OUT', 'Trattoria');
+  const tagged = { ...dinner, tripId: 'rome' };
+  assert.deepEqual(makeExpense(tagged), tagged);
+  assert.equal('tripId' in makeExpense(dinner), false); // no trip: no field
+  const home = e('2026-11-05', 2000, 'ENTERTAINMENT', 100, 'DINE_OUT', 'Souvlaki');
+  const data = { expenses: [tagged, home, { ...e('2026-11-22', 1500, 'FUEL', 100, null, 'Taxi'), tripId: 'rome' }], goals: { entries: [] }, trips: [rome] };
+  // The dinner still counts in November's Entertainment…
+  assert.equal(monthlySummary(data, '2026-11').categories.find((c) => c.category === 'ENTERTAINMENT').spentCents, 5000);
+  // …and the category can be seen without the trip.
+  assert.deepEqual(withoutTrips(data.expenses).map((x) => x.title), ['Souvlaki']);
+  const s = tripSummary(data, 'rome', '2026-11-24');
+  assert.equal(s.totalCents, 4500);
+  assert.equal(s.count, 2);
+  assert.equal(s.budget, null);
+  assert.equal(s.perDayCents, 900); // over the 5 days so far
+  assert.deepEqual(s.byCategory.map((c) => [c.label, c.cents]), [['Dine out', 3000], ['Transport', 1500]]);
+  assert.deepEqual(s.byDay, [{ date: '2026-11-22', cents: 1500 }, { date: '2026-11-21', cents: 3000 }]);
+  const budgeted = tripSummary({ ...data, trips: [{ ...rome, budgetCents: 5000 }] }, 'rome', '2026-12-01');
+  assert.deepEqual([budgeted.budget.percent, budgeted.perDayCents], [90, 500]); // over all 9 days once it is done
+  // Deleting the trip keeps its expenses, untied.
+  const after = deleteTrip(data, 'rome');
+  assert.deepEqual(after.trips, []);
+  assert.equal(after.expenses.filter((x) => x.tripId).length, 0);
+  assert.equal(after.expenses.length, 3);
+});
+
+test('trips are saved and loaded; ties to a missing trip are dropped', () => {
+  const mem = new Map();
+  const storage = { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v) };
+  const ex = [{ ...e('2026-11-21', 100, 'OTHER'), tripId: 'rome' }, { ...e('2026-11-22', 100, 'OTHER'), tripId: 'gone' }];
+  save(storage, { ...emptyData(), expenses: ex, trips: [rome, { id: 'bad', name: '', start: 'x', end: 'y' }] });
+  const back = load(storage);
+  assert.deepEqual(back.trips, [rome]);
+  assert.deepEqual(back.expenses.map((x) => x.tripId ?? null), ['rome', null]);
+});
+
+test('trips are managed in Settings, seen in Annals, picked when recording, and can be left out of a category', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  const sw = readFileSync(webFile('sw.js'), 'utf8');
+  assert.match(app, /case 'trips': app\.innerHTML = tripsScreen\(\); break;/);
+  assert.match(app, /case 'trip': app\.innerHTML = tripScreen\(r\.a\); break;/);
+  assert.match(app, /data-view="trips"/);
+  assert.match(app, /if \(a\.view === 'trips'\) return annalsTrips\(a\);/);
+  assert.match(app, /\$\{tripChips\(q\.trip, 'quick-trip'\)\}/);
+  assert.match(app, /\$\{tripChips\(d\.tripId, 'edit-trip'\)\}/);
+  assert.match(app, /tripId: q\.trip \?\? null \}\)\);/); // Quick add records the trip
+  assert.match(app, /tripId: d\.tripId \?\? null,/); // so does the form
+  assert.match(app, /trip: ongoingTrip\(data\.trips, today\(\)\)\?\.id \?\? null/); // the trip on today is ticked
+  assert.match(app, /const groups = hasTrips && ui\.catTrips === 'without' \? without : all;/);
+  assert.match(app, /body = `\$\{recapCard\(\)\}\$\{tripCard\(\)\}/);
+  assert.ok(sw.includes("'js/trips.js'") && sw.includes("'icons/emblems/trip.png'"));
+  assert.ok(existsSync(webFile(EMBLEMS.trip)));
+  assert.doesNotMatch(app, /trip-glyph/); // the painted badge everywhere, like Geminio and Apparate
+  assert.equal(wordsFor(true).trips, 'Portkeys');
+  assert.equal(wordsFor(false).trips, 'Trips');
 });

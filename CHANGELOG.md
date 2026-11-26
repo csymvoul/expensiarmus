@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.19.0 (Android), web app 1.19.0 and iPhone app 1.16.0 – unreleased (2026-11-26)
+
+### Added
+- **Trips** ("Portkeys" in wizard words), with their own painted badge (a gold-strapped travelling trunk with a luggage tag on burgundy, `art/emblem-trip.svg`) in the same round, gold-rimmed style as Geminio, Apparate and the tab emblems: on the Settings card, the Annals tab, trip cards, the trip page and the trip chips.
+  - **Plan them** in Settings → Trips (the card after Favourites): a name, first and last day, and an optional total budget. Several trips, each editable or deletable (its expenses stay, untied).
+  - **Record into them:** Quick add and the expense form show the trips that aren't over yet; the one on today is ticked, tap to untie. "More details" carries the choice. Any expense can be tied to a trip in the form, e.g. flights booked months before.
+  - **Expenses keep their category.** A trip dinner stays Dine out and still counts in its month, category and wards.
+  - **With or without trips:** a category page with trip expenses offers "With portkeys · €80.00 | Without · €20.00" and lists accordingly.
+  - **See them in Annals → Trips:** every trip with dates, where it stands (in 3 days, day 3 of 9, 9 days), total and budget bar. Each opens a page with the total against the budget, the average a day (so far, while it is on), the spend per category and the trip's expenses.
+  - **On the Ledger,** while a trip is on, a card shows it: "Rome · day 7 of 9 · €60.00 of €500.00".
+  - Expense rows and the expense view name the trip. Trips are stored with the data (`trips`, and `tripId` on an expense); Geminio's CSV doesn't carry trips yet.
+
+### Fixed
+- **Android: category pages opened for the wrong span since 1.13.0.** From the Ledger they listed the year or all time, and from Annals the current month; the two were swapped. Now the Ledger opens the month and Annals the year (By year) or all time, as on the web. A new test guards the wiring.
+
+### Tests
+- Android 204 (9 new: trip rules, saving and loading, the wiring, the glyph, and the category-period fix), web 97 (5 new; three older tests updated). All passing. Checked in a browser: adding Rome (20–28 Nov, €500) in Settings, its chip ticked in Quick add, recording a €60 Dine out into it, the Ledger card, Dine out "With portkeys €80 / Without €20", Annals → Portkeys and the trip page.
+
+### Known issues
+- Not yet checked on a phone. CSV export and import don't include trips.
+
 ## 1.18.0 (Android), web app 1.18.0 and iPhone app 1.15.0 – unreleased (2026-11-26)
 
 ### Added

@@ -29,6 +29,9 @@ import com.csymvoul.expenses.domain.Words
 /** The wording chosen in Settings (wizard or plain), available to every screen. */
 val LocalWords = staticCompositionLocalOf { Words.WIZARD }
 
+/** Trip names by id, so any expense row can say which trip it belongs to. */
+val LocalTripNames = staticCompositionLocalOf<Map<String, String>> { emptyMap() }
+
 enum class Tab(@DrawableRes val icon: Int) {
     LEDGER(R.drawable.emblem_tab_ledger),
     CALENDAR(R.drawable.emblem_tab_calendar),

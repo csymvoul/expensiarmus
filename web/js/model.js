@@ -31,6 +31,7 @@ export const EMBLEMS = {
   logo: 'icons/emblems/logo_pouch.png',
   geminio: 'icons/emblems/set_geminio.png',
   apparate: 'icons/emblems/set_apparate.png',
+  trip: 'icons/emblems/trip.png',
   reminder: 'icons/emblems/set_reminder.png',
   themeSystem: 'icons/emblems/set_theme_system.png',
   themeLight: 'icons/emblems/set_theme_light.png',
@@ -67,7 +68,8 @@ export function splitLine(e, fmt) {
  * model does: negative amount, share outside 1..100, unknown category, or food type on a
  * category other than Entertainment.
  */
-export function makeExpense({ id, date, title, amountCents, category: cat, myPercent = 100, foodType: food = null }) {
+/** An expense. [tripId] ties it to a trip as well as its category; it is left out when there is none. */
+export function makeExpense({ id, date, title, amountCents, category: cat, myPercent = 100, foodType: food = null, tripId = null }) {
   if (!id) throw new Error('id is required');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('date must be YYYY-MM-DD');
   if (!Number.isInteger(amountCents) || amountCents < 0) throw new Error('amount must not be negative');
@@ -75,10 +77,11 @@ export function makeExpense({ id, date, title, amountCents, category: cat, myPer
   if (!category(cat)) throw new Error(`unknown category ${cat}`);
   if (food != null && cat !== 'ENTERTAINMENT') throw new Error('only entertainment can be food');
   if (food != null && !foodType(food)) throw new Error(`unknown food type ${food}`);
-  return { id, date, title, amountCents, category: cat, myPercent, foodType: food ?? null };
+  if (tripId != null && (typeof tripId !== 'string' || !tripId)) throw new Error('tripId must be a non-empty string');
+  return { id, date, title, amountCents, category: cat, myPercent, foodType: food ?? null, ...(tripId ? { tripId } : {}) };
 }
 
-export const emptyData = () => ({ expenses: [], goals: { entries: [] }, alertsSent: [], favorites: [] });
+export const emptyData = () => ({ expenses: [], goals: { entries: [] }, alertsSent: [], favorites: [], trips: [] });
 
 export const upsert = (data, e) => ({ ...data, expenses: [...data.expenses.filter((x) => x.id !== e.id), e] });
 export const remove = (data, id) => ({ ...data, expenses: data.expenses.filter((x) => x.id !== id) });

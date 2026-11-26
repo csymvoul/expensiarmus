@@ -36,6 +36,10 @@ import com.csymvoul.expenses.data.AppSettings
 import com.csymvoul.expenses.domain.ExpenseQueries
 import com.csymvoul.expenses.domain.Favorites
 import com.csymvoul.expenses.domain.MonthRecap
+import com.csymvoul.expenses.domain.Trips
+import com.csymvoul.expenses.ui.components.LocalTripNames
+import com.csymvoul.expenses.ui.screens.TripScreen
+import com.csymvoul.expenses.ui.screens.TripsScreen
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.domain.MonthlySummary
 import com.csymvoul.expenses.domain.PeriodSummary
@@ -112,6 +116,8 @@ private const val GOALS = "goals"
 private const val SETTINGS = "settings"
 private const val SEARCH = "search"
 private const val FAVORITES = "favorites"
+private const val TRIPS = "trips"
+private const val TRIP = "trip:" // + trip id
 private const val EDIT = "edit:" // + expense id, empty for a new expense
 private const val VIEW = "view:" // + expense id: read-only view
 private const val CATEGORY = "category:" // + category name, ":" + food type name (or nothing), ":" + period ("2026-11", "2026", or nothing for all time)
@@ -210,8 +216,30 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
 
     BackHandler(enabled = route != MONTH) { pop() }
 
+    val today = LocalDate.now()
+    // Every expense row can name its trip.
+    val tripNames = remember(data.trips) { data.trips.associate { it.id to it.name } }
+    // Trips you can still record for, and the one on today (ticked by default).
+    val tripsToOffer = remember(data.trips, today) { Trips.toOffer(data.trips, today) }
+    val ongoingTripId = remember(data.trips, today) { Trips.ongoing(data.trips, today)?.id }
+
+    CompositionLocalProvider(LocalTripNames provides tripNames) {
     WizardBackdrop {
         when {
+            route == TRIPS -> TripsScreen(
+                trips = data.trips,
+                onSave = vm::saveTrip,
+                onDelete = vm::deleteTrip,
+                onBack = ::pop,
+            )
+            route.startsWith(TRIP) -> key(route) {
+                TripScreen(
+                    s = remember(data, route) { Trips.summary(data, route.removePrefix(TRIP), LocalDate.now()) },
+                    onOpen = { push(VIEW + it) },
+                    onEditTrips = { push(TRIPS) },
+                    onBack = ::pop,
+                )
+            }
             route == GOALS -> GoalsScreen(
                 month = month,
                 goals = data.goals,
@@ -248,7 +276,11 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                         annalsYear = it
                         annalsView = AnnalsView.YEAR
                     },
-                    onCategory = { c, t -> push(categoryRoute(c, t, month.toString())) },
+                    // Annals: a category opens for the year (By year) or for all time.
+                    onCategory = { c, t -> push(categoryRoute(c, t, if (annalsView == AnnalsView.YEAR) annalsYear.toString() else "")) },
+                    trips = remember(data) { data.trips.mapNotNull { Trips.summary(data, it.id, LocalDate.now()) } },
+                    onOpenTrip = { push(TRIP + it) },
+                    onEditTrips = { push(TRIPS) },
                     bottomBar = { tabBar(Tab.ANNALS) },
                 )
             }
@@ -272,6 +304,8 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                 onInstallUpdate = { file -> Updater.install(context, file) },
                 favoriteCount = data.favorites.size,
                 onOpenFavorites = { push(FAVORITES) },
+                tripCount = data.trips.size,
+                onOpenTrips = { push(TRIPS) },
                 onImport = { importLauncher.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "application/octet-stream")) },
                 bottomBar = { tabBar(Tab.SETTINGS) },
             )
@@ -291,14 +325,15 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                 val category = Category.valueOf(parts[0])
                 val foodType = parts.getOrNull(1)?.takeIf { it.isNotEmpty() }?.let { FoodType.valueOf(it) }
                 val period = parts.getOrNull(2).orEmpty()
-                val groups = remember(data, category, foodType, period) {
-                    ExpenseQueries.byCategory(ExpenseQueries.inPeriod(data.expenses, period), category, foodType)
-                }
+                val inSpan = remember(data, period) { ExpenseQueries.inPeriod(data.expenses, period) }
+                val groups = remember(inSpan, category, foodType) { ExpenseQueries.byCategory(inSpan, category, foodType) }
+                val groupsWithout = remember(inSpan, category, foodType) { ExpenseQueries.byCategory(Trips.withoutTrips(inSpan), category, foodType) }
                 CategoryScreen(
                     category = category,
                     foodType = foodType,
                     period = period,
-                    groups = groups,
+                    groupsAll = groups,
+                    groupsWithoutTrips = groupsWithout,
                     onFoodType = { t -> replaceTop(categoryRoute(category, t, period)) },
                     onOpen = { push(VIEW + it) },
                     onBack = ::pop,
@@ -331,6 +366,8 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                     defaultDate = newExpenseDate,
                     prefill = handed,
                     favorites = data.favorites,
+                    trips = tripsToOffer + data.trips.filter { t -> t.id == existing?.tripId && tripsToOffer.none { it.id == t.id } },
+                    defaultTrip = ongoingTripId,
                     onSave = {
                         vm.upsert(it)
                         month = YearMonth.from(it.date)
@@ -364,10 +401,15 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                         else MonthRecap.of(data, MonthRecap.monthFor(LocalDate.now()))?.takeIf { it.month.toString() != data.recapDismissed }
                     },
                     onOpenRecap = { month = it },
+                    ongoingTrip = remember(data, month) {
+                        if (month != YearMonth.now()) null else Trips.ongoing(data.trips, LocalDate.now())?.let { Trips.summary(data, it.id, LocalDate.now()) }
+                    },
+                    onOpenTrip = { push(TRIP + it) },
                     onDismissRecap = { vm.dismissRecap(it.toString()) },
                     onAdd = { quickOpen = true },
                     onOpen = { push(VIEW + it) },
-                    onCategory = { c, t -> push(categoryRoute(c, t, if (annalsView == AnnalsView.YEAR) annalsYear.toString() else "")) },
+                    // The Ledger: a category opens for the month on screen.
+                    onCategory = { c, t -> push(categoryRoute(c, t, month.toString())) },
                     onSearch = { push(SEARCH) },
                     reminderOn = settings.reminderOn,
                     owlsBlocked = owlsBlocked,
@@ -378,10 +420,13 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
             }
         }
     }
+    }
 
     if (quickOpen) {
         QuickAddSheet(
             favorites = data.favorites,
+            trips = tripsToOffer,
+            initialTrip = ongoingTripId,
             date = newExpenseDate,
             onSave = { e ->
                 vm.upsert(e)

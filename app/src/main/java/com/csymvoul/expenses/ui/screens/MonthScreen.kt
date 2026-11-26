@@ -72,6 +72,7 @@ import java.time.YearMonth
 import com.csymvoul.expenses.domain.ExpenseQueries
 import com.csymvoul.expenses.domain.MonthGlance
 import com.csymvoul.expenses.domain.MonthRecap
+import com.csymvoul.expenses.domain.TripSummary
 import com.csymvoul.expenses.ui.components.GoalBar
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.OrnamentHeading
@@ -110,6 +111,9 @@ fun MonthScreen(
     onThisMonth: () -> Unit,
     /** Last month in one line, shown on the current month's Ledger until dismissed (null: nothing to show). */
     recap: MonthRecap?,
+    /** The trip on today, shown on the current month's Ledger. */
+    ongoingTrip: TripSummary?,
+    onOpenTrip: (String) -> Unit,
     onOpenRecap: (YearMonth) -> Unit,
     onDismissRecap: (YearMonth) -> Unit,
     onAdd: () -> Unit,
@@ -168,6 +172,7 @@ fun MonthScreen(
             when (view) {
                 MonthView.OVERVIEW -> {
                     recap?.let { r -> item { RecapCard(r, onOpenRecap, onDismissRecap) } }
+                    ongoingTrip?.let { t -> item { TripCard(t, onClick = { onOpenTrip(t.trip.id) }, showDates = false) } }
                     item { TotalCard(summary) }
                     item { BreakdownCard(summary.categories, summary.totalCents, summary.month, onCategory, period = summary.month.toString()) }
                     if (summary.food.totalCents > 0) {

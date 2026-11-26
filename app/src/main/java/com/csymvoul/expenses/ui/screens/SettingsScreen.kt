@@ -66,6 +66,8 @@ fun SettingsScreen(
     onExport: () -> Unit,
     onImport: () -> Unit,
     favoriteCount: Int,
+    tripCount: Int,
+    onOpenTrips: () -> Unit,
     onOpenFavorites: () -> Unit,
     updateState: UpdateState,
     appVersion: String,
@@ -88,7 +90,7 @@ fun SettingsScreen(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // Order: Favourites, Owl reminder, Wizard words, Number format, Theme, Updates, Geminio, Apparate.
+            // Order: Favourites, Trips, Owl reminder, Wizard words, Number format, Theme, Updates, Geminio, Apparate.
             ParchmentCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     StarGlyph(on = true, contentDescription = null, size = 32.dp)
@@ -101,6 +103,19 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 WizardButton(onClick = onOpenFavorites) { Text(if (favoriteCount > 0) "Edit favourites" else "Add favourites") }
+            }
+            ParchmentCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    EmblemBadge(R.drawable.emblem_trip, size = 30.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text(w.trips, style = MaterialTheme.typography.titleMedium)
+                }
+                Text(
+                    "Trips with their dates and an optional budget. Their expenses keep their category and month; see each trip in Annals → ${w.trips}.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                WizardButton(onClick = onOpenTrips) { Text(if (tripCount > 0) "Edit ${w.trips.lowercase()}" else w.newTrip) }
             }
             ParchmentCard {
                 CardTitle(R.drawable.emblem_set_reminder, w.reminder)

@@ -30,6 +30,7 @@ fun ExpenseRow(expense: Expense, onClick: () -> Unit, showYear: Boolean = false)
         append(" · ").append(expense.category.label)
         expense.foodType?.let { append(" › ").append(it.label) }
         if (expense.isSplit) append(" · my share ${expense.myPercent}%")
+        expense.tripId?.let { LocalTripNames.current[it] }?.let { append(" · ").append(it) }
     }
     ListItem(
         modifier = Modifier.clickable(onClick = onClick),

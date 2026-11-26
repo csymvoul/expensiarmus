@@ -51,6 +51,10 @@ data class Words(
     val exportButton: String,
     val exported: String,
     val exportFailed: String,
+    /** Trips: "Portkeys" in wizard words. */
+    val trips: String,
+    val trip: String,
+    val newTrip: String,
     /** The end-of-month owl: the Ledger card's heading, and the notification's title ("%s" is the month). */
     val recapHeading: String,
     val recapTitleFormat: String,
@@ -106,6 +110,7 @@ data class Words(
             noGoals = "No wards for this month yet.", whichCategory = "Which vault?",
             categoryEmpty = "This vault is empty. Nothing recorded here yet.",
             exportTitle = "📜 Geminio", exportButton = "Geminio · export CSV", exported = "Geminio! Ledger copied to CSV.",
+            trips = "Portkeys", trip = "Portkey", newTrip = "Make a portkey",
             recapHeading = "Owl post", recapTitleFormat = "🦉 Owl post: %s's ledger is closed",
             wholeMonth = "Whole month", wholeMonthSub = "All your vaults together", thisMonthPrefix = "Back to",
             importTitle = "Apparate", importButton = "Apparate · import CSV", importedLine = "Apparate! %s appeared in the ledger.",
@@ -138,6 +143,7 @@ data class Words(
             noGoals = "No goals for this month yet.", whichCategory = "Which category?",
             categoryEmpty = "Nothing recorded in this category yet.",
             exportTitle = "📤 Export", exportButton = "Export CSV", exported = "Expenses exported.", exportFailed = "Export failed.",
+            trips = "Trips", trip = "Trip", newTrip = "Add a trip",
             recapHeading = "Last month", recapTitleFormat = "%s summary",
             wholeMonth = "Whole month", wholeMonthSub = "All categories together", thisMonthPrefix = "Back to",
             importTitle = "Import", importButton = "Import CSV", importedLine = "%s imported.",

@@ -5,6 +5,7 @@ import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
 import { dailyTotals, onDay, calendarCells, byCategory, inPeriod, isFavorite, toggleFavorite, MAX_FAVORITES, saveFavorite, removeFavoriteAt, search, shiftMonth, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
 import { toCsv, importCsv, importSummary } from './csv.js';
+import { saveTrip, deleteTrip, tripStatus, tripsToOffer, ongoingTrip, withoutTrips, tripSummary } from './trips.js';
 import { load, save, KEY } from './store.js';
 import { upcomingReminders } from './reminder.js';
 import { wordsFor } from './words.js';
@@ -170,7 +171,8 @@ function expenseRow(e, showYear = false) {
   const c = category(e.category);
   const f = e.foodType ? foodType(e.foodType) : null;
   const when = fmt(e.date, showYear ? { day: 'numeric', month: 'short', year: 'numeric' } : { weekday: 'short', day: 'numeric', month: 'short' });
-  const details = [when, c.label + (f ? ` › ${f.label}` : ''), isSplit(e) ? `my share ${e.myPercent}%` : ''].filter(Boolean).join(' · ');
+  const trip = e.tripId ? (data.trips ?? []).find((t) => t.id === e.tripId) : null;
+  const details = [when, c.label + (f ? ` › ${f.label}` : ''), isSplit(e) ? `my share ${e.myPercent}%` : '', trip ? trip.name : ''].filter(Boolean).join(' · ');
   return `<button class="row" data-action="open" data-id="${esc(e.id)}">
     ${emblem(f ? f.icon : c.icon)}
     <span class="row-main"><span class="row-title">${esc(e.title)}</span><span class="row-sub">${esc(details)}</span></span>
@@ -374,7 +376,7 @@ function monthScreen(calendar) {
   const actions = `${timeTurner()}<button class="icon-btn" data-action="go" data-to="#/search" aria-label="${W.search}"><span class="search-glyph"></span></button>`;
   let body;
   if (!calendar) {
-    body = `${recapCard()}${totalCard(s)}
+    body = `${recapCard()}${tripCard()}${totalCard(s)}
       ${breakdownCard(s, ui.month)}
       ${s.food.totalCents > 0 ? foodCard(s.food, ui.month) : ''}
       ${ornament(W.ledger)}
@@ -453,6 +455,7 @@ function quickSheet() {
     <input class="quick-title" type="text" placeholder="Title (optional)" value="${esc(q.title)}" data-input="quick-title" autocapitalize="sentences">
     <div class="quick-amount" id="quick-amount">${esc(quickAmountText())}</div>
     <label class="quick-date">${emblem(TAB_ICONS.calendar, 24)}<input type="date" value="${q.date}" data-input="quick-date"></label>
+    ${tripChips(q.trip, 'quick-trip')}
     <div class="numpad">${keys.map((k) => `<button data-action="quick-key" data-key="${k}">${k}</button>`).join('')}</div>
     <p class="small center ${q.error ? 'error' : 'soft'}" id="quick-help">${esc(quickHelp(q))}</p>
     <div class="tiles">${tiles.map((t) => `<button class="tile ${q.cat === t.cat && (q.food ?? '') === t.food ? 'glow' : ''}" data-action="quick-pick" data-cat="${t.cat}" data-food="${t.food}">
@@ -519,6 +522,8 @@ function startDraft(id) {
     category: e?.category ?? p?.category ?? 'SUPERMARKET',
     foodType: e?.foodType ?? p?.foodType ?? null,
     split: e ? isSplit(e) : (p?.myPercent ?? 100) < 100,
+    // A new expense is tied to the trip that is on today (or the one Quick add picked).
+    tripId: e ? e.tripId ?? null : p && 'tripId' in p ? p.tripId : ongoingTrip(data.trips, today())?.id ?? null,
     myPercent: e && isSplit(e) ? e.myPercent : (p?.myPercent ?? 100) < 100 ? p.myPercent : 50,
     showErrors: false,
   };
@@ -603,6 +608,7 @@ function editScreen(id) {
       ${amountBad ? `<span class="error">Enter an amount, e.g. 12${decimalKey()}50</span>` : ''}</label>
     <label class="field"><span class="label">Date</span>
       <input type="date" value="${d.date}" data-input="edit-date"></label>
+    ${tripChips(d.tripId, 'edit-trip')}
     <div class="field"><span class="h-small">Category</span><div class="chips">${catChips}</div>
       <p class="small soft">${esc(withNickname(cat))}</p></div>
     ${foodChips}
@@ -629,6 +635,7 @@ function saveDraft() {
     category: d.category,
     myPercent: d.split ? Math.min(99, Math.max(1, d.myPercent)) : 100,
     foodType: d.category === 'ENTERTAINMENT' ? d.foodType : null,
+    tripId: d.tripId ?? null,
   });
   commit(upsert(data, e));
   ui.month = monthOf(e.date);
@@ -659,7 +666,8 @@ function viewScreen(id) {
       ${row('Date', fmt(e.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}
       ${row('Category', `${c.emoji} ${c.label}`, W.nicknames ? c.nickname : '')}
       ${f ? row('Food', `${f.emoji} ${f.label}`, W.nicknames ? f.nickname : '') : ''}
-      ${row('Split', splitLine(e, format))}`)}
+      ${row('Split', splitLine(e, format))}
+      ${e.tripId && (data.trips ?? []).some((t) => t.id === e.tripId) ? row(W.trip, data.trips.find((t) => t.id === e.tripId).name) : ''}`)}
     <button class="btn wide" data-action="amend" data-id="${esc(e.id)}"><span class="frame"><span class="frame-inner">${esc(W.amend)}</span></span></button>
     <button class="link center-link" data-action="ask-delete">${esc(W.deleteLink)}</button>
   </main>${ui.modal ? deleteModal(e.title, e.id) : ''}`;
@@ -670,6 +678,102 @@ function favStar(e) {
   const on = isFavorite(data.favorites, e);
   const label = on ? 'Remove from favourites' : 'Add to favourites';
   return `<button class="icon-btn fav-star" data-action="fav-toggle" data-id="${esc(e.id)}" aria-label="${label}" title="${label}"><span class="${on ? 'star-on' : 'star-off'}"></span></button>`;
+}
+
+// ---------- trips ----------
+
+const tripDates = (t) => (t.start === t.end
+  ? fmt(t.start, { day: 'numeric', month: 'short', year: 'numeric' })
+  : `${fmt(t.start, { day: 'numeric', month: 'short' })} – ${fmt(t.end, { day: 'numeric', month: 'short', year: 'numeric' })}`);
+function tripStatusText(st) {
+  if (st.state === 'upcoming') return st.inDays === 1 ? 'tomorrow' : `in ${st.inDays} days`;
+  if (st.state === 'ongoing') return `day ${st.day} of ${st.days}`;
+  return st.days === 1 ? '1 day' : `${st.days} days`;
+}
+
+/** Trip chips for recording: the trips not over yet, the one on today ticked; tap again to untick. */
+function tripChips(current, action) {
+  const offer = tripsToOffer(data.trips, today());
+  const extra = current && !offer.some((t) => t.id === current) ? (data.trips ?? []).filter((t) => t.id === current) : [];
+  const trips = [...offer, ...extra];
+  if (!trips.length) return '';
+  return `<div class="chips trip-chips"><span class="h-small trip-label">${chipIcon({ icon: EMBLEMS.trip })}${esc(W.trip)}</span>${trips.map((t) =>
+    `<button class="chip ${current === t.id ? 'on' : ''}" data-action="${action}" data-id="${esc(t.id)}">${esc(t.name)}</button>`).join('')}</div>`;
+}
+
+/** On the current month's Ledger, while a trip is on: where it stands. */
+function tripCard() {
+  if (ui.month !== today().slice(0, 7)) return '';
+  const t = ongoingTrip(data.trips, today());
+  if (!t) return '';
+  const s = tripSummary(data, t.id, today());
+  return card(`<button class="ward" data-action="go" data-to="#/trip/${esc(t.id)}"><span class="legend-row">${emblem(EMBLEMS.trip, 36)}
+      <span class="row-main"><span class="h-small">${esc(t.name)}</span><span class="row-sub">${esc(tripStatusText(s.status))}</span></span>
+      <b class="h-medium">${format(s.totalCents)}${s.budget ? `<small> of ${format(s.budget.goalCents)}</small>` : ''}</b><span class="chev">${ICON.right}</span></span>
+    ${s.budget ? goalBar(s.budget, true) : ''}</button>`);
+}
+
+/** One trip: total against its budget, per day, per category, and its expenses. */
+function tripScreen(id) {
+  const s = tripSummary(data, id, today());
+  if (!s) { setTimeout(back, 0); return header(W.trips, { backBtn: true }); }
+  const t = s.trip;
+  const cats = s.byCategory.map((c) => {
+    const look = c.foodType ? foodType(c.foodType) : category(c.category);
+    return `<div class="legend-row">${emblem(look.icon, 30)}<span class="row-main"><span class="h-small">${esc(c.label)}</span></span>
+      <span class="row-amount"><b>${format(c.cents)}</b><small>${s.totalCents ? Math.round((c.cents * 100) / s.totalCents) : 0}%</small></span></div>`;
+  }).join('');
+  return `${header(t.name, { backBtn: true, icon: EMBLEMS.trip })}
+  <main>
+    ${card(`<span class="label">${esc(tripDates(t))} · ${esc(tripStatusText(s.status))}</span>
+      <p class="total">${format(s.totalCents)}</p>
+      ${s.budget ? `${goalBar(s.budget)}<span class="small">${esc(describeGoal(s.budget, W))}</span>` : '<p class="small soft">No budget set.</p>'}
+      <p class="small soft">${s.count === 1 ? '1 expense' : `${s.count} expenses`} · ${format(s.perDayCents)} a day${s.status.state === 'ongoing' ? ' so far' : ''}</p>`)}
+    ${s.count ? card(`<h3 class="h-medium">${esc(W.whereWent)}</h3><div class="trip-cats">${cats}</div>`) : ''}
+    ${s.count ? `${ornament(W.ledger)}<div class="list">${s.expenses.map((e) => expenseRow(e, true)).join('')}</div>` : hint(`Nothing recorded for this ${W.trip.toLowerCase()} yet. Pick it when you record an expense.`)}
+    <button class="link center-link" data-action="go" data-to="#/trips">Edit ${esc(W.trip.toLowerCase())} ›</button>
+  </main>`;
+}
+
+/** Settings → Trips: add, change or delete trips (name, first and last day, optional budget). */
+function tripsScreen() {
+  const trips = data.trips ?? [];
+  const ed = ui.tripEdit;
+  const editor = () => `<div class="ward-editor">
+      <label class="field"><span class="label">Name</span><input type="text" value="${esc(ed.name)}" data-input="te-name" placeholder="e.g. Crete 2027" autocapitalize="words" autocomplete="off"></label>
+      <div class="two-dates"><label class="field"><span class="label">First day</span><input type="date" value="${ed.start}" data-input="te-start"></label>
+        <label class="field"><span class="label">Last day</span><input type="date" value="${ed.end}" data-input="te-end"></label></div>
+      <label class="field"><span class="label">Budget (optional)</span><span class="money-input"><span>€</span><input type="text" inputmode="decimal" value="${esc(ed.budget)}" placeholder="e.g. 1200" data-input="te-budget"></span></label>
+      ${ed.error ? `<p class="error">${esc(ed.error)}</p>` : ''}
+      ${ed.confirmDelete ? `<p>Delete ${esc(ed.name)}? Its expenses stay, no longer tied to it.</p>` : ''}
+      <div class="ward-actions">
+        ${ed.id && !ed.confirmDelete ? '<button class="link danger-link" data-action="te-delete">Delete</button>' : ''}
+        ${ed.confirmDelete ? '<button class="link danger-link" data-action="te-delete-yes">Delete it</button>' : ''}
+        <span class="spacer"></span>
+        <button class="link" data-action="te-cancel">Cancel</button>
+        ${ed.confirmDelete ? '' : '<button class="btn" data-action="te-save"><span class="frame"><span class="frame-inner">Save</span></span></button>'}
+      </div></div>`;
+  const cards = trips.map((t) => card(ed && ed.id === t.id ? editor() : `<button class="ward" data-action="te-open" data-id="${esc(t.id)}"><span class="legend-row">${emblem(EMBLEMS.trip, 36)}
+      <span class="row-main"><span class="h-small">${esc(t.name)}</span><span class="row-sub">${esc(tripDates(t))}${t.budgetCents ? ` · budget ${format(t.budgetCents)}` : ''}</span></span><span class="chev">${ICON.right}</span></span></button>`));
+  return `${header(W.trips, { backBtn: true, icon: EMBLEMS.trip })}
+  <main>
+    <p class="soft">Give each trip its dates and, if you like, one total budget. While a trip is on it is ticked when you record; its expenses keep their category and still count in their month. See them in Annals → ${esc(W.trips)}.</p>
+    ${trips.length || ed ? '' : hint(`No ${W.trips.toLowerCase()} yet.`)}
+    ${cards.join('')}
+    ${ed && !ed.id ? card(`<h3 class="h-medium">${esc(W.newTrip)}</h3>${editor()}`) : ''}
+    ${ed ? '' : `<button class="btn wide" data-action="te-add"><span class="frame"><span class="frame-inner with-emblem">${emblem(EMBLEMS.trip, 26)}${esc(W.newTrip)}</span></span></button>`}
+  </main>`;
+}
+
+function saveTripEdit() {
+  const ed = ui.tripEdit;
+  const budget = ed.budget.trim() ? parseToCents(ed.budget) : null;
+  if (ed.budget.trim() && budget == null) { ed.error = 'The budget must be an amount, or left empty.'; render(); return; }
+  const r = saveTrip(data.trips, { id: ed.id ?? newId(), name: ed.name, start: ed.start, end: ed.end, budgetCents: budget });
+  if (r.error) { ed.error = r.error; render(); return; }
+  ui.tripEdit = null;
+  commit({ ...data, trips: r.list });
+  render();
 }
 
 // ---------- favourites ----------
@@ -739,7 +843,15 @@ const categoryPath = (cat, food, period) => `#/category/${cat}${food || period ?
 /** A category's expenses for the period it was opened from (a month, a year, or all time), grouped by month. */
 function categoryScreen(catId, foodId, period = '') {
   const cat = category(catId) ?? CATEGORIES[0];
-  const groups = byCategory(inPeriod(data.expenses, period), cat.id, foodId);
+  const all = byCategory(inPeriod(data.expenses, period), cat.id, foodId);
+  const without = byCategory(withoutTrips(inPeriod(data.expenses, period)), cat.id, foodId);
+  const sum = (gs) => gs.reduce((a, g) => a + g.totalCents, 0);
+  const hasTrips = sum(all) !== sum(without) || all.some((g) => g.expenses.some((e) => e.tripId));
+  const groups = hasTrips && ui.catTrips === 'without' ? without : all;
+  const tripFilter = hasTrips
+    ? `<div class="segmented small-seg"><button class="${ui.catTrips !== 'without' ? 'on' : ''}" data-action="cat-trips" data-v="with">With ${W.trips.toLowerCase()} · ${format(sum(all))}</button>
+        <button class="${ui.catTrips === 'without' ? 'on' : ''}" data-action="cat-trips" data-v="without">Without · ${format(sum(without))}</button></div>`
+    : '';
   const count = groups.reduce((a, g) => a + g.expenses.length, 0);
   const foodChips = cat.id === 'ENTERTAINMENT'
     ? `<div class="chips">
@@ -754,6 +866,7 @@ function categoryScreen(catId, foodId, period = '') {
       <span class="label">${esc(periodTitle(period))}${foodId ? ` · ${foodType(foodId).label}` : ''}</span>
       <p class="total">${format(groups.reduce((a, g) => a + g.totalCents, 0))}</p>
       <p class="small soft">${count === 1 ? '1 expense' : `${count} expenses`}${period.length === 7 ? '' : ` in ${groups.length === 1 ? '1 month' : `${groups.length} months`}`}</p>`)}
+    ${tripFilter}
     ${foodChips}
     ${groups.length ? '' : hint(W.categoryEmpty)}
     ${groups.map((g) => `<div class="group-head"><span class="h-small">${monthTitle(g.month)}</span><b>${format(g.totalCents)}</b></div>
@@ -884,6 +997,9 @@ function settingsScreen() {
     ${card(`<h3 class="h-medium card-title"><span class="star-on title-glyph"></span>Favourites</h3>
       <p class="small soft">Up to ${MAX_FAVORITES} expenses you record often, ready in ${esc(W.newExpense)}: their title, category and split are filled in, you type the amount.</p>
       <button class="btn" data-action="go" data-to="#/favorites"><span class="frame"><span class="frame-inner">${(data.favorites ?? []).length ? 'Edit favourites' : 'Add favourites'}</span></span></button>`)}
+    ${card(`<h3 class="h-medium card-title">${emblem(EMBLEMS.trip, 36)}${esc(W.trips)}</h3>
+      <p class="small soft">Trips with their dates and an optional budget. Their expenses keep their category and month; see each trip in Annals → ${esc(W.trips)}.</p>
+      <button class="btn" data-action="go" data-to="#/trips"><span class="frame"><span class="frame-inner">${(data.trips ?? []).length ? `Edit ${W.trips.toLowerCase()}` : esc(W.newTrip)}</span></span></button>`)}
     ${card(`<h3 class="h-medium card-title">${emblem(EMBLEMS.reminder, 36)}${esc(withoutEmoji(W.reminder))}</h3>
       <label class="switch-row"><span><span class="h-small">${esc(W.reminderSwitch)}</span><span class="small soft">A daily nudge to record the day's expenses</span></span>
         <input type="checkbox" class="switch" ${settings.reminderOn ? 'checked' : ''} data-input="set-reminder"></label>
@@ -930,8 +1046,35 @@ function barChart(bars, selected) {
   </div>`;
 }
 
+function annalsTabs(a) {
+  return `<div class="segmented">
+      <button class="${a.view === 'year' ? 'on' : ''}" data-action="annals-view" data-view="year">${chipIcon({ icon: TAB_ICONS.calendar })}By year</button>
+      <button class="${a.view === 'all' ? 'on' : ''}" data-action="annals-view" data-view="all">${chipIcon({ icon: TAB_ICONS.annals })}All time</button>
+      <button class="${a.view === 'trips' ? 'on' : ''}" data-action="annals-view" data-view="trips">${chipIcon({ icon: EMBLEMS.trip })}${esc(W.trips)}</button>
+    </div>`;
+}
+
+/** Annals → Trips: every trip with its dates, where it stands, what it cost and its budget. */
+function annalsTrips(a) {
+  const trips = data.trips ?? [];
+  const cards = trips.map((t) => {
+    const s = tripSummary(data, t.id, today());
+    return card(`<button class="ward" data-action="go" data-to="#/trip/${esc(t.id)}"><span class="legend-row">${emblem(EMBLEMS.trip, 36)}
+        <span class="row-main"><span class="h-small">${esc(t.name)}</span><span class="row-sub">${esc(tripDates(t))} · ${esc(tripStatusText(s.status))}</span></span>
+        <b class="h-medium">${format(s.totalCents)}</b><span class="chev">${ICON.right}</span></span>
+      ${s.budget ? `${goalBar(s.budget)}<span class="small">${esc(describeGoal(s.budget, W))}</span>` : ''}</button>`);
+  });
+  return `${header(W.annals, { icon: TAB_ICONS.annals })}
+  <main class="with-tabs">
+    ${annalsTabs(a)}
+    ${trips.length ? cards.join('') : hint(`No ${W.trips.toLowerCase()} yet. Add one in Settings → ${W.trips}.`)}
+    <button class="btn wide" data-action="go" data-to="#/trips"><span class="frame"><span class="frame-inner with-emblem">${emblem(EMBLEMS.trip, 26)}${trips.length ? `Edit ${W.trips.toLowerCase()}` : esc(W.newTrip)}</span></span></button>
+  </main>${tabBar('annals')}`;
+}
+
 function annalsScreen() {
   const a = ui.annals;
+  if (a.view === 'trips') return annalsTrips(a);
   const t = today();
   const s = a.view === 'year' ? yearSummary(data, a.year, t) : allTimeSummary(data, t);
   const bar = a.bar != null ? s.bars[a.bar] : null;
@@ -950,10 +1093,7 @@ function annalsScreen() {
     s.biggest ? `biggest: ${s.biggest.title}, ${format(myShareCents(s.biggest))}` : ''].filter(Boolean).join(' · ');
   return `${header(W.annals, { icon: TAB_ICONS.annals, actions: yearTurner() })}
   <main class="with-tabs">
-    <div class="segmented">
-      <button class="${a.view === 'year' ? 'on' : ''}" data-action="annals-view" data-view="year">${chipIcon({ icon: TAB_ICONS.calendar })}By year</button>
-      <button class="${a.view === 'all' ? 'on' : ''}" data-action="annals-view" data-view="all">${chipIcon({ icon: TAB_ICONS.annals })}All time</button>
-    </div>
+    ${annalsTabs(a)}
     ${a.view === 'year' ? monthSwitch('prev-year', 'next-year', String(a.year)) : ''}
     ${card(`
       <h3 class="h-small">${a.view === 'year' ? W.spentIn(a.year) : W.spentAllTime}</h3>
@@ -1010,6 +1150,8 @@ function render() {
   if (r.name !== 'month' && r.name !== 'calendar') ui.quick = null;
   if (r.name !== 'goals') ui.goalEdit = null;
   if (r.name !== 'favorites') ui.favEdit = null;
+  if (r.name !== 'trips') ui.tripEdit = null;
+  if (r.name !== 'category') ui.catTrips = null;
   if (r.name !== ui.lastScreen && TABS.includes(r.name)) ui.highlighted = null;
   ui.lastScreen = r.name;
   switch (r.name) {
@@ -1018,6 +1160,8 @@ function render() {
     case 'category': app.innerHTML = categoryScreen(r.a, r.b, r.c ?? ''); break;
     case 'search': app.innerHTML = searchScreen(); break;
     case 'favorites': app.innerHTML = favoritesScreen(); break;
+    case 'trips': app.innerHTML = tripsScreen(); break;
+    case 'trip': app.innerHTML = tripScreen(r.a); break;
     case 'goals': app.innerHTML = goalsScreen(); break;
     case 'settings':
     case 'owl': app.innerHTML = settingsScreen(); break;
@@ -1065,14 +1209,14 @@ const actions = {
     toast(W.imported(added.length));
     render();
   },
-  quick: () => { ui.quick = { title: '', amount: '', date: newExpenseDate(), error: false, cat: null, food: null, pct: 100, fav: null }; render(); },
+  quick: () => { ui.quick = { title: '', amount: '', date: newExpenseDate(), error: false, cat: null, food: null, pct: 100, fav: null, trip: ongoingTrip(data.trips, today())?.id ?? null }; render(); },
   'quick-close': () => { ui.quick = null; render(); },
   'quick-key': (el) => quickKey(el.dataset.key),
   'quick-more': () => {
     const q = ui.quick;
     // A picked favourite also carries its category, food type and split to the full form.
     // The picked category (and a favourite's split) go on to the full form.
-    prefill = { title: q.title, amount: q.amount, date: q.date, category: q.cat, foodType: q.food, myPercent: q.pct };
+    prefill = { title: q.title, amount: q.amount, date: q.date, category: q.cat, foodType: q.food, myPercent: q.pct, tripId: q.trip ?? null };
     ui.quick = null;
     go('#/edit');
   },
@@ -1091,7 +1235,7 @@ const actions = {
     const cents = parseToCents(q.amount);
     q.error = !(cents > 0) ? 'Type an amount first' : !q.cat ? 'Pick a category first' : null;
     if (q.error) { render(); return; }
-    quickRecord(makeExpense({ id: newId(), date: q.date, title: q.title.trim() || defaultTitle(q.cat, q.food), amountCents: cents, category: q.cat, foodType: q.food, myPercent: q.pct ?? 100 }));
+    quickRecord(makeExpense({ id: newId(), date: q.date, title: q.title.trim() || defaultTitle(q.cat, q.food), amountCents: cents, category: q.cat, foodType: q.food, myPercent: q.pct ?? 100, tripId: q.trip ?? null }));
   },
   'fav-pick': (el) => {
     const q = ui.quick;
@@ -1114,6 +1258,15 @@ const actions = {
     Object.assign(draft, { title: f.title, category: f.category, foodType: f.foodType ?? null, split: (f.myPercent ?? 100) < 100, myPercent: (f.myPercent ?? 100) < 100 ? f.myPercent : 50 });
     render();
   },
+  'quick-trip': (el) => { ui.quick.trip = ui.quick.trip === el.dataset.id ? null : el.dataset.id; render(); },
+  'edit-trip': (el) => { draft.tripId = draft.tripId === el.dataset.id ? null : el.dataset.id; render(); },
+  'cat-trips': (el) => { ui.catTrips = el.dataset.v; render(); },
+  'te-open': (el) => { const t = data.trips.find((x) => x.id === el.dataset.id); ui.tripEdit = { id: t.id, name: t.name, start: t.start, end: t.end, budget: t.budgetCents ? forInput(t.budgetCents) : '', error: null }; render(); },
+  'te-add': () => { ui.tripEdit = { id: null, name: '', start: today(), end: today(), budget: '', error: null }; render(); },
+  'te-cancel': () => { ui.tripEdit = null; render(); },
+  'te-save': saveTripEdit,
+  'te-delete': () => { ui.tripEdit.confirmDelete = true; render(); },
+  'te-delete-yes': () => { const id = ui.tripEdit.id; ui.tripEdit = null; commit(deleteTrip(data, id)); render(); },
   'fav-toggle': (el) => {
     const e = find(data, el.dataset.id);
     const next = toggleFavorite(data.favorites, e);
@@ -1174,6 +1327,10 @@ const inputs = {
     app.querySelector('#share-line').textContent = shareLine();
   },
   'fe-title': (el) => { ui.favEdit.title = el.value; },
+  'te-name': (el) => { ui.tripEdit.name = el.value; },
+  'te-start': (el) => { ui.tripEdit.start = el.value; if (ui.tripEdit.end < el.value) ui.tripEdit.end = el.value; render(); },
+  'te-end': (el) => { ui.tripEdit.end = el.value; },
+  'te-budget': (el) => { ui.tripEdit.budget = el.value; },
   'quick-title': (el) => { ui.quick.title = el.value; },
   'import-file': (el) => { readImport(el); },
   'quick-date': (el) => { if (el.value) ui.quick.date = el.value; },
@@ -1189,7 +1346,7 @@ const inputs = {
 };
 
 // Settings controls change on "change" only, so typing a time doesn't re-render mid-edit.
-const ON_CHANGE = ['import-file', 'edit-split', 'edit-date', 'quick-date', 'ward-onwards', 'set-reminder', 'set-time', 'set-wizard'];
+const ON_CHANGE = ['te-start', 'te-end', 'import-file', 'edit-split', 'edit-date', 'quick-date', 'ward-onwards', 'set-reminder', 'set-time', 'set-wizard'];
 
 app.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-action]');
@@ -1220,7 +1377,7 @@ window.expensiarmusOpen = (hash) => {
   if (hash === '#/edit') {
     // The owl opens Quick add on the Ledger.
     location.hash = '#/';
-    ui.quick = { title: '', amount: '', date: today(), error: false, cat: null, food: null, pct: 100, fav: null };
+    ui.quick = { title: '', amount: '', date: today(), error: false, cat: null, food: null, pct: 100, fav: null, trip: ongoingTrip(data.trips, today())?.id ?? null };
     render();
     return;
   }
