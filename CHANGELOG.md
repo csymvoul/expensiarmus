@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.23.0 (Android), web app 1.24.0 and iPhone app 1.21.0 – unreleased (2026-11-26)
+
+### Changed
+- **A month's full list shows where the gold went.** After the total (and the With / Without trips switch), the Ledger's category card: the donut and every category with its amount, share and ward. Tapping a slice highlights it; tapping a category opens it for that month. It follows the switch: without trips it sums only the other expenses and leaves the wards out, since a ward always counts everything spent.
+- **The days on the full list fold up.** Each day is a header with its date, how many expenses and its total, closed at first; tap it to open its expenses (several can be open), tap again to close. Opened days stay open while you look at an expense or a category and come back; opening the list again from the Ledger starts with all closed.
+
+### Tests
+- Android 213 (2 new: the list's summary with and without trips, and the wiring), web 107 (2 new: the same). All passing. Checked in a browser at phone size: the card, the closed days with count and total, opening 24 Nov, an expense and back (still open), and Without (Entertainment drops to €0.00, no wards).
+
+### Known issues
+- Not yet checked on a phone.
+
 ## Deployment (2026-11-26)
 
 ### Fixed

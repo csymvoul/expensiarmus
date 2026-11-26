@@ -1,5 +1,19 @@
 package com.csymvoul.expenses.ui.screens
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.rotate
+import com.csymvoul.expenses.domain.DayGroup
+import com.csymvoul.expenses.domain.MonthlySummary
+import com.csymvoul.expenses.model.AppData
+import com.csymvoul.expenses.model.Category
+import com.csymvoul.expenses.model.FoodType
+import java.time.LocalDate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -30,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import com.csymvoul.expenses.domain.ExpenseQueries
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.domain.Trips
-import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.ui.components.ExpenseRow
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.ParchmentCard
@@ -43,15 +56,29 @@ import java.util.Locale
 private val monthTitle = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)
 private val dayTitle = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH)
 
-/** A month's full list, by day, with or without the expenses of trips. [expenses] are that month's. */
+/**
+ * A month's full list: where the gold went (the Ledger's category card), then the days, each closed until
+ * tapped, with or without the expenses of trips. [openDays] is kept by the caller so it survives a visit to an expense.
+ */
 @Composable
-fun MonthListScreen(month: YearMonth, expenses: List<Expense>, onOpen: (String) -> Unit, onBack: () -> Unit) {
+fun MonthListScreen(
+    month: YearMonth,
+    data: AppData,
+    openDays: Set<LocalDate>,
+    onToggleDay: (LocalDate) -> Unit,
+    onOpen: (String) -> Unit,
+    onCategory: (Category, FoodType?) -> Unit,
+    onBack: () -> Unit,
+) {
     val w = LocalWords.current
     var withTrips by rememberSaveable(month) { mutableStateOf(true) }
+    val expenses = remember(data, month) { data.expenses.filter { YearMonth.from(it.date) == month } }
     val without = remember(expenses) { Trips.withoutTrips(expenses) }
     val hasTrips = without.size != expenses.size
-    val shown = if (hasTrips && !withTrips) without else expenses
+    val leaveOut = hasTrips && !withTrips
+    val shown = if (leaveOut) without else expenses
     val days = remember(shown) { ExpenseQueries.byDay(shown) }
+    val summary = remember(data, month, leaveOut) { MonthlySummary.forList(data, month, leaveOut) }
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
@@ -72,7 +99,7 @@ fun MonthListScreen(month: YearMonth, expenses: List<Expense>, onOpen: (String) 
                     Text(w.spentThisMonth, style = MaterialTheme.typography.labelLarge)
                     Text(Money.format(shown.sumOf { it.myShareCents }), style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
                     Text(
-                        (if (shown.size == 1) "1 expense" else "${shown.size} expenses") + if (hasTrips && !withTrips) ", without ${w.trips.lowercase()}" else "",
+                        (if (shown.size == 1) "1 expense" else "${shown.size} expenses") + if (leaveOut) ", without ${w.trips.lowercase()}" else "",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -90,21 +117,48 @@ fun MonthListScreen(month: YearMonth, expenses: List<Expense>, onOpen: (String) 
                     }
                 }
             }
+            if (summary.totalCents > 0) {
+                item(key = "where") { BreakdownCard(summary.categories, summary.totalCents, "$month-$leaveOut", onCategory, period = month.toString()) }
+            }
             if (days.isEmpty()) {
                 item { Text(w.ledgerEmpty, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp)) }
             }
             days.forEach { d ->
-                item(key = "day-${d.date}") {
-                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(d.date.format(dayTitle), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-                        Text(Money.format(d.totalCents), style = MaterialTheme.typography.titleSmall)
+                val open = d.date in openDays
+                item(key = "day-${d.date}") { DayHeader(d, open, onClick = { onToggleDay(d.date) }) }
+                if (open) {
+                    items(d.expenses, key = { it.id }) { e ->
+                        ExpenseRow(e, onClick = { onOpen(e.id) })
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
-                }
-                items(d.expenses, key = { it.id }) { e ->
-                    ExpenseRow(e, onClick = { onOpen(e.id) })
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
         }
+    }
+}
+
+/** A day on the full list: date, how many, total and a chevron that turns down when open. */
+@Composable
+private fun DayHeader(d: DayGroup, open: Boolean, onClick: () -> Unit) {
+    val turn by animateFloatAsState(if (open) 90f else 0f, label = "chevron")
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(top = 10.dp)) {
+        Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(d.date.format(dayTitle), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                if (d.expenses.size == 1) "1 expense" else "${d.expenses.size} expenses",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            Text(Money.format(d.totalCents), style = MaterialTheme.typography.titleSmall)
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = if (open) "Close" else "Open",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.rotate(turn),
+            )
+        }
+        HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.45f))
     }
 }

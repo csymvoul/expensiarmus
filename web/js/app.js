@@ -1,7 +1,7 @@
 // Expensiarmus web app: screens, navigation and event handling. Logic lives in the other modules.
 import { CATEGORIES, FOOD_TYPES, TAB_ICONS, EMBLEMS, WHOLE_MONTH, goalKey, withoutEmoji, category, foodType, makeExpense, myShareCents, isSplit, splitLine, upsert, remove, find, monthOf } from './model.js';
 import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
-import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary, monthRecap, recapText, recapMonthFor } from './summary.js';
+import { monthlySummary, listSummary, describeGoal, goalProgress, yearSummary, allTimeSummary, monthRecap, recapText, recapMonthFor } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
 import { dailyTotals, onDay, calendarCells, byCategory, byDay, inPeriod, isFavorite, toggleFavorite, MAX_FAVORITES, saveFavorite, removeFavoriteAt, search, shiftMonth, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
 import { toCsv, importCsv, importSummary } from './csv.js';
@@ -40,6 +40,7 @@ const ui = {
   modal: false,
   quick: null, // the Quick add sheet, when open
   monthListTrips: null, // on a month's full list: 'without' leaves trip expenses out
+  openDays: new Set(), // on a month's full list: the days opened to show their expenses (all closed at first)
   importing: null, // Apparate: what the picked CSV would add, waiting for the user to confirm
   annals: { view: 'year', year: Number(today().slice(0, 4)), bar: null },
 };
@@ -314,7 +315,18 @@ function ledgerList(expenses) {
   return `<div class="list">${ledgerPreview(expenses, false).map((e) => expenseRow(e)).join('')}</div>${more}`;
 }
 
-/** A month's full list, by day, with or without the expenses of trips. */
+/** One day on a month's full list: a header with its date, count and total; tapped, it opens to its expenses. */
+function listDay(d) {
+  const open = ui.openDays.has(d.date);
+  const count = d.expenses.length === 1 ? '1 expense' : `${d.expenses.length} expenses`;
+  return `<button class="group-head day-toggle ${open ? 'open' : ''}" data-action="list-day" data-day="${d.date}" aria-expanded="${open}">
+      <span class="day-title"><span class="h-small">${fmt(d.date, { weekday: 'short', day: 'numeric', month: 'short' })}</span><small class="soft">${count}</small></span>
+      <span class="day-sum"><b>${format(d.totalCents)}</b><span class="chev">${ICON.right}</span></span>
+    </button>
+    ${open ? `<div class="list">${d.expenses.map((e) => expenseRow(e)).join('')}</div>` : ''}`;
+}
+
+/** A month's full list: where the gold went, then the days (closed until tapped), with or without trips. */
 function monthListScreen(month) {
   const m = /^\d{4}-\d{2}$/.test(month ?? '') ? month : ui.month;
   const all = data.expenses.filter((e) => monthOf(e.date) === m);
@@ -323,6 +335,7 @@ function monthListScreen(month) {
   const hasTrips = without.length !== all.length;
   const shown = hasTrips && ui.monthListTrips === 'without' ? without : all;
   const days = byDay(shown);
+  const s = listSummary(data, m, hasTrips && ui.monthListTrips === 'without');
   const toggle = hasTrips
     ? `<div class="segmented small-seg"><button class="${ui.monthListTrips !== 'without' ? 'on' : ''}" data-action="month-trips" data-v="with">With ${W.trips.toLowerCase()} · ${format(sum(all))}</button>
         <button class="${ui.monthListTrips === 'without' ? 'on' : ''}" data-action="month-trips" data-v="without">Without · ${format(sum(without))}</button></div>`
@@ -333,8 +346,8 @@ function monthListScreen(month) {
       <p class="total">${format(sum(shown))}</p>
       <p class="small soft">${shown.length === 1 ? '1 expense' : `${shown.length} expenses`}${hasTrips && ui.monthListTrips === 'without' ? `, without ${W.trips.toLowerCase()}` : ''}</p>`)}
     ${toggle}
-    ${days.length ? days.map((d) => `<div class="group-head"><span class="h-small">${fmt(d.date, { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${format(d.totalCents)}</b></div>
-      <div class="list">${d.expenses.map((e) => expenseRow(e)).join('')}</div>`).join('') : hint(W.ledgerEmpty)}
+    ${s.totalCents > 0 ? breakdownCard(s, m) : ''}
+    ${days.length ? days.map(listDay).join('') : hint(W.ledgerEmpty)}
   </main>`;
 }
 
@@ -1184,6 +1197,9 @@ function render() {
   if (r.name !== 'trips') ui.tripEdit = null;
   if (r.name !== 'category') ui.catTrips = null;
   if (r.name !== 'all') ui.monthListTrips = null;
+  // Opened days stay open while you look at an expense or a category and come back; a tab, or another month, closes them.
+  if (TABS.includes(r.name) || (r.name === 'all' && r.a !== ui.openDaysMonth)) ui.openDays = new Set();
+  if (r.name === 'all') ui.openDaysMonth = r.a;
   if (r.name !== ui.lastScreen && TABS.includes(r.name)) ui.highlighted = null;
   ui.lastScreen = r.name;
   switch (r.name) {
@@ -1209,6 +1225,11 @@ const actions = {
   go: (el) => go(el.dataset.to),
   tab: (el) => { navDepth = 0; location.replace(el.dataset.to); },
   'month-trips': (el) => { ui.monthListTrips = el.dataset.v; render(); },
+  'list-day': (el) => {
+    const d = el.dataset.day;
+    if (ui.openDays.has(d)) ui.openDays.delete(d); else ui.openDays.add(d);
+    render();
+  },
   'recap-open': (el) => { ui.month = el.dataset.month; ui.highlighted = null; render(); },
   'recap-dismiss': (el) => { commit({ ...data, recapDismissed: el.dataset.month }); render(); },
   'this-month': () => { ui.month = today().slice(0, 7); ui.day = today(); ui.highlighted = null; ui.goalEdit = null; render(); },

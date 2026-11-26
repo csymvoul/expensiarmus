@@ -21,8 +21,8 @@ android {
         applicationId = "com.csymvoul.expenses"
         minSdk = 26
         targetSdk = 35
-        versionCode = 39
-        versionName = "1.22.0"
+        versionCode = 40
+        versionName = "1.23.0"
     }
 
     signingConfigs {

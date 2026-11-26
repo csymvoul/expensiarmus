@@ -140,6 +140,8 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
     var annalsYear by rememberSaveable { mutableStateOf(LocalDate.now().year) }
     var quickOpen by rememberSaveable { mutableStateOf(openRecord) }
     var prefill by remember { mutableStateOf<QuickPrefill?>(null) }
+    // The days opened on a month's full list: kept while you look at an expense or a category and come back.
+    var listOpenDays by remember { mutableStateOf(emptySet<LocalDate>()) }
     val route = stack.substringAfterLast('|')
 
     fun push(r: String) { stack = "$stack|$r" }
@@ -232,8 +234,12 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                 val listMonth = YearMonth.parse(route.removePrefix(ALL))
                 MonthListScreen(
                     month = listMonth,
-                    expenses = remember(data, listMonth) { data.expenses.filter { YearMonth.from(it.date) == listMonth } },
+                    data = data,
+                    openDays = listOpenDays,
+                    onToggleDay = { d -> listOpenDays = if (d in listOpenDays) listOpenDays - d else listOpenDays + d },
                     onOpen = { push(VIEW + it) },
+                    // As on the Ledger: a category opens for that month.
+                    onCategory = { c, t -> push(categoryRoute(c, t, listMonth.toString())) },
                     onBack = ::pop,
                 )
             }
@@ -416,7 +422,7 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                         if (month != YearMonth.now()) null else Trips.ongoing(data.trips, LocalDate.now())?.let { Trips.summary(data, it.id, LocalDate.now()) }
                     },
                     onOpenTrip = { push(TRIP + it) },
-                    onOpenMonthList = { push(ALL + it) },
+                    onOpenMonthList = { listOpenDays = emptySet(); push(ALL + it) },
                     onDismissRecap = { vm.dismissRecap(it.toString()) },
                     onAdd = { quickOpen = true },
                     onOpen = { push(VIEW + it) },

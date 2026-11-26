@@ -294,6 +294,13 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
 .row-amount small { font-size: 12px; color: var(--ink-soft); }
 .hint { text-align: center; color: var(--ink-soft); padding: 12px; }
 .group-head { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-bottom: 4px; border-bottom: 3px double var(--gold-soft); }
+/* A month's full list: each day a tappable header (date, count, total, chevron) that opens to its expenses. */
+.day-toggle { width: 100%; margin-top: 10px; padding: 10px 2px 8px; text-align: left; }
+.day-title { display: flex; align-items: baseline; gap: 8px; }
+.day-sum { display: flex; align-items: center; gap: 6px; }
+.day-toggle .chev svg { transition: transform 0.15s ease; }
+.day-toggle.open .chev svg { transform: rotate(90deg); }
+.day-toggle + .list { margin-top: 4px; }
 
 /* Calendar */
 .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }

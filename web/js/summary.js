@@ -68,6 +68,15 @@ export function monthlySummary(data, month) {
   };
 }
 
+/**
+ * The month as the full list shows it: everything, or without the trips' expenses. Without them the
+ * wards are left out, since a ward always counts everything spent and would read wrong against part of it.
+ */
+export function listSummary(data, month, leaveTripsOut = false) {
+  if (!leaveTripsOut) return monthlySummary(data, month);
+  return monthlySummary({ ...data, expenses: data.expenses.filter((e) => !e.tripId), goals: null }, month);
+}
+
 const MONTH_LETTERS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 const ym = (date) => date.slice(0, 7);
 const year = (date) => Number(date.slice(0, 4));
