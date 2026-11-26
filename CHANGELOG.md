@@ -1,5 +1,16 @@
 # Changelog
 
+## Web app 1.23.0 and iPhone app 1.20.0 – unreleased (2026-11-26)
+
+Android stays at 1.22.0 (nothing changes there).
+
+### Changed
+- **Thinner capitals on the web and iPhone apps.** Cinzel (the engraved capitals of headings, buttons, totals and the Quick add amount) is now drawn at its regular weight everywhere, as Android always has, instead of semibold and bold. The browser's faked bold is switched off too (`font-synthesis: none`), so nothing thickens it.
+- **A smaller Record expense button** on the web and iPhone apps: a 24px quill (was 30px) and less padding (8px top and bottom, 20px at the sides). With the thinner words it is now 217 × 44 px.
+
+### Tests
+- Web 104 (2 new: every Cinzel rule at weight 400 with no faked bold; the button's sizes). Android unchanged at 211. All passing. Checked in a browser at phone size, by day and at night: the Ledger's headings, total and button.
+
 ## 1.22.0 (Android), web app 1.22.0 and iPhone app 1.19.0 – unreleased (2026-11-26)
 
 ### Changed

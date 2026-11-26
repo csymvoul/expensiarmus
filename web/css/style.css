@@ -123,15 +123,18 @@ button { background: none; border: 0; padding: 0; cursor: pointer; text-align: i
 svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 svg.filled { fill: currentColor; stroke: none; }
 
-/* Headings: Cinzel in gold at night, burgundy on parchment. */
+/* Headings: Cinzel in gold at night, burgundy on parchment. Always at its regular weight, as on Android:
+   the engraved capitals stay thin (no bold, and no bold faked by the browser). */
 h1, h2, h3, .h-large, .h-medium, .h-small, .ornament, .btn, .fab, .segmented button {
   font-family: 'Cinzel', 'Trajan Pro', serif;
+  font-weight: 400; font-synthesis: none;
 }
+:is(h1, h2, h3, .h-large, .h-medium, .h-small, .ornament, .btn, .fab, .segmented button) :is(b, strong) { font-weight: 400; }
 h1, h2, h3, .h-large, .h-medium, .h-small, .gold { color: var(--primary); }
 h1, h2, h3 { margin: 0; }
-.h-large { font-size: 22px; font-weight: 700; letter-spacing: 1px; }
-.h-medium { font-size: 17px; font-weight: 600; }
-.h-small { font-size: 14px; font-weight: 600; }
+.h-large { font-size: 22px; font-weight: 400; letter-spacing: 1px; }
+.h-medium { font-size: 17px; font-weight: 400; }
+.h-small { font-size: 14px; font-weight: 400; }
 .small { font-size: 13px; }
 .soft { color: var(--ink-soft); }
 .italic { font-style: italic; }
@@ -161,7 +164,7 @@ p { margin: 4px 0; }
   background: var(--sparkle) center / contain no-repeat;
 }
 .bar-row { display: flex; align-items: center; gap: 4px; min-height: 56px; padding: 0 8px 0 12px; }
-.bar h1 { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
+.bar h1 { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 400; letter-spacing: 1px; white-space: nowrap; }
 .bar h1 span { overflow: hidden; text-overflow: ellipsis; }
 .bar-icon { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--gold); object-fit: cover; }
 .trip-chips { align-items: center; }
@@ -228,7 +231,7 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
   border: 1px solid var(--gold-soft);
   pointer-events: none;
 }
-.total { font-family: 'Cinzel', serif; font-size: 30px; font-weight: 700; color: var(--primary); margin: 0; }
+.total { font-family: 'Cinzel', serif; font-size: 30px; font-weight: 400; font-synthesis: none; color: var(--primary); margin: 0; }
 .goal-text { font-size: 15px; }
 .link { color: var(--primary); font-weight: 600; padding: 6px 0; text-align: left; }
 
@@ -243,7 +246,7 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
 .month-switch h2 { text-align: center; flex: 1; }
 
 .segmented { display: flex; border: 1px solid var(--gold); border-radius: 99px; overflow: hidden; margin: 12px 0; }
-.segmented button { flex: 1; padding: 10px; font-size: 14px; font-weight: 600; text-align: center; word-spacing: 4px; }
+.segmented button { flex: 1; padding: 10px; font-size: 14px; font-weight: 400; text-align: center; word-spacing: 4px; }
 .segmented button + button { border-left: 1px solid var(--gold); }
 .segmented button.on { background: var(--primary); color: var(--on-primary); }
 
@@ -278,7 +281,7 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
 .chip-icon { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--gold); object-fit: cover; vertical-align: middle; margin: -3px 6px -2px -4px; }
 
 /* Lists */
-.ornament { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; margin: 20px 0 6px; }
+.ornament { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 400; margin: 20px 0 6px; }
 .ornament::before, .ornament::after { content: ''; flex: 1; border-top: 3px double var(--gold); }
 .ornament span::before, .ornament span::after { content: ' ✦ '; color: var(--gold); }
 .list { display: flex; flex-direction: column; }
@@ -324,7 +327,7 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
    <span class="frame"><span class="frame-inner">…</span></span>; the shadow is a drop-shadow
    filter on the button, because the cut-corner clip would cut off an ordinary shadow. */
 .btn, .fab {
-  padding: 0; background: none; color: var(--on-primary); font-weight: 700; letter-spacing: 0.5px; text-align: center;
+  padding: 0; background: none; color: var(--on-primary); font-weight: 400; letter-spacing: 0.5px; text-align: center;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
 }
 .frame, .frame-inner, .frame-inner::before {
@@ -355,11 +358,11 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.45)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
 }
 .fab .frame { --cut: 14px; }
-.fab .frame-inner { --cut: 13px; padding: 15px 24px; }
+.fab .frame-inner { --cut: 13px; padding: 13px 20px; }
 .fab .frame-inner::before { --cut: 10px; }
 /* Record expense's quill, drawn without a badge: gold on the burgundy button by day, bronze on the gold one at night. */
-.fab .frame-inner.with-emblem { padding-top: 10px; padding-bottom: 10px; gap: 8px; }
-.fab-glyph { flex: none; display: block; width: 30px; height: 30px; background: var(--fab-glyph) center / contain no-repeat; }
+.fab .frame-inner.with-emblem { padding-top: 8px; padding-bottom: 8px; gap: 8px; }
+.fab-glyph { flex: none; display: block; width: 24px; height: 24px; background: var(--fab-glyph) center / contain no-repeat; }
 
 /* Forms */
 .field { display: flex; flex-direction: column; gap: 6px; }
@@ -414,7 +417,7 @@ input[type='range'] { width: 100%; accent-color: var(--primary); }
 .bar-labels span.on { color: var(--primary); font-weight: 700; }
 .glance { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
 .glance-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border: 1px solid var(--gold-soft); border-radius: 8px; background: var(--paper-center); text-align: center; }
-.glance-tile b { font-family: 'Cinzel', serif; font-size: 15px; color: var(--primary); white-space: nowrap; }
+.glance-tile b { font-family: 'Cinzel', serif; font-weight: 400; font-synthesis: none; font-size: 15px; color: var(--primary); white-space: nowrap; }
 .glance-tile small { font-size: 11px; color: var(--ink-soft); line-height: 1.2; }
 .import-summary { max-height: 50vh; overflow-y: auto; margin: 8px 0; }
 .import-summary .error { color: var(--error); }
@@ -440,7 +443,7 @@ main > .btn.wide { margin-top: 8px; }
 .toast.alert { display: flex; flex-direction: column; gap: 2px; width: calc(100% - 32px); max-width: 420px; text-align: left;
   bottom: auto; top: calc(76px + env(safe-area-inset-top)); background: var(--paper-center); color: var(--ink);
   border: 2px solid var(--gold); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); animation-duration: 6.5s; }
-.toast.alert b { color: var(--primary); font-family: 'Cinzel', serif; }
+.toast.alert b { color: var(--primary); font-family: 'Cinzel', serif; font-weight: 400; font-synthesis: none; }
 
 /* Bottom tab bar */
 .tabs {
@@ -465,7 +468,7 @@ main.with-tabs { padding-bottom: calc(170px + env(safe-area-inset-bottom)); }
 }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; }
 .quick-title { min-height: 40px !important; font-size: 16px !important; }
-.quick-amount { font-family: 'Cinzel', serif; font-size: 32px; font-weight: 700; color: var(--primary); text-align: center; line-height: 1.1; }
+.quick-amount { font-family: 'Cinzel', serif; font-size: 32px; font-weight: 400; font-synthesis: none; color: var(--primary); text-align: center; line-height: 1.1; }
 .quick-date { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; color: var(--ink-soft); }
 .quick-date input { min-height: 32px; width: auto; padding: 4px 10px; font-size: 15px; }
 .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }

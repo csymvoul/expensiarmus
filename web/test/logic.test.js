@@ -1316,3 +1316,27 @@ test('the app hands the widget its content after every save, settings change and
   assert.match(src, /visibilitychange[^\n]*updateWidget\(\)/);
   assert.match(readFileSync(new URL('../sw.js', import.meta.url), 'utf8'), /'js\/widget\.js'/);
 });
+
+test('Cinzel is drawn at its regular weight everywhere, as on Android (no bold, real or faked)', () => {
+  const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  // Every rule that names Cinzel, or styles text drawn in it, asks for 400.
+  const rules = css.match(/[^{}]+\{[^}]*\}/g).filter((r) => !r.trim().startsWith('@font-face'));
+  const cinzelSelectors = ['h1', '.h-large', '.h-medium', '.h-small', '.bar h1', '.total', '.segmented button', '.ornament', '.btn, .fab', '.glance-tile b', '.toast.alert b', '.quick-amount'];
+  for (const sel of cinzelSelectors) {
+    const rule = rules.find((r) => r.split('{')[0].trim().split(/\s*,\s*|\n/).includes(sel) || r.split('{')[0].trim().startsWith(sel));
+    assert.ok(rule, sel);
+    const w = rule.match(/font-weight:\s*(\d+)/);
+    if (w) assert.equal(w[1], '400', sel);
+  }
+  for (const r of rules.filter((x) => /font-family:\s*'Cinzel'/.test(x))) {
+    assert.match(r, /font-weight: 400/, r.slice(0, 60));
+    assert.match(r, /font-synthesis: none/, r.slice(0, 60));
+  }
+});
+
+test('the Record expense button is a step smaller: a 24px quill and less padding', () => {
+  const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
+  assert.match(css, /\.fab-glyph \{[^}]*width: 24px; height: 24px;/);
+  assert.match(css, /\.fab \.frame-inner\.with-emblem \{ padding-top: 8px; padding-bottom: 8px;/);
+  assert.match(css, /\.fab \.frame-inner \{ --cut: 13px; padding: 13px 20px; \}/);
+});
