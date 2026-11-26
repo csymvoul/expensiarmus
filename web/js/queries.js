@@ -180,3 +180,17 @@ export function saveFavorite(favorites, index, fav) {
 }
 
 export const removeFavoriteAt = (favorites, index) => (favorites ?? []).filter((_, i) => i !== index);
+
+/** Expenses grouped by day, newest day first, each with its my-share total. */
+export function byDay(expenses) {
+  const days = new Map();
+  for (const e of expenses) {
+    if (!days.has(e.date)) days.set(e.date, []);
+    days.get(e.date).push(e);
+  }
+  return [...days.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([date, list]) => ({
+    date,
+    totalCents: list.reduce((s, e) => s + myShareCents(e), 0),
+    expenses: list.sort((a, b) => a.title.toLowerCase().localeCompare(b.title.toLowerCase())),
+  }));
+}

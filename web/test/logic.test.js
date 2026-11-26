@@ -1213,3 +1213,27 @@ test('trips are managed in Settings, seen in Annals, picked when recording, and 
   assert.equal(wordsFor(true).trips, 'Portkeys');
   assert.equal(wordsFor(false).trips, 'Trips');
 });
+
+// --- the month's full list, and painted icons on the expense page ---
+import { byDay } from '../js/queries.js';
+
+test('a month\'s full list groups by day, newest first, and can leave trips out', () => {
+  const list = [e('2026-11-21', 6000, 'ENTERTAINMENT', 50, 'DINE_OUT', 'Trattoria'), e('2026-11-21', 1500, 'FUEL', 100, null, 'Bus'), e('2026-11-05', 2000, 'OTHER', 100, null, 'Gift')];
+  list[0] = { ...list[0], tripId: 'rome' };
+  assert.deepEqual(byDay(list).map((d) => [d.date, d.totalCents, d.expenses.map((x) => x.title)]),
+    [['2026-11-21', 4500, ['Bus', 'Trattoria']], ['2026-11-05', 2000, ['Gift']]]);
+  assert.deepEqual(byDay(withoutTrips(list)).map((d) => d.totalCents), [1500, 2000]);
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  assert.match(app, /case 'all': app\.innerHTML = monthListScreen\(r\.a\); break;/);
+  assert.match(app, /data-to="#\/all\/\$\{ui\.month\}"/);
+  assert.match(app, /const shown = hasTrips && ui\.monthListTrips === 'without' \? without : all;/);
+});
+
+test('the expense page shows the painted icons, not emoji, for category, food and trip', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  const view = app.slice(app.indexOf('function viewScreen('), app.indexOf('function favStar('));
+  assert.doesNotMatch(view, /\.emoji/);
+  assert.match(view, /row\('Category', c\.label, W\.nicknames \? c\.nickname : '', c\.icon\)/);
+  assert.match(view, /row\('Food', f\.label, W\.nicknames \? f\.nickname : '', f\.icon\)/);
+  assert.match(view, /EMBLEMS\.trip\)/);
+});

@@ -114,6 +114,8 @@ fun MonthScreen(
     /** The trip on today, shown on the current month's Ledger. */
     ongoingTrip: TripSummary?,
     onOpenTrip: (String) -> Unit,
+    /** Opens the month's full list. */
+    onOpenMonthList: (YearMonth) -> Unit,
     onOpenRecap: (YearMonth) -> Unit,
     onDismissRecap: (YearMonth) -> Unit,
     onAdd: () -> Unit,
@@ -128,7 +130,6 @@ fun MonthScreen(
 ) {
     val w = LocalWords.current
     // The Ledger lists the latest few expenses; "Show all" opens the whole month until the month changes.
-    var showAll by remember(summary.month) { mutableStateOf(false) }
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = bottomBar,
@@ -182,18 +183,16 @@ fun MonthScreen(
                     if (summary.expenses.isEmpty()) {
                         item { Hint(w.ledgerEmpty) }
                     }
-                    items(ExpenseQueries.ledgerPreview(summary.expenses, showAll), key = { it.id }) { expense ->
+                    items(ExpenseQueries.ledgerPreview(summary.expenses, false), key = { it.id }) { expense ->
                         ExpenseRow(expense, onClick = { onOpen(expense.id) })
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
-                    if (summary.expenses.size > ExpenseQueries.LATEST_COUNT) {
+                    // The latest few here; the month's full list (with or without trips) is its own page.
+                    if (summary.expenses.isNotEmpty()) {
                         item {
                             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                TextButton(onClick = { showAll = !showAll }) {
-                                    Text(
-                                        if (showAll) "Show only the latest ${ExpenseQueries.LATEST_COUNT}"
-                                        else "Show all ${summary.expenses.size} ›",
-                                    )
+                                TextButton(onClick = { onOpenMonthList(summary.month) }) {
+                                    Text(if (summary.expenses.size > ExpenseQueries.LATEST_COUNT) "Show all ${summary.expenses.size} ›" else "Open the full list ›")
                                 }
                             }
                         }

@@ -3,7 +3,7 @@ import { CATEGORIES, FOOD_TYPES, TAB_ICONS, EMBLEMS, WHOLE_MONTH, goalKey, witho
 import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
 import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary, monthRecap, recapText, recapMonthFor } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
-import { dailyTotals, onDay, calendarCells, byCategory, inPeriod, isFavorite, toggleFavorite, MAX_FAVORITES, saveFavorite, removeFavoriteAt, search, shiftMonth, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
+import { dailyTotals, onDay, calendarCells, byCategory, byDay, inPeriod, isFavorite, toggleFavorite, MAX_FAVORITES, saveFavorite, removeFavoriteAt, search, shiftMonth, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
 import { toCsv, importCsv, importSummary } from './csv.js';
 import { saveTrip, deleteTrip, tripStatus, tripsToOffer, ongoingTrip, withoutTrips, tripSummary } from './trips.js';
 import { load, save, KEY } from './store.js';
@@ -38,7 +38,7 @@ const ui = {
   highlighted: null,
   modal: false,
   quick: null, // the Quick add sheet, when open
-  ledgerAll: null, // the month whose whole ledger is shown; otherwise only the latest few
+  monthListTrips: null, // on a month's full list: 'without' leaves trip expenses out
   importing: null, // Apparate: what the picked CSV would add, waiting for the user to confirm
   annals: { view: 'year', year: Number(today().slice(0, 4)), bar: null },
 };
@@ -301,11 +301,33 @@ function recapCard() {
 
 /** The newest few expenses of the month, with a link to show them all (or only the latest again). */
 function ledgerList(expenses) {
-  const showAll = ui.ledgerAll === ui.month;
-  const more = expenses.length > LATEST_COUNT
-    ? `<button class="link more-link" data-action="ledger-all">${showAll ? `Show only the latest ${LATEST_COUNT}` : `Show all ${expenses.length} ›`}</button>`
+  // The latest few here; the month's full list (with or without trips) is its own page.
+  const more = `<button class="link more-link" data-action="go" data-to="#/all/${ui.month}">${expenses.length > LATEST_COUNT ? `Show all ${expenses.length} ›` : 'Open the full list ›'}</button>`;
+  return `<div class="list">${ledgerPreview(expenses, false).map((e) => expenseRow(e)).join('')}</div>${more}`;
+}
+
+/** A month's full list, by day, with or without the expenses of trips. */
+function monthListScreen(month) {
+  const m = /^\d{4}-\d{2}$/.test(month ?? '') ? month : ui.month;
+  const all = data.expenses.filter((e) => monthOf(e.date) === m);
+  const without = withoutTrips(all);
+  const sum = (list) => list.reduce((s, e) => s + myShareCents(e), 0);
+  const hasTrips = without.length !== all.length;
+  const shown = hasTrips && ui.monthListTrips === 'without' ? without : all;
+  const days = byDay(shown);
+  const toggle = hasTrips
+    ? `<div class="segmented small-seg"><button class="${ui.monthListTrips !== 'without' ? 'on' : ''}" data-action="month-trips" data-v="with">With ${W.trips.toLowerCase()} · ${format(sum(all))}</button>
+        <button class="${ui.monthListTrips === 'without' ? 'on' : ''}" data-action="month-trips" data-v="without">Without · ${format(sum(without))}</button></div>`
     : '';
-  return `<div class="list">${ledgerPreview(expenses, showAll).map((e) => expenseRow(e)).join('')}</div>${more}`;
+  return `${header(monthTitle(m), { backBtn: true, icon: TAB_ICONS.month })}
+  <main>
+    ${card(`<span class="label">${esc(W.spentThisMonth)}</span>
+      <p class="total">${format(sum(shown))}</p>
+      <p class="small soft">${shown.length === 1 ? '1 expense' : `${shown.length} expenses`}${hasTrips && ui.monthListTrips === 'without' ? `, without ${W.trips.toLowerCase()}` : ''}</p>`)}
+    ${toggle}
+    ${days.length ? days.map((d) => `<div class="group-head"><span class="h-small">${fmt(d.date, { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${format(d.totalCents)}</b></div>
+      <div class="list">${d.expenses.map((e) => expenseRow(e)).join('')}</div>`).join('') : hint(W.ledgerEmpty)}
+  </main>`;
 }
 
 /** Above the calendar: the month's total, how it compares with the month before, and three small facts. */
@@ -653,7 +675,8 @@ function viewScreen(id) {
   }
   const c = category(e.category);
   const f = e.foodType ? foodType(e.foodType) : null;
-  const row = (label, value, note = '') => `<div class="detail"><span class="h-small">${label}</span><span>${esc(value)}</span>${note ? `<span class="small soft italic">${esc(note)}</span>` : ''}</div>`;
+  // A detail line; [icon] puts the painted emblem before the value (categories, food types, trips).
+  const row = (label, value, note = '', icon = '') => `<div class="detail"><span class="h-small">${label}</span><span class="detail-value">${icon ? chipIcon({ icon }) : ''}${esc(value)}</span>${note ? `<span class="small soft italic">${esc(note)}</span>` : ''}</div>`;
   // Amend and delete are the labelled buttons at the bottom; the top bar only has Back.
   return `${header(W.entry, { backBtn: true, icon: TAB_ICONS.month })}
   <main>
@@ -664,10 +687,10 @@ function viewScreen(id) {
         ${favStar(e)}</div>
       <hr class="gold-rule">
       ${row('Date', fmt(e.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}
-      ${row('Category', `${c.emoji} ${c.label}`, W.nicknames ? c.nickname : '')}
-      ${f ? row('Food', `${f.emoji} ${f.label}`, W.nicknames ? f.nickname : '') : ''}
+      ${row('Category', c.label, W.nicknames ? c.nickname : '', c.icon)}
+      ${f ? row('Food', f.label, W.nicknames ? f.nickname : '', f.icon) : ''}
       ${row('Split', splitLine(e, format))}
-      ${e.tripId && (data.trips ?? []).some((t) => t.id === e.tripId) ? row(W.trip, data.trips.find((t) => t.id === e.tripId).name) : ''}`)}
+      ${e.tripId && (data.trips ?? []).some((t) => t.id === e.tripId) ? row(W.trip, data.trips.find((t) => t.id === e.tripId).name, '', EMBLEMS.trip) : ''}`)}
     <button class="btn wide" data-action="amend" data-id="${esc(e.id)}"><span class="frame"><span class="frame-inner">${esc(W.amend)}</span></span></button>
     <button class="link center-link" data-action="ask-delete">${esc(W.deleteLink)}</button>
   </main>${ui.modal ? deleteModal(e.title, e.id) : ''}`;
@@ -1152,6 +1175,7 @@ function render() {
   if (r.name !== 'favorites') ui.favEdit = null;
   if (r.name !== 'trips') ui.tripEdit = null;
   if (r.name !== 'category') ui.catTrips = null;
+  if (r.name !== 'all') ui.monthListTrips = null;
   if (r.name !== ui.lastScreen && TABS.includes(r.name)) ui.highlighted = null;
   ui.lastScreen = r.name;
   switch (r.name) {
@@ -1161,6 +1185,7 @@ function render() {
     case 'search': app.innerHTML = searchScreen(); break;
     case 'favorites': app.innerHTML = favoritesScreen(); break;
     case 'trips': app.innerHTML = tripsScreen(); break;
+    case 'all': app.innerHTML = monthListScreen(r.a); break;
     case 'trip': app.innerHTML = tripScreen(r.a); break;
     case 'goals': app.innerHTML = goalsScreen(); break;
     case 'settings':
@@ -1175,7 +1200,7 @@ const actions = {
   back,
   go: (el) => go(el.dataset.to),
   tab: (el) => { navDepth = 0; location.replace(el.dataset.to); },
-  'ledger-all': () => { ui.ledgerAll = ui.ledgerAll === ui.month ? null : ui.month; render(); },
+  'month-trips': (el) => { ui.monthListTrips = el.dataset.v; render(); },
   'recap-open': (el) => { ui.month = el.dataset.month; ui.highlighted = null; render(); },
   'recap-dismiss': (el) => { commit({ ...data, recapDismissed: el.dataset.month }); render(); },
   'this-month': () => { ui.month = today().slice(0, 7); ui.day = today(); ui.highlighted = null; ui.goalEdit = null; render(); },

@@ -40,6 +40,7 @@ import com.csymvoul.expenses.domain.Trips
 import com.csymvoul.expenses.ui.components.LocalTripNames
 import com.csymvoul.expenses.ui.screens.TripScreen
 import com.csymvoul.expenses.ui.screens.TripsScreen
+import com.csymvoul.expenses.ui.screens.MonthListScreen
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.domain.MonthlySummary
 import com.csymvoul.expenses.domain.PeriodSummary
@@ -117,6 +118,7 @@ private const val SETTINGS = "settings"
 private const val SEARCH = "search"
 private const val FAVORITES = "favorites"
 private const val TRIPS = "trips"
+private const val ALL = "all:" // + month: the month's full list
 private const val TRIP = "trip:" // + trip id
 private const val EDIT = "edit:" // + expense id, empty for a new expense
 private const val VIEW = "view:" // + expense id: read-only view
@@ -226,6 +228,15 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
     CompositionLocalProvider(LocalTripNames provides tripNames) {
     WizardBackdrop {
         when {
+            route.startsWith(ALL) -> key(route) {
+                val listMonth = YearMonth.parse(route.removePrefix(ALL))
+                MonthListScreen(
+                    month = listMonth,
+                    expenses = remember(data, listMonth) { data.expenses.filter { YearMonth.from(it.date) == listMonth } },
+                    onOpen = { push(VIEW + it) },
+                    onBack = ::pop,
+                )
+            }
             route == TRIPS -> TripsScreen(
                 trips = data.trips,
                 onSave = vm::saveTrip,
@@ -405,6 +416,7 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                         if (month != YearMonth.now()) null else Trips.ongoing(data.trips, LocalDate.now())?.let { Trips.summary(data, it.id, LocalDate.now()) }
                     },
                     onOpenTrip = { push(TRIP + it) },
+                    onOpenMonthList = { push(ALL + it) },
                     onDismissRecap = { vm.dismissRecap(it.toString()) },
                     onAdd = { quickOpen = true },
                     onOpen = { push(VIEW + it) },

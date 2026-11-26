@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.20.0 (Android), web app 1.20.0 and iPhone app 1.17.0 – unreleased (2026-11-26)
+
+### Added
+- **A month's full list.** "Show all ›" under the Ledger's latest five (or "Open the full list ›" when there are five or fewer) opens a page with every expense of that month, grouped by day with each day's total. When some of them belong to a trip, a toggle shows the month **With portkeys · €95.00** or **Without · €35.00**, and the total and list follow it. (It replaces the Ledger's own Show all / Show only the latest 5.)
+
+### Changed
+- **The expense page shows the painted icons**: the Category, Food and Trip lines now start with the category's, food type's and trip's emblem instead of an emoji.
+- Tests: Android 206 (2 new), web 99 (2 new). All passing. Checked in a browser: the expense page's icons, and the November list with and without the Rome dinner.
+
+### Known issues
+- Not yet checked on a phone.
+
 ## 1.19.0 (Android), web app 1.19.0 and iPhone app 1.16.0 – unreleased (2026-11-26)
 
 ### Added

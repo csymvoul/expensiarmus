@@ -26,10 +26,18 @@ data class MonthGlance(
     val changePercent: Int?,
 )
 
+/** Expenses of one day, with my-share total. */
+data class DayGroup(val date: LocalDate, val totalCents: Long, val expenses: List<Expense>)
+
 /** Expenses of one month, with my-share total. */
 data class MonthGroup(val month: YearMonth, val totalCents: Long, val expenses: List<Expense>)
 
 object ExpenseQueries {
+    /** Expenses grouped by day, newest day first, titles in order within a day. Same as the web app. */
+    fun byDay(expenses: List<Expense>): List<DayGroup> =
+        expenses.groupBy { it.date }.toSortedMap(compareByDescending { it })
+            .map { (d, list) -> DayGroup(d, list.sumOf { it.myShareCents }, list.sortedBy { it.title.lowercase() }) }
+
     /** How many of the month's expenses the Ledger lists before "Show all". */
     const val LATEST_COUNT = 5
 

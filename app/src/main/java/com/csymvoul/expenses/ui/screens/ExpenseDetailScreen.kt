@@ -1,5 +1,6 @@
 package com.csymvoul.expenses.ui.screens
 
+import com.csymvoul.expenses.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,7 +45,6 @@ import com.csymvoul.expenses.ui.components.ParchmentCard
 import com.csymvoul.expenses.ui.components.WizardButton
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.theme.color
-import com.csymvoul.expenses.ui.theme.emoji
 import com.csymvoul.expenses.ui.theme.icon
 import com.csymvoul.expenses.ui.components.Tab
 import com.csymvoul.expenses.ui.theme.nickname
@@ -120,10 +120,10 @@ fun ExpenseDetailScreen(
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
                 DetailRow("Date", expense.date.format(longDate))
-                DetailRow("Category", "${expense.category.emoji} ${expense.category.label}", expense.category.nickname.takeIf { w.nicknames })
-                expense.foodType?.let { DetailRow("Food", "${it.emoji} ${it.label}", it.nickname.takeIf { w.nicknames }) }
+                DetailRow("Category", expense.category.label, expense.category.nickname.takeIf { w.nicknames }, expense.category.icon)
+                expense.foodType?.let { DetailRow("Food", it.label, it.nickname.takeIf { w.nicknames }, it.icon) }
                 DetailRow("Split", ExpenseDetails.splitLine(expense))
-                expense.tripId?.let { LocalTripNames.current[it] }?.let { DetailRow(w.trip, it, null) }
+                expense.tripId?.let { LocalTripNames.current[it] }?.let { DetailRow(w.trip, it, null, R.drawable.emblem_trip) }
             }
             WizardButton(onClick = { onEdit(expense.id) }, modifier = Modifier.fillMaxWidth()) {
                 Text(w.amend)
@@ -148,10 +148,17 @@ fun ExpenseDetailScreen(
 }
 
 @Composable
-private fun DetailRow(label: String, value: String, note: String? = null) {
+private fun DetailRow(label: String, value: String, note: String? = null, @androidx.annotation.DrawableRes icon: Int? = null) {
     Column {
         Text(label, style = MaterialTheme.typography.titleSmall)
-        Text(value, style = MaterialTheme.typography.bodyLarge)
+        // [icon] puts the painted emblem before the value (categories, food types, trips).
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            icon?.let {
+                EmblemBadge(it, size = 22.dp)
+                Spacer(Modifier.width(8.dp))
+            }
+            Text(value, style = MaterialTheme.typography.bodyLarge)
+        }
         note?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, fontStyle = FontStyle.Italic, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
