@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.21.1 (Android), web app 1.21.1 and iPhone app 1.18.1 – unreleased (2026-11-26)
+
+### Changed
+- **The widgets use the app's own icons, never emoji** (Android and iPhone). The heading carries the pouch emblem, the trip line the trip emblem (instead of ✦), and each ward its category's painted emblem (the pouch for the whole month) instead of 🏰, 🍽️ and the like. A ward over its goal turns burgundy (gold by night), with no ⚠.
+- **A new quill glyph for Quick add** (`art/glyph-quill-light.svg` / `-dark.svg`): a quill with a plus, bronze by day and gold by night, drawn without a badge like the ✓ and ☆ glyphs. It replaces the "+" in a burgundy circle on both widgets.
+- The web app tells the iPhone widget which emblem goes with each ward (`icon`: `cat_rent`, `logo_pouch`…); the widget carries the emblems in its own assets.
+
+### Tests
+- Android 211 (3 new: the widget's emblems, quill and no emoji or symbols; two older ones updated), web 102 (the widget test now also checks the emblem names and that no emoji are sent), iPhone 1 new (every emblem the widget can be sent is in its assets, the quill in both looks). All passing; the iPhone tests compile, and with no iPhone simulator here the 6 widget logic tests were run on the Mac against the same source and pass.
+
+### Known issues
+- Neither widget has been seen on a phone with the emblems yet.
+
 ## 1.21.0 (Android), web app 1.21.0 and iPhone app 1.18.0 – unreleased (2026-11-26)
 
 ### Added

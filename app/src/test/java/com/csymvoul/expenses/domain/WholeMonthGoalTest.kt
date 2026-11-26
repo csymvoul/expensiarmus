@@ -75,7 +75,8 @@ class WholeMonthGoalTest {
         val data = AppData(listOf(e("2026-11-01", 45_000, Category.RENT), e("2026-11-02", 900), e("2026-11-03", 500, Category.FUEL)), goals)
         val w = WidgetContent.of(data, nov, Words.WIZARD)
         assertEquals(3, w.wards.size)
-        assertEquals("✦ Whole month · €464.00 of €1,000.00", w.wards[0].text)
+        assertEquals("Whole month · €464.00 of €1,000.00", w.wards[0].text)
+        assertEquals(com.csymvoul.expenses.R.drawable.emblem_logo_pouch, w.wards[0].icon)
         assertTrue(w.wards.drop(1).none { it.text.startsWith("✦") })
     }
 

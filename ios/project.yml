@@ -6,8 +6,8 @@ options:
     iOS: "16.0"
 settings:
   base:
-    MARKETING_VERSION: "1.18.0"
-    CURRENT_PROJECT_VERSION: "34"
+    MARKETING_VERSION: "1.18.1"
+    CURRENT_PROJECT_VERSION: "35"
     SWIFT_VERSION: "5.0"
 targets:
   Expensiarmus:

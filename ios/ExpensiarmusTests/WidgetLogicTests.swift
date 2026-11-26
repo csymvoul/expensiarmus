@@ -4,7 +4,7 @@ import XCTest
 final class WidgetLogicTests: XCTestCase {
     private let message: [String: Any] = [
         "month": "2026-11", "heading": "Expensiarmus · November", "total": "€560.00", "label": "Gold spent this month",
-        "wards": [["text": "✦ Whole month · €560.00 of €1,000.00", "percent": 56, "over": false]],
+        "wards": [["text": "Whole month · €560.00 of €1,000.00", "percent": 56, "over": false, "icon": "logo_pouch"]],
         "empty": NSNull(),
         "trips": [
             ["name": "Rome", "start": "2026-11-20", "end": "2026-11-28", "spent": "€60.00", "budget": "€500.00"],
@@ -15,7 +15,7 @@ final class WidgetLogicTests: XCTestCase {
     func testTheWebAppsMessageBecomesASnapshot() throws {
         let s = try XCTUnwrap(WidgetSnapshot(message: message))
         XCTAssertEqual(s.total, "€560.00")
-        XCTAssertEqual(s.wards, [WidgetSnapshot.Ward(text: "✦ Whole month · €560.00 of €1,000.00", percent: 56, over: false)])
+        XCTAssertEqual(s.wards, [WidgetSnapshot.Ward(text: "Whole month · €560.00 of €1,000.00", percent: 56, over: false, icon: "logo_pouch")])
         XCTAssertNil(s.empty)
         XCTAssertNil(s.trips[1].budget)
         XCTAssertNil(WidgetSnapshot(message: ["month": "2026-11"]))
@@ -24,10 +24,10 @@ final class WidgetLogicTests: XCTestCase {
 
     func testTheTripLineFollowsTheDayWhileTheAppIsClosed() throws {
         let s = try XCTUnwrap(WidgetSnapshot(message: message))
-        XCTAssertEqual(s.tripLine(on: "2026-11-22"), "✦ Rome · day 3 of 9 · €60.00 of €500.00")
-        XCTAssertEqual(s.tripLine(on: "2026-11-28"), "✦ Rome · day 9 of 9 · €60.00 of €500.00")
+        XCTAssertEqual(s.tripLine(on: "2026-11-22"), "Rome · day 3 of 9 · €60.00 of €500.00")
+        XCTAssertEqual(s.tripLine(on: "2026-11-28"), "Rome · day 9 of 9 · €60.00 of €500.00")
         XCTAssertNil(s.tripLine(on: "2026-11-29"))
-        XCTAssertEqual(s.tripLine(on: "2026-12-24"), "✦ Xmas · day 2 of 5 · €0.00")
+        XCTAssertEqual(s.tripLine(on: "2026-12-24"), "Xmas · day 2 of 5 · €0.00")
     }
 
     func testASnapshotFromLastMonthIsNotShownAsThisMonth() throws {
@@ -52,6 +52,19 @@ final class WidgetLogicTests: XCTestCase {
         XCTAssertEqual(AppGroup.pick(from: ["group.com.csymvoul.expensiarmus.X", "group.com.csymvoul.expensiarmus"]), "group.com.csymvoul.expensiarmus")
         XCTAssertEqual(AppGroup.pick(from: []), "group.com.csymvoul.expensiarmus")
         XCTAssertEqual(AppGroup.groups(inProvisioningProfile: nil), [])
+    }
+
+    func testEveryEmblemTheWebAppNamesIsInTheWidgetsAssets() throws {
+        // The widget bundle's asset catalog is checked at build time; here: the names the web app can send.
+        let names = ["logo_pouch", "trip", "cat_rent", "cat_supermarket", "cat_entertainment", "cat_bills", "cat_shopping", "cat_fuel", "cat_other"]
+        let catalog = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("ExpensiarmusWidget/Assets.xcassets")
+        for name in names {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: catalog.appendingPathComponent("\(name).imageset/\(name).png").path), name)
+        }
+        for look in ["light", "dark"] {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: catalog.appendingPathComponent("quill.imageset/quill_\(look).png").path), look)
+        }
     }
 
     func testWidgetLinksOpenTheirScreen() {

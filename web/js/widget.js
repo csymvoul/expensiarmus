@@ -1,6 +1,6 @@
 // What the iPhone home-screen widget shows, worked out here (same rules as Android's WidgetContent)
 // and handed to the Swift shell, which saves it where the widget can read it.
-import { category } from './model.js';
+import { category, WHOLE_MONTH } from './model.js';
 import { format } from './money.js';
 import { monthlySummary } from './summary.js';
 import { tripsToOffer, tripSummary } from './trips.js';
@@ -14,13 +14,15 @@ const MONTH = (month) => new Date(`${month}-01T00:00:00Z`).toLocaleDateString('e
  */
 export function widgetContent(data, month, words, today) {
   const s = monthlySummary(data, month);
-  const line = (name, g) => ({ text: `${name} · ${format(g.spentCents)} of ${format(g.goalCents)}`, percent: Math.min(100, Math.max(0, g.percent)), over: g.isOver });
-  const whole = s.totalGoal ? [line(`✦ ${words.wholeMonth}`, s.totalGoal)] : [];
+  // Each ward comes with the name of its painted emblem (cat_rent, logo_pouch…), which the widget carries too.
+  const emblem = (path) => path.split('/').pop().replace(/\.png$/, '');
+  const line = (name, g, icon) => ({ text: `${name} · ${format(g.spentCents)} of ${format(g.goalCents)}`, percent: Math.min(100, Math.max(0, g.percent)), over: g.isOver, icon: emblem(icon) });
+  const whole = s.totalGoal ? [line(words.wholeMonth, s.totalGoal, WHOLE_MONTH.icon)] : [];
   const wards = [...whole, ...s.categories
     .filter((c) => c.goal)
     .sort((a, b) => b.goal.fraction - a.goal.fraction)
     .slice(0, 3 - whole.length)
-    .map((c) => line(`${category(c.category).emoji} ${category(c.category).label}`, c.goal))];
+    .map((c) => line(category(c.category).label, c.goal, category(c.category).icon))];
   return {
     month,
     heading: `Expensiarmus · ${MONTH(month)}`,

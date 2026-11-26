@@ -15,17 +15,19 @@ import com.csymvoul.expenses.data.ExpenseStore
 import java.io.File
 import java.time.YearMonth
 
-/** Home-screen widget: this month's total, the trip on today, up to three goal bars, and ➕ for Quick add. */
+/** Home-screen widget: this month's total, the trip on today, up to three goal bars (each with its painted emblem), and Quick add. */
 class LedgerWidget : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         manager.updateAppWidget(ids, build(context))
     }
 
+    private data class Ward(val row: Int, val icon: Int, val text: Int, val bar: Int)
+
     companion object {
         private val WARDS = listOf(
-            Triple(R.id.widget_ward1, R.id.widget_ward1_text, R.id.widget_ward1_bar),
-            Triple(R.id.widget_ward2, R.id.widget_ward2_text, R.id.widget_ward2_bar),
-            Triple(R.id.widget_ward3, R.id.widget_ward3_text, R.id.widget_ward3_bar),
+            Ward(R.id.widget_ward1, R.id.widget_ward1_icon, R.id.widget_ward1_text, R.id.widget_ward1_bar),
+            Ward(R.id.widget_ward2, R.id.widget_ward2_icon, R.id.widget_ward2_text, R.id.widget_ward2_bar),
+            Ward(R.id.widget_ward3, R.id.widget_ward3_icon, R.id.widget_ward3_text, R.id.widget_ward3_bar),
         )
 
         /** Redraws every placed widget, e.g. after an expense or a setting changed. */
@@ -43,13 +45,16 @@ class LedgerWidget : AppWidgetProvider() {
             views.setTextViewText(R.id.widget_heading, content.heading)
             views.setTextViewText(R.id.widget_total, content.total)
             views.setTextViewText(R.id.widget_label, content.label)
-            views.setViewVisibility(R.id.widget_trip, if (content.trip == null) View.GONE else View.VISIBLE)
+            views.setViewVisibility(R.id.widget_trip_row, if (content.trip == null) View.GONE else View.VISIBLE)
             views.setTextViewText(R.id.widget_trip, content.trip ?: "")
-            WARDS.forEachIndexed { i, (row, text, bar) ->
+            WARDS.forEachIndexed { i, (row, icon, text, bar) ->
                 val ward = content.wards.getOrNull(i)
                 views.setViewVisibility(row, if (ward == null) View.GONE else View.VISIBLE)
                 if (ward != null) {
-                    views.setTextViewText(text, (if (ward.isOver) "⚠ " else "") + ward.text)
+                    views.setImageViewResource(icon, ward.icon)
+                    views.setTextViewText(text, ward.text)
+                    // Over its goal: the line turns burgundy (gold by night), like the app's broken ward.
+                    views.setTextColor(text, context.getColor(if (ward.isOver) R.color.widget_heading else R.color.widget_ink))
                     views.setProgressBar(bar, 100, ward.percent, false)
                 }
             }

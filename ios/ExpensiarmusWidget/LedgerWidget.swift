@@ -41,19 +41,19 @@ extension WidgetSnapshot {
     static let sample = WidgetSnapshot(
         month: WidgetSnapshot.day(of: Date()).prefix(7).description,
         heading: "Expensiarmus", total: "€560.00", label: "Gold spent this month",
-        wards: [Ward(text: "✦ Whole month · €560.00 of €1,000.00", percent: 56, over: false)],
+        wards: [Ward(text: "Whole month · €560.00 of €1,000.00", percent: 56, over: false, icon: "logo_pouch")],
         empty: nil, trips: []
     )
 }
 
 /// Parchment by day, a candle-lit castle by night (the same colours as the Android widget).
 private struct Palette {
-    let paper, gold, heading, ink, soft, track, accent, onAccent: Color
+    let paper, gold, heading, ink, soft, track: Color
 
     static func of(_ scheme: ColorScheme) -> Palette {
         scheme == .dark
-            ? Palette(paper: hex(0x241C16), gold: hex(0xD9A441), heading: hex(0xE0B656), ink: hex(0xEDE0C4), soft: hex(0xCDBB98), track: hex(0x3A2E22), accent: hex(0xE0B656), onAccent: hex(0x3A2800))
-            : Palette(paper: hex(0xF8EDD3), gold: hex(0xA87A1E), heading: hex(0x7B1E1E), ink: hex(0x3B2A1A), soft: hex(0x6B5236), track: hex(0xE6D3AA), accent: hex(0x7B1E1E), onAccent: hex(0xFFF4DC))
+            ? Palette(paper: hex(0x241C16), gold: hex(0xD9A441), heading: hex(0xE0B656), ink: hex(0xEDE0C4), soft: hex(0xCDBB98), track: hex(0x3A2E22))
+            : Palette(paper: hex(0xF8EDD3), gold: hex(0xA87A1E), heading: hex(0x7B1E1E), ink: hex(0x3B2A1A), soft: hex(0x6B5236), track: hex(0xE6D3AA))
     }
 
     private static func hex(_ v: Int) -> Color {
@@ -84,23 +84,26 @@ struct LedgerWidgetView: View {
         let today = WidgetSnapshot.day(of: entry.date)
         if let s = entry.snapshot, s.isFor(day: today) {
             VStack(alignment: .leading, spacing: 3) {
-                HStack(alignment: .firstTextBaseline) {
+                HStack(alignment: .center, spacing: 5) {
+                    Emblem(name: "logo_pouch", size: 18)
                     Text(family == .systemSmall ? String(s.heading.split(separator: "·").last ?? "").trimmingCharacters(in: .whitespaces) : s.heading)
                         .font(.system(size: 12, weight: .bold, design: .serif)).foregroundStyle(p.heading).lineLimit(1)
                     Spacer(minLength: 4)
                     if family != .systemSmall {
-                        Link(destination: WidgetLinks.quickAdd) {
-                            Text("+").font(.system(size: 18, weight: .bold, design: .serif)).foregroundStyle(p.onAccent)
-                                .frame(width: 26, height: 26).background(Circle().fill(p.accent))
-                        }
+                        // Quick add: the quill glyph (bronze by day, gold by night), drawn without a badge.
+                        Link(destination: WidgetLinks.quickAdd) { Emblem(name: "quill", size: 28) }
                     }
                 }
                 Text(s.total).font(.system(size: family == .systemSmall ? 24 : 28, weight: .bold, design: .serif))
                     .foregroundStyle(p.ink).minimumScaleFactor(0.6).lineLimit(1)
                 Text(s.label).font(.system(size: 11, design: .serif)).foregroundStyle(p.soft).lineLimit(1)
                 if let trip = s.tripLine(on: today) {
-                    Text(trip).font(.system(size: 11, weight: .bold, design: .serif)).foregroundStyle(p.heading)
-                        .lineLimit(family == .systemSmall ? 2 : 1).padding(.top, 2)
+                    HStack(alignment: .center, spacing: 5) {
+                        Emblem(name: "trip", size: 16)
+                        Text(trip).font(.system(size: 11, weight: .bold, design: .serif)).foregroundStyle(p.heading)
+                            .lineLimit(family == .systemSmall ? 2 : 1)
+                    }
+                    .padding(.top, 2)
                 }
                 Spacer(minLength: 2)
                 let wards = family == .systemSmall ? Array(s.wards.prefix(1)) : s.wards
@@ -109,18 +112,35 @@ struct LedgerWidgetView: View {
                 }
                 ForEach(Array(wards.enumerated()), id: \.offset) { _, ward in
                     VStack(alignment: .leading, spacing: 2) {
-                        Text((ward.over ? "⚠ " : "") + ward.text).font(.system(size: 10, design: .serif)).foregroundStyle(ward.over ? p.heading : p.ink).lineLimit(1)
+                        HStack(alignment: .center, spacing: 4) {
+                            if let icon = ward.icon { Emblem(name: icon, size: 14) }
+                            // Over its goal the line turns burgundy (gold by night), like the app's broken ward.
+                            Text(ward.text).font(.system(size: 10, design: .serif)).foregroundStyle(ward.over ? p.heading : p.ink).lineLimit(1)
+                        }
                         Bar(percent: ward.percent, fill: ward.over ? p.heading : p.gold, track: p.track)
                     }
                 }
             }
         } else {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Expensiarmus").font(.system(size: 13, weight: .bold, design: .serif)).foregroundStyle(p.heading)
+                HStack(spacing: 5) {
+                    Emblem(name: "logo_pouch", size: 18)
+                    Text("Expensiarmus").font(.system(size: 13, weight: .bold, design: .serif)).foregroundStyle(p.heading)
+                }
                 Spacer()
                 Text("Open the app to fill the Ledger.").font(.system(size: 12, design: .serif)).foregroundStyle(p.soft)
             }
         }
+    }
+}
+
+/// One of the app's painted emblems (the same PNGs as the web app and Android), from the widget's assets.
+private struct Emblem: View {
+    let name: String
+    let size: CGFloat
+
+    var body: some View {
+        Image(name).resizable().interpolation(.high).scaledToFit().frame(width: size, height: size).accessibilityHidden(true)
     }
 }
 

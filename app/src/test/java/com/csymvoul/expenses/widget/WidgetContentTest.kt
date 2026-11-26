@@ -33,8 +33,8 @@ class WidgetContentTest {
         assertEquals("€233.00", w.total)
         assertEquals("Gold spent this month", w.label)
         assertEquals(3, w.wards.size)
-        assertEquals(WardLine("🛍️ Shopping · €15.00 of €10.00", 100, true), w.wards[0])
-        assertEquals(WardLine("🍽️ Entertainment · €48.00 of €60.00", 80, false), w.wards[1])
+        assertEquals(WardLine("Shopping · €15.00 of €10.00", 100, true, com.csymvoul.expenses.R.drawable.emblem_cat_shopping), w.wards[0])
+        assertEquals(WardLine("Entertainment · €48.00 of €60.00", 80, false, com.csymvoul.expenses.R.drawable.emblem_cat_entertainment), w.wards[1])
         assertEquals(75, w.wards[2].percent)
         assertNull(w.emptyNote)
     }
@@ -55,7 +55,7 @@ class WidgetContentTest {
             trips = listOf(rome),
         )
         val on = WidgetContent.of(data, java.time.YearMonth.of(2026, 11), com.csymvoul.expenses.domain.Words.WIZARD, java.time.LocalDate.parse("2026-11-22"))
-        org.junit.Assert.assertEquals("✦ Rome · day 3 of 9 · €60.00 of €500.00", on.trip)
+        org.junit.Assert.assertEquals("Rome · day 3 of 9 · €60.00 of €500.00", on.trip)
         val off = WidgetContent.of(data, java.time.YearMonth.of(2026, 12), com.csymvoul.expenses.domain.Words.WIZARD, java.time.LocalDate.parse("2026-12-02"))
         org.junit.Assert.assertNull(off.trip)
     }

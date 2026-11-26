@@ -8,6 +8,8 @@ struct WidgetSnapshot: Codable, Equatable {
         let text: String
         let percent: Int
         let over: Bool
+        /// The painted emblem shown before it ("cat_rent", "logo_pouch"), from the widget's assets.
+        var icon: String? = nil
     }
 
     struct Trip: Codable, Equatable {
@@ -31,11 +33,11 @@ struct WidgetSnapshot: Codable, Equatable {
     /// Was this worked out for the month that [day] ("2026-11-22") is in?
     func isFor(day: String) -> Bool { month == String(day.prefix(7)) }
 
-    /// "✦ Rome · day 3 of 9 · €60.00 of €500.00" for the trip on [day] (the one started last, as in the app), or nil.
+    /// "Rome · day 3 of 9 · €60.00 of €500.00" (shown after the trip emblem) for the trip on [day] (the one started last, as in the app), or nil.
     func tripLine(on day: String) -> String? {
         guard let trip = trips.filter({ $0.start <= day && day <= $0.end }).max(by: { $0.start < $1.start }),
               let length = Self.daysBetween(trip.start, trip.end), let gone = Self.daysBetween(trip.start, day) else { return nil }
-        return "✦ \(trip.name) · day \(gone + 1) of \(length + 1) · \(trip.spent)" + (trip.budget.map { " of \($0)" } ?? "")
+        return "\(trip.name) · day \(gone + 1) of \(length + 1) · \(trip.spent)" + (trip.budget.map { " of \($0)" } ?? "")
     }
 
     /// "2026-11-22" for [date] in the phone's own time zone.

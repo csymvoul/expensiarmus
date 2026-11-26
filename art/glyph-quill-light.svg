@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B88A2E"/><stop offset="0.5" stop-color="#8A5E14"/><stop offset="1" stop-color="#5A3A08"/></linearGradient>
+<linearGradient id="e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8A5E14"/><stop offset="1" stop-color="#5A3A08"/></linearGradient></defs>
+<!-- Quick add: a quill writing a new line, with a plus -->
+<path d="M170,18 C132,26 100,50 82,84 C74,100 70,114 68,126 L80,132 C94,124 112,112 128,96 C150,74 164,48 170,18Z" fill="url(#g)" stroke="url(#e)" stroke-width="4" stroke-linejoin="round"/>
+<path d="M166,24 C140,52 112,86 74,128" fill="none" stroke="rgba(255,248,220,0.5)" stroke-width="3.5" stroke-linecap="round"/>
+<path d="M122,54 L104,52 M108,78 L90,76 M134,70 L136,88 M118,96 L120,112" fill="none" stroke="url(#e)" stroke-width="3" stroke-linecap="round"/>
+<path d="M74,128 L52,166" fill="none" stroke="url(#e)" stroke-width="7" stroke-linecap="round"/>
+<path d="M56,160 L44,176 L60,168Z" fill="url(#e)" stroke="url(#e)" stroke-width="3" stroke-linejoin="round"/>
+<path d="M98,170 L170,170" fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round"/>
+<path d="M44,38 L44,92 M17,65 L71,65" fill="none" stroke="url(#g)" stroke-width="16" stroke-linecap="round"/>
+<path d="M44,42 L44,60 M21,65 L36,65" fill="none" stroke="rgba(255,248,220,0.35)" stroke-width="4" stroke-linecap="round"/>
+<path d="M158,124 L161.5,134.5 L172,138 L161.5,141.5 L158,152 L154.5,141.5 L144,138 L154.5,134.5Z" fill="url(#g)"/>
+</svg>

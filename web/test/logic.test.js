@@ -1284,11 +1284,13 @@ test('the iPhone widget gets this month, its wards (whole month first) and the t
   assert.equal(w.heading, 'Expensiarmus · November');
   assert.equal(w.total, '€560.00');
   assert.equal(w.label, 'Gold spent this month');
-  assert.deepEqual(w.wards.map((x) => [x.text, x.percent, x.over]), [
-    ['✦ Whole month · €560.00 of €1,000.00', 56, false],
-    ['🏰 Home · €500.00 of €400.00', 100, true],
-    ['⚡ Bills · €0.00 of €100.00', 0, false],
+  assert.deepEqual(w.wards.map((x) => [x.icon, x.text, x.percent, x.over]), [
+    ['logo_pouch', 'Whole month · €560.00 of €1,000.00', 56, false],
+    ['cat_rent', 'Home · €500.00 of €400.00', 100, true],
+    ['cat_bills', 'Bills · €0.00 of €100.00', 0, false],
   ]);
+  // Painted emblems only, never emoji.
+  assert.ok(w.wards.every((x) => !/\p{Extended_Pictographic}|✦/u.test(x.text)));
   assert.equal(w.empty, null);
   assert.deepEqual(w.trips, [
     { name: 'Rome', start: '2026-11-20', end: '2026-11-28', spent: '€60.00', budget: '€500.00' },
