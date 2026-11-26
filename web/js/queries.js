@@ -1,4 +1,4 @@
-import { CATEGORIES, category, foodType, monthOf, myShareCents } from './model.js';
+import { CATEGORIES, FOOD_TYPES, category, foodType, monthOf, myShareCents } from './model.js';
 import { byNewest } from './summary.js';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -39,6 +39,23 @@ export function calendarCells(month) {
  * category opened from a month, a year or all time lists just that span.
  */
 export const inPeriod = (expenses, period = '') => (period ? expenses.filter((e) => e.date.startsWith(`${period}-`)) : expenses);
+
+/**
+ * What the expenses came to per category, the biggest first, leaving out categories with nothing spent.
+ * Entertainment also says what went to each food type and to the rest of entertainment.
+ */
+export function categoryTotals(expenses) {
+  const total = expenses.reduce((s, e) => s + myShareCents(e), 0);
+  const of = (list) => list.reduce((s, e) => s + myShareCents(e), 0);
+  return CATEGORIES.map((c, i) => {
+    const list = expenses.filter((e) => e.category === c.id);
+    const cents = of(list);
+    const food = c.id === 'ENTERTAINMENT'
+      ? FOOD_TYPES.map((t) => ({ type: t.id, cents: of(list.filter((e) => e.foodType === t.id)) })).filter((f) => f.cents > 0)
+      : [];
+    return { category: c.id, cents, share: total > 0 ? cents / total : 0, food, otherCents: food.length ? of(list.filter((e) => !e.foodType)) : 0, order: i };
+  }).filter((c) => c.cents > 0).sort((a, b) => b.cents - a.cents || a.order - b.order).map(({ order, ...c }) => c);
+}
 
 export function byCategory(expenses, categoryId, foodTypeId = null) {
   const groups = new Map();

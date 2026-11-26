@@ -391,7 +391,8 @@ internal fun BreakdownCard(
 ) {
     var highlighted by remember(resetKey) { mutableStateOf<Category?>(null) }
     val glow = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
-    ParchmentCard(spacing = Arrangement.spacedBy(10.dp)) {
+    // Rows and the chart close together.
+    ParchmentCard(spacing = Arrangement.spacedBy(4.dp)) {
         Text(LocalWords.current.whereWent, style = MaterialTheme.typography.titleMedium)
         if (totalCents > 0) {
             DonutChart(
@@ -432,7 +433,7 @@ internal fun BreakdownCard(
                     .background(if (c.category == highlighted) glow else Color.Transparent)
                     .clickable { onCategory(c.category, null) }
                     .alpha(if (empty || (highlighted != null && c.category != highlighted)) 0.55f else 1f)
-                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                    .padding(vertical = 2.dp, horizontal = 4.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     EmblemBadge(c.category.icon, size = 30.dp)
@@ -484,7 +485,8 @@ internal fun BreakdownCard(
 
 @Composable
 internal fun FoodCard(food: FoodSummary, onFoodType: (FoodType) -> Unit) {
-    ParchmentCard(spacing = Arrangement.spacedBy(10.dp)) {
+    // Rows close together, as in the category card.
+    ParchmentCard(spacing = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(LocalWords.current.food, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             Text(Money.format(food.totalCents), fontWeight = FontWeight.Bold)

@@ -70,6 +70,8 @@ fun CategoryScreen(
     groupsAll: List<MonthGroup>,
     groupsWithoutTrips: List<MonthGroup>,
     onFoodType: (FoodType?) -> Unit,
+    /** False when opened from a month's full list switched to Without trips. */
+    startWithTrips: Boolean = true,
     onOpen: (String) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -89,7 +91,7 @@ fun CategoryScreen(
         },
     ) { padding ->
         // With or without trip expenses: shown only when some of the list belongs to a trip.
-        var withTrips by rememberSaveable(category, foodType, period) { mutableStateOf(true) }
+        var withTrips by rememberSaveable(category, foodType, period) { mutableStateOf(startWithTrips) }
         val hasTrips = groupsAll.any { g -> g.expenses.any { it.tripId != null } }
         val groups = if (hasTrips && !withTrips) groupsWithoutTrips else groupsAll
         LazyColumn(

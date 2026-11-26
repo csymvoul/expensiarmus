@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.24.0 (Android), web app 1.25.0 and iPhone app 1.22.0 – unreleased (2026-11-27)
+
+### Added
+- **"By vault" on a month's full list** ("By category" in plain words): a compact card between the With / Without trips switch and the days. A thin bar in the categories' colours, then one line per category with its emblem, amount and share, the biggest first, leaving out categories with nothing spent; under Entertainment, its food types (Delivery, Dine out, Day to day) and "Other entertainment". It follows the switch, so without trips you see what each category came to without them. No wards here, so it stays short.
+  - **It folds:** tap its heading to fold it to one line ("Home 73% · 4 vaults"), tap again to open it. It starts open and stays as you left it while the app is open.
+  - **Tapping a line** opens that category (or food type) for the month, with the same trips choice already set.
+  - Mock-ups of four layouts were compared first; this is option A, made foldable.
+
+### Changed
+- **Tighter category and food cards** on the Ledger (and in Annals, which share them): less space between the rows and between the chart and the rows. On a phone the category card is about 13% shorter (756 → 658 px on the web) and the food card 297 → 261 px.
+
+### Tests
+- Android 215 (3 new: the per-category totals with food types, the card's wiring and trips choice, the tighter cards), web 109 (3 new: the same). All passing. Checked in a browser at phone size: the card with and without trips (Entertainment €90 → €30, Dine out gone), folded to "Home 73% · 4 vaults", Entertainment opened from Without with Without already on, and the tighter Ledger cards.
+
+### Known issues
+- Not yet checked on a phone.
+
 ## 1.23.1 (Android), web app 1.24.1 and iPhone app 1.21.1 – unreleased (2026-11-26)
 
 ### Changed

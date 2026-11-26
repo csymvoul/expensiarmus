@@ -32,7 +32,7 @@ class MonthListTest {
         assertTrue(detail.contains("expense.category.icon)") && detail.contains("it.icon)") && detail.contains("R.drawable.emblem_trip)"))
     }
 
-    @Test fun `the full list has no category card (that is on the Ledger), and its days open when tapped, kept across an expense visit`() {
+    @Test fun `the full list has no chart (that is on the Ledger), and its days open when tapped, kept across an expense visit`() {
         val screen = File("src/main/java/com/csymvoul/expenses/ui/screens/MonthListScreen.kt").readText()
         assertFalse(screen.contains("BreakdownCard") || screen.contains("DonutChart"))
         // A day's expenses are listed only while it is open.
@@ -40,5 +40,49 @@ class MonthListTest {
         val main = File("src/main/java/com/csymvoul/expenses/MainActivity.kt").readText()
         assertTrue(main.contains("onToggleDay = { d -> listOpenDays = if (d in listOpenDays) listOpenDays - d else listOpenDays + d }"))
         assertTrue(main.contains("onOpenMonthList = { listOpenDays = emptySet(); push(ALL + it) }"))
+    }
+
+    @Test fun `categoryTotals - per category, biggest first, empty ones left out, with Entertainment's food types`() {
+        fun x(id: String, cents: Long, c: Category, food: FoodType? = null, pct: Int = 100, trip: String? = null) =
+            Expense(id, LocalDate.parse("2026-11-20"), id, cents, c, pct, food, trip)
+        val list = listOf(
+            x("dinner", 6_000, Category.ENTERTAINMENT, FoodType.DINE_OUT, trip = "rome"), x("pizza", 1_800, Category.ENTERTAINMENT, FoodType.DELIVERY),
+            x("cinema", 1_200, Category.ENTERTAINMENT), x("rent", 50_000, Category.RENT),
+            x("lidl", 4_250, Category.SUPERMARKET), x("coat", 9_000, Category.SHOPPING, pct = 50),
+        )
+        val t = ExpenseQueries.categoryTotals(list)
+        assertEquals(listOf(Category.RENT to 50_000L, Category.ENTERTAINMENT to 9_000L, Category.SHOPPING to 4_500L, Category.SUPERMARKET to 4_250L), t.map { it.category to it.cents })
+        assertEquals(738, Math.round(t[0].share * 1000)) // €500 of €677.50
+        assertEquals(listOf(FoodType.DELIVERY to 1_800L, FoodType.DINE_OUT to 6_000L), t[1].food)
+        assertEquals(1_200L, t[1].otherCents)
+        assertEquals(emptyList<Pair<FoodType, Long>>(), t[0].food)
+        val without = ExpenseQueries.categoryTotals(Trips.withoutTrips(list))
+        assertEquals(listOf(FoodType.DELIVERY to 1_800L), without.first { it.category == Category.ENTERTAINMENT }.food)
+        assertEquals(emptyList<CategoryLine>(), ExpenseQueries.categoryTotals(emptyList()))
+    }
+
+    @Test fun `the full list has a folding By vault card that follows the trips switch and keeps it into the category`() {
+        val screen = File("src/main/java/com/csymvoul/expenses/ui/screens/MonthListScreen.kt").readText()
+        assertTrue(screen.contains("val lines = remember(shown) { ExpenseQueries.categoryTotals(shown) }"))
+        assertTrue(screen.contains("ByVaultCard(lines, catsOpen, onToggleCats) { c, t -> onCategory(c, t, leaveOut) }"))
+        assertTrue(screen.contains("if (!open) return@ParchmentCard"))
+        val main = File("src/main/java/com/csymvoul/expenses/MainActivity.kt").readText()
+        assertTrue(main.contains("onCategory = { c, t, without -> push(categoryRoute(c, t, listMonth.toString(), without)) }"))
+        assertTrue(main.contains("var listCatsOpen by rememberSaveable { mutableStateOf(true) }"))
+        assertTrue(main.contains("startWithTrips = !startWithout"))
+        val category = File("src/main/java/com/csymvoul/expenses/ui/screens/CategoryScreen.kt").readText()
+        assertTrue(category.contains("mutableStateOf(startWithTrips)"))
+        assertEquals("By vault", Words.WIZARD.byVault)
+        assertEquals("By category", Words.PLAIN.byVault)
+        assertEquals("categories", Words.PLAIN.vaults)
+    }
+
+    @Test fun `the Ledger's category and food cards are tight - rows and the chart closer together`() {
+        val month = File("src/main/java/com/csymvoul/expenses/ui/screens/MonthScreen.kt").readText()
+        val breakdown = month.substring(month.indexOf("internal fun BreakdownCard"), month.indexOf("fun FoodCard"))
+        val food = month.substring(month.indexOf("fun FoodCard"))
+        assertTrue(breakdown.contains("ParchmentCard(spacing = Arrangement.spacedBy(4.dp))"))
+        assertTrue(breakdown.contains(".padding(vertical = 2.dp, horizontal = 4.dp)"))
+        assertTrue(food.contains("ParchmentCard(spacing = Arrangement.spacedBy(4.dp))"))
     }
 }

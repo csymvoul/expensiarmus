@@ -3,7 +3,7 @@ import { CATEGORIES, FOOD_TYPES, TAB_ICONS, EMBLEMS, WHOLE_MONTH, goalKey, witho
 import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
 import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary, monthRecap, recapText, recapMonthFor } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
-import { dailyTotals, onDay, calendarCells, byCategory, byDay, inPeriod, isFavorite, toggleFavorite, MAX_FAVORITES, saveFavorite, removeFavoriteAt, search, shiftMonth, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
+import { categoryTotals, dailyTotals, onDay, calendarCells, byCategory, byDay, inPeriod, isFavorite, toggleFavorite, MAX_FAVORITES, saveFavorite, removeFavoriteAt, search, shiftMonth, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
 import { toCsv, importCsv, importSummary } from './csv.js';
 import { saveTrip, deleteTrip, tripStatus, tripsToOffer, ongoingTrip, withoutTrips, tripSummary } from './trips.js';
 import { load, save, KEY } from './store.js';
@@ -41,6 +41,7 @@ const ui = {
   quick: null, // the Quick add sheet, when open
   monthListTrips: null, // on a month's full list: 'without' leaves trip expenses out
   openDays: new Set(), // on a month's full list: the days opened to show their expenses (all closed at first)
+  listCatsOpen: true, // on a month's full list: the By vault card open (tap its heading to fold it)
   importing: null, // Apparate: what the picked CSV would add, waiting for the user to confirm
   annals: { view: 'year', year: Number(today().slice(0, 4)), bar: null },
 };
@@ -259,7 +260,7 @@ function breakdownCard(s, period = '') {
     <h3 class="h-medium">${W.whereWent}</h3>
     ${s.totalCents > 0 ? donut(s) : ''}
     ${rows.join('')}
-    <p class="small soft">Tap a slice to highlight it, or a ${W.vault} to see its expenses ${periodWords(period)}.</p>`);
+    <p class="small soft">Tap a slice to highlight it, or a ${W.vault} to see its expenses ${periodWords(period)}.</p>`, 'tight');
 }
 
 function foodCard(food, period = '') {
@@ -278,7 +279,7 @@ function foodCard(food, period = '') {
     <div class="split-head"><h3 class="h-medium">${esc(W.food)}</h3><b>${format(food.totalCents)}</b></div>
     <div class="stack-bar">${bar}</div>
     ${rows.join('')}
-    ${food.otherEntertainmentCents > 0 ? `<p class="small soft">Other entertainment (not food): ${format(food.otherEntertainmentCents)}</p>` : ''}`);
+    ${food.otherEntertainmentCents > 0 ? `<p class="small soft">Other entertainment (not food): ${format(food.otherEntertainmentCents)}</p>` : ''}`, 'tight');
 }
 
 function calendarCard() {
@@ -326,7 +327,36 @@ function listDay(d) {
     ${open ? `<div class="list">${d.expenses.map((e) => expenseRow(e)).join('')}</div>` : ''}`;
 }
 
-/** A month's full list: the days (closed until tapped), with or without trips. The categories are on the Ledger. */
+/**
+ * The full list's By vault card: a line per category (amount and share), Entertainment's food types under it,
+ * for the expenses shown (with or without trips). Its heading folds it to one line. Rows open the category
+ * for that month, keeping the trips choice.
+ */
+function listCategoriesCard(expenses, month, trips) {
+  const lines = categoryTotals(expenses);
+  if (!lines.length) return '';
+  const open = ui.listCatsOpen;
+  const total = lines.reduce((s, c) => s + c.cents, 0);
+  const pct = (x) => `${Math.round(x * 100)}%`;
+  const link = (cat, food = '') => `data-action="category" data-cat="${cat}" data-food="${food}" data-period="${month}" data-trips="${trips}"`;
+  const top = lines[0];
+  const summary = `${esc(category(top.category).label)} ${pct(top.share)} · ${lines.length === 1 ? `1 ${W.vault}` : `${lines.length} ${W.vaults}`}`;
+  const rows = lines.map((c) => {
+    const cat = category(c.category);
+    const subs = [
+      ...c.food.map((f) => `<button class="crow sub" ${link(c.category, f.type)}>${emblem(foodType(f.type).icon, 18)}<span class="name">${esc(foodType(f.type).label)}</span><span class="amt">${format(f.cents)}</span><span class="pct"></span></button>`),
+      ...(c.otherCents ? [`<div class="crow sub"><span class="name">Other entertainment</span><span class="amt">${format(c.otherCents)}</span><span class="pct"></span></div>`] : []),
+    ];
+    return `<button class="crow" ${link(c.category)}>${emblem(cat.icon, 24)}<span class="name">${esc(cat.label)}</span><span class="amt">${format(c.cents)}</span><span class="pct">${pct(c.share)}</span><span class="chev">${ICON.right}</span></button>${subs.join('')}`;
+  });
+  return card(`<button class="cats-head ${open ? 'open' : ''}" data-action="list-cats" aria-expanded="${open}">
+      <span class="cats-title"><span class="h-medium">${esc(W.byVault)}</span>${open ? '' : `<small class="soft">${summary}</small>`}</span>
+      <span class="chev">${ICON.right}</span></button>
+    ${open ? `<div class="thin-bar">${lines.map((c) => `<span style="flex:${c.cents};background:${category(c.category).color}"></span>`).join('')}</div>
+      <div class="crows" data-total="${total}">${rows.join('')}</div>` : ''}`, 'list-cats');
+}
+
+/** A month's full list: by vault (folding), then the days (closed until tapped), with or without trips. */
 function monthListScreen(month) {
   const m = /^\d{4}-\d{2}$/.test(month ?? '') ? month : ui.month;
   const all = data.expenses.filter((e) => monthOf(e.date) === m);
@@ -335,6 +365,7 @@ function monthListScreen(month) {
   const hasTrips = without.length !== all.length;
   const shown = hasTrips && ui.monthListTrips === 'without' ? without : all;
   const days = byDay(shown);
+  const trips = hasTrips && ui.monthListTrips === 'without' ? 'without' : '';
   const toggle = hasTrips
     ? `<div class="segmented small-seg"><button class="${ui.monthListTrips !== 'without' ? 'on' : ''}" data-action="month-trips" data-v="with">With ${W.trips.toLowerCase()} · ${format(sum(all))}</button>
         <button class="${ui.monthListTrips === 'without' ? 'on' : ''}" data-action="month-trips" data-v="without">Without · ${format(sum(without))}</button></div>`
@@ -345,6 +376,7 @@ function monthListScreen(month) {
       <p class="total">${format(sum(shown))}</p>
       <p class="small soft">${shown.length === 1 ? '1 expense' : `${shown.length} expenses`}${hasTrips && ui.monthListTrips === 'without' ? `, without ${W.trips.toLowerCase()}` : ''}</p>`)}
     ${toggle}
+    ${listCategoriesCard(shown, m, trips)}
     ${days.length ? days.map(listDay).join('') : hint(W.ledgerEmpty)}
   </main>`;
 }
@@ -1223,6 +1255,7 @@ const actions = {
   go: (el) => go(el.dataset.to),
   tab: (el) => { navDepth = 0; location.replace(el.dataset.to); },
   'month-trips': (el) => { ui.monthListTrips = el.dataset.v; render(); },
+  'list-cats': () => { ui.listCatsOpen = !ui.listCatsOpen; render(); },
   'list-day': (el) => {
     const d = el.dataset.day;
     if (ui.openDays.has(d)) ui.openDays.delete(d); else ui.openDays.add(d);
@@ -1247,7 +1280,12 @@ const actions = {
   'open-month': (el) => { ui.month = el.dataset.month; ui.highlighted = null; navDepth = 0; location.replace('#/'); },
   'open-year': (el) => { ui.annals = { view: 'year', year: Number(el.dataset.year), bar: null }; ui.highlighted = null; render(); },
   day: (el) => { ui.day = el.dataset.day; render(); },
-  category: (el) => go(categoryPath(el.dataset.cat, el.dataset.food, el.dataset.period)),
+  category: (el) => {
+    go(categoryPath(el.dataset.cat, el.dataset.food, el.dataset.period));
+    // From the full list, the category opens with the same trips choice.
+    ui.catTrips = el.dataset.trips === 'without' ? 'without' : null;
+    render();
+  },
   'cat-food': (el) => location.replace(categoryPath(route().a, el.dataset.food, route().c)),
   open: (el) => go(`#/view/${encodeURIComponent(el.dataset.id)}`),
   amend: (el) => go(`#/edit/${encodeURIComponent(el.dataset.id)}`),

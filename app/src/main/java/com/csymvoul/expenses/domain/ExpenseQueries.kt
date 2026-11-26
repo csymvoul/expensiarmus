@@ -29,6 +29,15 @@ data class MonthGlance(
 /** Expenses of one day, with my-share total. */
 data class DayGroup(val date: LocalDate, val totalCents: Long, val expenses: List<Expense>)
 
+/** What a category came to; Entertainment also per food type ([food]) and for the rest ([otherCents]). */
+data class CategoryLine(
+    val category: Category,
+    val cents: Long,
+    val share: Float,
+    val food: List<Pair<FoodType, Long>> = emptyList(),
+    val otherCents: Long = 0,
+)
+
 /** Expenses of one month, with my-share total. */
 data class MonthGroup(val month: YearMonth, val totalCents: Long, val expenses: List<Expense>)
 
@@ -121,6 +130,29 @@ object ExpenseQueries {
         0 -> "All time"
         7 -> YearMonth.parse(period).format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH))
         else -> period
+    }
+
+    /**
+     * What the expenses came to per category, the biggest first, leaving out categories with nothing spent.
+     * Entertainment also says what went to each food type and to the rest of entertainment. Same as the web's categoryTotals.
+     */
+    fun categoryTotals(expenses: List<Expense>): List<CategoryLine> {
+        val total = expenses.sumOf { it.myShareCents }
+        return Category.entries.mapNotNull { c ->
+            val list = expenses.filter { it.category == c }
+            val cents = list.sumOf { it.myShareCents }
+            if (cents <= 0) return@mapNotNull null
+            val food = if (c != Category.ENTERTAINMENT) emptyList() else FoodType.entries
+                .map { t -> t to list.filter { it.foodType == t }.sumOf { it.myShareCents } }
+                .filter { it.second > 0 }
+            CategoryLine(
+                category = c,
+                cents = cents,
+                share = if (total > 0) cents.toFloat() / total else 0f,
+                food = food,
+                otherCents = if (food.isEmpty()) 0 else list.filter { it.foodType == null }.sumOf { it.myShareCents },
+            )
+        }.sortedByDescending { it.cents } // stable: ties keep the category order
     }
 
     fun byCategory(expenses: List<Expense>, category: Category, foodType: FoodType? = null): List<MonthGroup> =

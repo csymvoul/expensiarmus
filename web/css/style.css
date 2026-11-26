@@ -267,6 +267,12 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
 .legend-row { display: flex; align-items: center; gap: 10px; }
 .legend-goal { display: block; padding: 4px 24px 0 40px; }
 .legend .h-small { font-size: 13px; }
+/* The category and food cards (Ledger and Annals): rows and the chart closer together. */
+.card.tight > .paper { gap: 2px; }
+.card.tight .legend { padding: 3px 6px; }
+.card.tight .donut { margin: 0 auto 4px; }
+.card.tight .stack-bar { margin: 4px 0 6px; }
+.card.tight > .paper > .small { margin-top: 6px; }
 .chev { color: var(--ink-soft); display: grid; }
 .chev svg { width: 18px; height: 18px; }
 .split-head { display: flex; align-items: center; justify-content: space-between; }
@@ -301,6 +307,23 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
 .day-toggle .chev svg { transition: transform 0.15s ease; }
 .day-toggle.open .chev svg { transform: rotate(90deg); }
 .day-toggle + .list { margin-top: 4px; }
+/* The full list's By vault card: a heading that folds it, a thin colour bar, then a line per category. */
+.cats-head { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; }
+.cats-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cats-title small { font-size: 12px; }
+.cats-head .chev svg { transition: transform 0.15s ease; }
+.cats-head.open .chev svg { transform: rotate(90deg); }
+.cats-head.open { margin-bottom: 10px; }
+.thin-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; border: 1px solid var(--gold-soft); margin-bottom: 6px; }
+.crow { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 2px; text-align: left; }
+.crow + .crow:not(.sub) { border-top: 1px solid var(--line); }
+.crow .emblem { flex: none; }
+.crow .name { flex: 1; min-width: 0; font-size: 15px; }
+.crow .amt { font-weight: 600; white-space: nowrap; }
+.crow .pct { width: 38px; text-align: right; font-size: 12px; color: var(--ink-soft); }
+.crow .chev svg { width: 14px; height: 14px; }
+.crow.sub { padding: 2px 2px 2px 32px; }
+.crow.sub .name, .crow.sub .amt { font-size: 13px; color: var(--ink-soft); font-weight: 400; }
 
 /* Calendar */
 .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }

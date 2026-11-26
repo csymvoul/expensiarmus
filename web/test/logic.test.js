@@ -1349,7 +1349,7 @@ test('the Pages workflow waits for the uploaded artifact before deploying it', (
   assert.ok(upload > 0 && wait > upload && deploy > wait, 'upload, then wait, then deploy');
 });
 
-test('the full list has no category card (that is on the Ledger), and its days open when tapped', () => {
+test('the full list has no chart (that is on the Ledger), and its days open when tapped', () => {
   const app = readFileSync(webFile('js/app.js'), 'utf8');
   const screen = app.slice(app.indexOf('function listDay('), app.indexOf('function glanceCard('));
   assert.doesNotMatch(screen, /breakdownCard|donut\(/);
@@ -1361,4 +1361,54 @@ test('the full list has no category card (that is on the Ledger), and its days o
   assert.match(app, /openDays: new Set\(\),/);
   const css = readFileSync(webFile('css/style.css'), 'utf8');
   assert.match(css, /\.day-toggle\.open \.chev svg \{ transform: rotate\(90deg\); \}/);
+});
+
+test('categoryTotals: per category, biggest first, empty ones left out, with Entertainment\'s food types', async () => {
+  const { categoryTotals } = await import('../js/queries.js');
+  const list = [
+    e('2026-11-24', 6000, 'ENTERTAINMENT', 100, 'DINE_OUT', 'Trattoria'), e('2026-11-18', 1800, 'ENTERTAINMENT', 100, 'DELIVERY', 'Pizza'),
+    e('2026-11-15', 1200, 'ENTERTAINMENT', 100, null, 'Cinema'), e('2026-11-02', 50000, 'RENT', 100, null, 'Rent'),
+    e('2026-11-20', 4250, 'SUPERMARKET', 100, null, 'Lidl'), e('2026-11-20', 9000, 'SHOPPING', 50, null, 'Coat'),
+  ];
+  const t = categoryTotals(list);
+  assert.deepEqual(t.map((c) => [c.category, c.cents]), [['RENT', 50000], ['ENTERTAINMENT', 9000], ['SHOPPING', 4500], ['SUPERMARKET', 4250]]);
+  assert.equal(Math.round(t[0].share * 1000), 738); // €500 of €677.50
+  assert.deepEqual(t[1].food, [{ type: 'DELIVERY', cents: 1800 }, { type: 'DINE_OUT', cents: 6000 }]);
+  assert.equal(t[1].otherCents, 1200);
+  assert.deepEqual(t[0].food, []);
+  assert.equal(t[0].otherCents, 0);
+  // Without the trip's dinner, Dine out drops out of Entertainment.
+  const without = categoryTotals(list.slice(1));
+  assert.deepEqual(without.find((c) => c.category === 'ENTERTAINMENT').food, [{ type: 'DELIVERY', cents: 1800 }]);
+  assert.deepEqual(categoryTotals([]), []);
+});
+
+test('the full list has a folding By vault card that follows the trips switch and opens categories for the month', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  const screen = app.slice(app.indexOf('function listCategoriesCard('), app.indexOf('function glanceCard('));
+  assert.match(screen, /\$\{listCategoriesCard\(shown, m, trips\)\}/);
+  assert.match(screen, /const trips = hasTrips && ui\.monthListTrips === 'without' \? 'without' : '';/);
+  assert.match(screen, /data-action="list-cats" aria-expanded="\$\{open\}"/);
+  // Folded: just the heading and a summary line; open: the colour bar and the rows.
+  assert.match(screen, /\$\{open \? '' : `<small class="soft">\$\{summary\}<\/small>`\}/);
+  assert.match(screen, /\$\{open \? `<div class="thin-bar">/);
+  assert.match(screen, /data-period="\$\{month\}" data-trips="\$\{trips\}"/);
+  assert.match(app, /'list-cats': \(\) => \{ ui\.listCatsOpen = !ui\.listCatsOpen; render\(\); \},/);
+  assert.match(app, /listCatsOpen: true,/);
+  assert.match(app, /ui\.catTrips = el\.dataset\.trips === 'without' \? 'without' : null;/);
+  assert.equal(wordsFor(true).byVault, 'By vault');
+  assert.equal(wordsFor(false).byVault, 'By category');
+  assert.equal(wordsFor(false).vaults, 'categories');
+});
+
+test('the category and food cards are tight: rows and the chart closer together', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  const breakdown = app.slice(app.indexOf('function breakdownCard('), app.indexOf('function foodCard('));
+  const food = app.slice(app.indexOf('function foodCard('), app.indexOf('function calendarCard('));
+  assert.match(breakdown, /, 'tight'\);\n\}/);
+  assert.match(food, /, 'tight'\);\n\}/);
+  const css = readFileSync(webFile('css/style.css'), 'utf8');
+  assert.match(css, /\.card\.tight > \.paper \{ gap: 2px; \}/);
+  assert.match(css, /\.card\.tight \.legend \{ padding: 3px 6px; \}/);
+  assert.match(css, /\.card\.tight \.donut \{ margin: 0 auto 4px; \}/);
 });

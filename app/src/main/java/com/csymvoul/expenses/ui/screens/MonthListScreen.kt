@@ -1,6 +1,21 @@
 package com.csymvoul.expenses.ui.screens
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import com.csymvoul.expenses.domain.CategoryLine
+import com.csymvoul.expenses.model.Category
+import com.csymvoul.expenses.model.FoodType
+import com.csymvoul.expenses.ui.components.EmblemBadge
+import com.csymvoul.expenses.ui.theme.color
+import com.csymvoul.expenses.ui.theme.icon
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -54,8 +69,8 @@ private val monthTitle = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH
 private val dayTitle = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH)
 
 /**
- * A month's full list: the days, each closed until tapped, with or without the expenses of trips
- * (the categories are on the Ledger). [openDays] is kept by the caller so it survives a visit to an expense.
+ * A month's full list: a folding By vault card, then the days, each closed until tapped, with or
+ * without the expenses of trips (the chart is on the Ledger). [openDays] is kept by the caller so it survives a visit to an expense.
  */
 @Composable
 fun MonthListScreen(
@@ -63,6 +78,10 @@ fun MonthListScreen(
     data: AppData,
     openDays: Set<LocalDate>,
     onToggleDay: (LocalDate) -> Unit,
+    catsOpen: Boolean,
+    onToggleCats: () -> Unit,
+    /** A category (or food type) for this month; true: with trips left out. */
+    onCategory: (Category, FoodType?, Boolean) -> Unit,
     onOpen: (String) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -74,6 +93,7 @@ fun MonthListScreen(
     val leaveOut = hasTrips && !withTrips
     val shown = if (leaveOut) without else expenses
     val days = remember(shown) { ExpenseQueries.byDay(shown) }
+    val lines = remember(shown) { ExpenseQueries.categoryTotals(shown) }
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
@@ -112,6 +132,9 @@ fun MonthListScreen(
                     }
                 }
             }
+            if (lines.isNotEmpty()) {
+                item(key = "by-vault") { ByVaultCard(lines, catsOpen, onToggleCats) { c, t -> onCategory(c, t, leaveOut) } }
+            }
             if (days.isEmpty()) {
                 item { Text(w.ledgerEmpty, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp)) }
             }
@@ -123,6 +146,61 @@ fun MonthListScreen(
                         ExpenseRow(e, onClick = { onOpen(e.id) })
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
+                }
+            }
+        }
+    }
+}
+
+/** The full list's By vault card: a line per category, Entertainment's food types under it; the heading folds it. */
+@Composable
+private fun ByVaultCard(lines: List<CategoryLine>, open: Boolean, onToggle: () -> Unit, onCategory: (Category, FoodType?) -> Unit) {
+    val w = LocalWords.current
+    val turn by animateFloatAsState(if (open) 90f else 0f, label = "chevron")
+    fun pct(x: Float) = "${Math.round(x * 100)}%"
+    ParchmentCard(spacing = Arrangement.spacedBy(0.dp)) {
+        Row(Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(bottom = if (open) 10.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(w.byVault, style = MaterialTheme.typography.titleMedium)
+                if (!open) {
+                    val top = lines.first()
+                    Text(
+                        "${top.category.label} ${pct(top.share)} · " + if (lines.size == 1) "1 ${w.vault}" else "${lines.size} ${w.vaults}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = if (open) "Fold" else "Open", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.rotate(turn))
+        }
+        if (!open) return@ParchmentCard
+        // A thin bar in the categories' colours.
+        Row(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)).padding(bottom = 0.dp)) {
+            lines.forEach { l -> Box(Modifier.weight(l.cents.toFloat()).fillMaxHeight().background(l.category.color)) }
+        }
+        Spacer(Modifier.height(6.dp))
+        lines.forEachIndexed { i, l ->
+            if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Row(Modifier.fillMaxWidth().clickable { onCategory(l.category, null) }.padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                EmblemBadge(l.category.icon, size = 24.dp)
+                Spacer(Modifier.width(8.dp))
+                Text(l.category.label, modifier = Modifier.weight(1f))
+                Text(Money.format(l.cents), fontWeight = FontWeight.SemiBold)
+                Text(pct(l.share), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End, modifier = Modifier.width(40.dp))
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+            }
+            l.food.forEach { (t, cents) ->
+                Row(Modifier.fillMaxWidth().clickable { onCategory(l.category, t) }.padding(start = 32.dp, top = 2.dp, bottom = 2.dp, end = 56.dp), verticalAlignment = Alignment.CenterVertically) {
+                    EmblemBadge(t.icon, size = 18.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text(t.label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                    Text(Money.format(cents), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            if (l.otherCents > 0) {
+                Row(Modifier.fillMaxWidth().padding(start = 32.dp, top = 2.dp, bottom = 2.dp, end = 56.dp)) {
+                    Text("Other entertainment", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                    Text(Money.format(l.otherCents), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

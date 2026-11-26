@@ -125,7 +125,9 @@ private const val VIEW = "view:" // + expense id: read-only view
 private const val CATEGORY = "category:" // + category name, ":" + food type name (or nothing), ":" + period ("2026-11", "2026", or nothing for all time)
 
 /** The route of a category page for a food type (or none) and a period (a month, a year, or "" for all time). */
-private fun categoryRoute(category: Category, food: FoodType?, period: String) = CATEGORY + category.name + ":" + (food?.name ?: "") + ":" + period
+/** [withoutTrips]: open it with trips left out (from a month's full list switched to Without). */
+private fun categoryRoute(category: Category, food: FoodType?, period: String, withoutTrips: Boolean = false) =
+    CATEGORY + category.name + ":" + (food?.name ?: "") + ":" + period + if (withoutTrips) ":without" else ""
 
 private val TAB_ROUTES = mapOf(Tab.LEDGER to MONTH, Tab.CALENDAR to CALENDAR, Tab.ANNALS to ANNALS, Tab.GOALS to GOALS, Tab.SETTINGS to SETTINGS)
 
@@ -142,6 +144,8 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
     var prefill by remember { mutableStateOf<QuickPrefill?>(null) }
     // The days opened on a month's full list: kept while you look at an expense or a category and come back.
     var listOpenDays by remember { mutableStateOf(emptySet<LocalDate>()) }
+    // The full list's By vault card: open until you fold it.
+    var listCatsOpen by rememberSaveable { mutableStateOf(true) }
     val route = stack.substringAfterLast('|')
 
     fun push(r: String) { stack = "$stack|$r" }
@@ -237,6 +241,10 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                     data = data,
                     openDays = listOpenDays,
                     onToggleDay = { d -> listOpenDays = if (d in listOpenDays) listOpenDays - d else listOpenDays + d },
+                    catsOpen = listCatsOpen,
+                    onToggleCats = { listCatsOpen = !listCatsOpen },
+                    // A category opens for that month, with the same trips choice.
+                    onCategory = { c, t, without -> push(categoryRoute(c, t, listMonth.toString(), without)) },
                     onOpen = { push(VIEW + it) },
                     onBack = ::pop,
                 )
@@ -340,6 +348,7 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                 val category = Category.valueOf(parts[0])
                 val foodType = parts.getOrNull(1)?.takeIf { it.isNotEmpty() }?.let { FoodType.valueOf(it) }
                 val period = parts.getOrNull(2).orEmpty()
+                val startWithout = parts.getOrNull(3) == "without"
                 val inSpan = remember(data, period) { ExpenseQueries.inPeriod(data.expenses, period) }
                 val groups = remember(inSpan, category, foodType) { ExpenseQueries.byCategory(inSpan, category, foodType) }
                 val groupsWithout = remember(inSpan, category, foodType) { ExpenseQueries.byCategory(Trips.withoutTrips(inSpan), category, foodType) }
@@ -349,7 +358,8 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                     period = period,
                     groupsAll = groups,
                     groupsWithoutTrips = groupsWithout,
-                    onFoodType = { t -> replaceTop(categoryRoute(category, t, period)) },
+                    startWithTrips = !startWithout,
+                    onFoodType = { t -> replaceTop(categoryRoute(category, t, period, startWithout)) },
                     onOpen = { push(VIEW + it) },
                     onBack = ::pop,
                 )
