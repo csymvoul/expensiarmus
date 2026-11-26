@@ -24,6 +24,8 @@ export function load(storage) {
       expenses,
       goals: migrateGoals(parsed.goals),
       alertsSent: Array.isArray(parsed.alertsSent) ? parsed.alertsSent : [],
+      // The month whose recap card was dismissed on the Ledger.
+      ...(typeof parsed.recapDismissed === 'string' ? { recapDismissed: parsed.recapDismissed } : {}),
       // Favourites with a known category (and, for Entertainment only, a known food type) and a title.
       favorites: (Array.isArray(parsed.favorites) ? parsed.favorites : []).filter((f) => f && typeof f.title === 'string' && f.title.trim()
         && category(f.category) && (f.foodType == null || (f.category === 'ENTERTAINMENT' && foodType(f.foodType)))

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.18.0 (Android), web app 1.18.0 and iPhone app 1.15.0 – unreleased (2026-11-26)
+
+### Added
+- **The end-of-month owl.** The current month's Ledger opens with an **Owl post** card (Last month in plain words) that sums up the month just finished: "October: €1,240.00, 8% less than September, most went to Diagon Alley." (the category's plain name with plain words). **Open October ›** jumps to it; **Dismiss** hides the card until next month (saved with the data as `recapDismissed`). A month with nothing recorded gets no card, and the comparison is left out when the month before is empty.
+- **The owl's notification.** On the 1st, with the evening owl, a second notification brings the same line ("🦉 Owl post: October's ledger is closed"); tapping it opens the Ledger. On Android it comes with the 21:30 alarm; in the iPhone app it is scheduled with the evening owls (its own id, so it doesn't replace that evening's reminder). It follows the evening owl's on/off switch. github.io shows the card only, since web apps can't schedule notifications.
+- Logic in `monthRecap` / `recapText` (web `summary.js`) and `MonthRecap` (Android), same wording.
+- Tests: Android 195 (2 new), web 92 (2 new). All passing. Checked in a browser: the card's wording, and Dismiss surviving a reload.
+
+### Known issues
+- The notifications were not tried on a phone (they first fire on 1 December). The iPhone app's Swift change compiles in the IPA build; its unit tests weren't run (no simulator installed).
+
 ## 1.17.2 (Android), web app 1.17.2 and iPhone app 1.14.2 – unreleased (2026-11-25)
 
 ### Changed

@@ -1,7 +1,7 @@
 // Expensiarmus web app: screens, navigation and event handling. Logic lives in the other modules.
 import { CATEGORIES, FOOD_TYPES, TAB_ICONS, EMBLEMS, WHOLE_MONTH, goalKey, withoutEmoji, category, foodType, makeExpense, myShareCents, isSplit, splitLine, upsert, remove, find, monthOf } from './model.js';
 import { parseToCents, format, forInput, compact, setMoneyStyle } from './money.js';
-import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary } from './summary.js';
+import { monthlySummary, describeGoal, goalProgress, yearSummary, allTimeSummary, monthRecap, recapText, recapMonthFor } from './summary.js';
 import { goalFor, setGoal, removeGoal, scopeText, alertsDue, markAlertsSent } from './goals.js';
 import { dailyTotals, onDay, calendarCells, byCategory, inPeriod, isFavorite, toggleFavorite, MAX_FAVORITES, saveFavorite, removeFavoriteAt, search, shiftMonth, defaultTitle, ledgerPreview, monthGlance, LATEST_COUNT } from './queries.js';
 import { toCsv, importCsv, importSummary } from './csv.js';
@@ -69,11 +69,13 @@ function updateSettings(change) {
 
 /** Asks the iPhone app to (re)schedule the evening owls for the coming days, at the chosen time. */
 function scheduleOwls() {
-  post({
-    type: 'schedule',
-    enabled: settings.reminderOn,
-    reminders: settings.reminderOn ? upcomingReminders(data.expenses, new Date(), 30, settings.reminderTime, W) : [],
+  const evenings = settings.reminderOn ? upcomingReminders(data.expenses, new Date(), 30, settings.reminderTime, W) : [];
+  // On the 1st, a second owl sums up the month just finished (opens the Ledger, not Record expense).
+  const recaps = evenings.filter((o) => o.date.endsWith('-01')).flatMap((o) => {
+    const r = monthRecap(data, recapMonthFor(o.date));
+    return r ? [{ ...o, id: `recap-${r.month}`, route: '#/', title: W.recapTitle(fmt(`${r.month}-01`, { month: 'long' })), body: recapText(r, W) }] : [];
   });
+  post({ type: 'schedule', enabled: settings.reminderOn, reminders: [...evenings, ...recaps] });
 }
 
 function commit(next) {
@@ -282,6 +284,19 @@ function calendarCard() {
   return card(`<div class="cal">${['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((w) => `<span class="wd">${w}</span>`).join('')}${cells.join('')}</div>`);
 }
 
+/** On the current month's Ledger: last month in one line, until dismissed. */
+function recapCard() {
+  if (ui.month !== today().slice(0, 7)) return '';
+  const month = recapMonthFor(today());
+  if (data.recapDismissed === month) return '';
+  const r = monthRecap(data, month);
+  if (!r) return '';
+  return card(`<h3 class="h-medium card-title">${emblem(EMBLEMS.reminder, 36)}${esc(W.recapHeading)}</h3>
+    <p>${esc(recapText(r, W))}</p>
+    <div class="ward-actions"><button class="link" data-action="recap-open" data-month="${month}">Open ${fmt(`${month}-01`, { month: 'long' })} ›</button>
+      <span class="spacer"></span><button class="link" data-action="recap-dismiss" data-month="${month}">Dismiss</button></div>`, 'recap');
+}
+
 /** The newest few expenses of the month, with a link to show them all (or only the latest again). */
 function ledgerList(expenses) {
   const showAll = ui.ledgerAll === ui.month;
@@ -359,7 +374,7 @@ function monthScreen(calendar) {
   const actions = `${timeTurner()}<button class="icon-btn" data-action="go" data-to="#/search" aria-label="${W.search}"><span class="search-glyph"></span></button>`;
   let body;
   if (!calendar) {
-    body = `${totalCard(s)}
+    body = `${recapCard()}${totalCard(s)}
       ${breakdownCard(s, ui.month)}
       ${s.food.totalCents > 0 ? foodCard(s.food, ui.month) : ''}
       ${ornament(W.ledger)}
@@ -1017,6 +1032,8 @@ const actions = {
   go: (el) => go(el.dataset.to),
   tab: (el) => { navDepth = 0; location.replace(el.dataset.to); },
   'ledger-all': () => { ui.ledgerAll = ui.ledgerAll === ui.month ? null : ui.month; render(); },
+  'recap-open': (el) => { ui.month = el.dataset.month; ui.highlighted = null; render(); },
+  'recap-dismiss': (el) => { commit({ ...data, recapDismissed: el.dataset.month }); render(); },
   'this-month': () => { ui.month = today().slice(0, 7); ui.day = today(); ui.highlighted = null; ui.goalEdit = null; render(); },
   'prev-month': () => { ui.month = shiftMonth(ui.month, -1); ui.highlighted = null; ui.goalEdit = null; render(); },
   'next-month': () => { ui.month = shiftMonth(ui.month, 1); ui.highlighted = null; ui.goalEdit = null; render(); },

@@ -35,6 +35,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.csymvoul.expenses.data.AppSettings
 import com.csymvoul.expenses.domain.ExpenseQueries
 import com.csymvoul.expenses.domain.Favorites
+import com.csymvoul.expenses.domain.MonthRecap
 import com.csymvoul.expenses.domain.Money
 import com.csymvoul.expenses.domain.MonthlySummary
 import com.csymvoul.expenses.domain.PeriodSummary
@@ -358,6 +359,12 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
                     onPreviousMonth = { month = month.minusMonths(1) },
                     onNextMonth = { month = month.plusMonths(1) },
                     onThisMonth = { month = YearMonth.now(); selectedDay = LocalDate.now() },
+                    recap = remember(data, month) {
+                        if (month != YearMonth.now()) null
+                        else MonthRecap.of(data, MonthRecap.monthFor(LocalDate.now()))?.takeIf { it.month.toString() != data.recapDismissed }
+                    },
+                    onOpenRecap = { month = it },
+                    onDismissRecap = { vm.dismissRecap(it.toString()) },
                     onAdd = { quickOpen = true },
                     onOpen = { push(VIEW + it) },
                     onCategory = { c, t -> push(categoryRoute(c, t, if (annalsView == AnnalsView.YEAR) annalsYear.toString() else "")) },

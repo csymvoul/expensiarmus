@@ -1,11 +1,15 @@
 import Foundation
 import UserNotifications
 
-/// One evening's reminder, as sent by the web app (see web/js/reminder.js).
+/// One evening's reminder, as sent by the web app (see web/js/reminder.js). On the 1st the web app
+/// also sends last month's recap, with its own [key] (so it doesn't replace that evening's owl) and
+/// [route] (it opens the Ledger rather than Record expense).
 struct Owl {
     let date: DateComponents
     let title: String
     let body: String
+    let key: String?
+    let route: String
 
     init?(message: [String: Any]) {
         guard let day = message["date"] as? String, let title = message["title"] as? String, let body = message["body"] as? String else { return nil }
@@ -20,6 +24,8 @@ struct Owl {
         self.date = date
         self.title = title
         self.body = body
+        self.key = message["id"] as? String
+        self.route = message["route"] as? String ?? "#/edit"
     }
 }
 
@@ -58,8 +64,8 @@ final class OwlScheduler {
                     content.body = owl.body
                     content.sound = .default
                     content.threadIdentifier = "owl"
-                    content.userInfo = ["route": "#/edit"]
-                    let id = self.prefix + String(format: "%04d-%02d-%02d", owl.date.year ?? 0, owl.date.month ?? 0, owl.date.day ?? 0)
+                    content.userInfo = ["route": owl.route]
+                    let id = self.prefix + (owl.key ?? String(format: "%04d-%02d-%02d", owl.date.year ?? 0, owl.date.month ?? 0, owl.date.day ?? 0))
                     let trigger = UNCalendarNotificationTrigger(dateMatching: owl.date, repeats: false)
                     self.center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
                 }

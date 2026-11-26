@@ -1,4 +1,4 @@
-import { CATEGORIES, FOOD_TYPES, monthOf, myShareCents } from './model.js';
+import { CATEGORIES, FOOD_TYPES, monthOf, myShareCents, category } from './model.js';
 import { format } from './money.js';
 import { goalFor } from './goals.js';
 import { wordsFor } from './words.js';
@@ -142,3 +142,45 @@ export function allTimeSummary(data, today) {
   }));
   return periodBuild(data.expenses, monthsBetween(first, maxStr(ym(today), last)), bars, null);
 }
+
+// ---------- end-of-month owl ----------
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const monthName = (m) => MONTH_NAMES[Number(m.slice(5, 7)) - 1];
+const monthBefore = (m) => {
+  const [y, mo] = m.split('-').map(Number);
+  return mo === 1 ? `${y - 1}-12` : `${y}-${String(mo - 1).padStart(2, '0')}`;
+};
+
+/**
+ * A finished month in one line, for the owl on the 1st and the card on the Ledger: the total, the change
+ * from the month before, and the category most went to. Null for a month with nothing recorded.
+ */
+export function monthRecap(data, month) {
+  const s = monthlySummary(data, month);
+  if (s.totalCents <= 0) return null;
+  const previousMonth = monthBefore(month);
+  const previousCents = monthlySummary(data, previousMonth).totalCents;
+  const top = s.categories.reduce((a, c) => (c.spentCents > a.spentCents ? c : a));
+  return {
+    month,
+    totalCents: s.totalCents,
+    previousMonth,
+    changePercent: previousCents > 0 ? Math.round(((s.totalCents - previousCents) * 100) / previousCents) : null,
+    topCategory: top.category,
+    topCents: top.spentCents,
+  };
+}
+
+/** "October: €1,240.00, 8% less than September, most went to Diagon Alley." (the category's name in plain words). */
+export function recapText(r, words = wordsFor(true)) {
+  const c = category(r.topCategory);
+  const change = r.changePercent == null ? ''
+    : r.changePercent > 0 ? `, ${r.changePercent}% more than ${monthName(r.previousMonth)}`
+      : r.changePercent < 0 ? `, ${-r.changePercent}% less than ${monthName(r.previousMonth)}`
+        : `, the same as ${monthName(r.previousMonth)}`;
+  return `${monthName(r.month)}: ${format(r.totalCents)}${change}, most went to ${words.nicknames ? c.nickname : c.label}.`;
+}
+
+/** The month the card on the Ledger sums up on [today] ("YYYY-MM-DD"): the one just finished. */
+export const recapMonthFor = (today) => monthBefore(today.slice(0, 7));

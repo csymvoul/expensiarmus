@@ -130,6 +130,8 @@ data class AppData(
     val alertsSent: Set<String> = emptySet(),
     /** Up to five favourites for Quick add, sorted by title. */
     val favorites: List<Favorite> = emptyList(),
+    /** The month ("2026-10") whose recap card was dismissed on the Ledger. */
+    val recapDismissed: String? = null,
 ) {
     fun upsert(expense: Expense) = copy(expenses = expenses.filterNot { it.id == expense.id } + expense)
 

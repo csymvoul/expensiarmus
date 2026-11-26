@@ -51,6 +51,9 @@ data class Words(
     val exportButton: String,
     val exported: String,
     val exportFailed: String,
+    /** The end-of-month owl: the Ledger card's heading, and the notification's title ("%s" is the month). */
+    val recapHeading: String,
+    val recapTitleFormat: String,
     /** The ward that watches everything spent in a month. */
     val wholeMonth: String,
     val wholeMonthSub: String,
@@ -73,6 +76,7 @@ data class Words(
     val nicknames: Boolean,
 ) {
     fun spentIn(year: Int) = "$spentInPrefix $year"
+    fun recapTitle(month: String) = recapTitleFormat.format(month)
     fun thisMonth(month: String) = "$thisMonthPrefix $month"
     fun imported(count: Int) = importedLine.format(if (count == 1) "1 expense" else "$count expenses")
     fun deleteBody(title: String) = "\"$title\" $deleteBodySuffix"
@@ -102,6 +106,7 @@ data class Words(
             noGoals = "No wards for this month yet.", whichCategory = "Which vault?",
             categoryEmpty = "This vault is empty. Nothing recorded here yet.",
             exportTitle = "📜 Geminio", exportButton = "Geminio · export CSV", exported = "Geminio! Ledger copied to CSV.",
+            recapHeading = "Owl post", recapTitleFormat = "🦉 Owl post: %s's ledger is closed",
             wholeMonth = "Whole month", wholeMonthSub = "All your vaults together", thisMonthPrefix = "Back to",
             importTitle = "Apparate", importButton = "Apparate · import CSV", importedLine = "Apparate! %s appeared in the ledger.",
             exportFailed = "The spell failed: export did not work.",
@@ -133,6 +138,7 @@ data class Words(
             noGoals = "No goals for this month yet.", whichCategory = "Which category?",
             categoryEmpty = "Nothing recorded in this category yet.",
             exportTitle = "📤 Export", exportButton = "Export CSV", exported = "Expenses exported.", exportFailed = "Export failed.",
+            recapHeading = "Last month", recapTitleFormat = "%s summary",
             wholeMonth = "Whole month", wholeMonthSub = "All categories together", thisMonthPrefix = "Back to",
             importTitle = "Import", importButton = "Import CSV", importedLine = "%s imported.",
             settingsTab = "⚙️ Settings", reminder = "Daily reminder", reminderSwitch = "Send the daily reminder",

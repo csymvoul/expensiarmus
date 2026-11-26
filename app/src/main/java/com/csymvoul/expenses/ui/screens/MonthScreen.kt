@@ -71,6 +71,7 @@ import java.time.format.TextStyle
 import java.time.YearMonth
 import com.csymvoul.expenses.domain.ExpenseQueries
 import com.csymvoul.expenses.domain.MonthGlance
+import com.csymvoul.expenses.domain.MonthRecap
 import com.csymvoul.expenses.ui.components.GoalBar
 import com.csymvoul.expenses.ui.components.LocalWords
 import com.csymvoul.expenses.ui.components.OrnamentHeading
@@ -107,6 +108,10 @@ fun MonthScreen(
     onNextMonth: () -> Unit,
     /** Jumps back to the current month. */
     onThisMonth: () -> Unit,
+    /** Last month in one line, shown on the current month's Ledger until dismissed (null: nothing to show). */
+    recap: MonthRecap?,
+    onOpenRecap: (YearMonth) -> Unit,
+    onDismissRecap: (YearMonth) -> Unit,
     onAdd: () -> Unit,
     onOpen: (String) -> Unit,
     onCategory: (Category, FoodType?) -> Unit,
@@ -162,6 +167,7 @@ fun MonthScreen(
             item { MonthSwitcher(summary, onPreviousMonth, onNextMonth) }
             when (view) {
                 MonthView.OVERVIEW -> {
+                    recap?.let { r -> item { RecapCard(r, onOpenRecap, onDismissRecap) } }
                     item { TotalCard(summary) }
                     item { BreakdownCard(summary.categories, summary.totalCents, summary.month, onCategory, period = summary.month.toString()) }
                     if (summary.food.totalCents > 0) {
@@ -325,6 +331,25 @@ private fun RowScope.GlanceTile(value: String, label: String) {
     ) {
         Text(value, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1)
         Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+    }
+}
+
+/** The end-of-month owl on the Ledger: last month in one line, with a way to open it and to dismiss the card. */
+@Composable
+private fun RecapCard(r: MonthRecap, onOpen: (YearMonth) -> Unit, onDismiss: (YearMonth) -> Unit) {
+    val w = LocalWords.current
+    ParchmentCard(spacing = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            EmblemBadge(R.drawable.emblem_set_reminder, size = 36.dp)
+            Spacer(Modifier.width(10.dp))
+            Text(w.recapHeading, style = MaterialTheme.typography.titleMedium)
+        }
+        Text(r.text { if (w.nicknames) it.nickname else it.label }, style = MaterialTheme.typography.bodyMedium)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = { onOpen(r.month) }) { Text("Open ${MonthRecap.monthName(r.month)} ›") }
+            Spacer(Modifier.weight(1f))
+            TextButton(onClick = { onDismiss(r.month) }) { Text("Dismiss") }
+        }
     }
 }
 

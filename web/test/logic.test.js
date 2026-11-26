@@ -1089,3 +1089,40 @@ test('Settings cards come in the chosen order: Favourites, Owl reminder, Wizard 
   assert.ok(at.every((i) => i > 0), 'every card is there');
   assert.deepEqual([...at].sort((a, b) => a - b), at);
 });
+
+// --- end-of-month owl ---
+import { monthRecap, recapText, recapMonthFor } from '../js/summary.js';
+
+test('the month recap: total, change from the month before, and where most went', () => {
+  const data = { expenses: [
+    e('2026-10-01', 45000, 'RENT'), e('2026-10-05', 9000, 'SHOPPING'), e('2026-10-20', 70000, 'SHOPPING'),
+    e('2026-09-01', 45000, 'RENT'), e('2026-09-10', 90000, 'SHOPPING'),
+  ], goals: { entries: [] } };
+  const r = monthRecap(data, '2026-10');
+  assert.deepEqual(r, { month: '2026-10', totalCents: 124000, previousMonth: '2026-09', changePercent: -8, topCategory: 'SHOPPING', topCents: 79000 });
+  assert.equal(recapText(r, wordsFor(true)), 'October: €1,240.00, 8% less than September, most went to Diagon Alley.');
+  assert.equal(recapText(r, wordsFor(false)), 'October: €1,240.00, 8% less than September, most went to Shopping.');
+  assert.equal(recapText({ ...r, changePercent: 12 }), 'October: €1,240.00, 12% more than September, most went to Diagon Alley.');
+  assert.equal(recapText({ ...r, changePercent: 0 }), 'October: €1,240.00, the same as September, most went to Diagon Alley.');
+  assert.equal(recapText({ ...r, changePercent: null }), 'October: €1,240.00, most went to Diagon Alley.');
+  assert.equal(monthRecap(data, '2026-08'), null); // nothing recorded
+  assert.equal(monthRecap(data, '2026-09').changePercent, null); // nothing the month before
+  assert.equal(recapMonthFor('2026-11-01'), '2026-10');
+  assert.equal(recapMonthFor('2027-01-15'), '2026-12');
+});
+
+test('the recap card shows on the current Ledger until dismissed, and the iPhone owl brings it on the 1st', () => {
+  const app = readFileSync(webFile('js/app.js'), 'utf8');
+  assert.match(app, /body = `\$\{recapCard\(\)\}\$\{totalCard\(s\)\}/);
+  assert.match(app, /if \(ui\.month !== today\(\)\.slice\(0, 7\)\) return '';/);
+  assert.match(app, /if \(data\.recapDismissed === month\) return '';/);
+  assert.match(app, /'recap-dismiss': \(el\) => \{ commit\(\{ \.\.\.data, recapDismissed: el\.dataset\.month \}\)/);
+  assert.match(app, /evenings\.filter\(\(o\) => o\.date\.endsWith\('-01'\)\)/);
+  assert.match(app, /id: `recap-\$\{r\.month\}`, route: '#\/'/);
+  // The dismissal is saved with the data.
+  const mem = new Map();
+  const storage = { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v) };
+  save(storage, { ...emptyData(), recapDismissed: '2026-10' });
+  assert.equal(load(storage).recapDismissed, '2026-10');
+  assert.equal(wordsFor(true).recapTitle('October'), "🦉 Owl post: October's ledger is closed");
+});

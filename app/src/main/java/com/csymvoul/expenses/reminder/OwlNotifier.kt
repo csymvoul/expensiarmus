@@ -11,6 +11,8 @@ import com.csymvoul.expenses.R
 import com.csymvoul.expenses.data.AppSettings
 import com.csymvoul.expenses.data.ExpenseStore
 import com.csymvoul.expenses.domain.Reminder
+import com.csymvoul.expenses.domain.MonthRecap
+import com.csymvoul.expenses.ui.theme.nickname
 import java.io.File
 import java.time.LocalDate
 
@@ -43,6 +45,32 @@ object OwlNotifier {
             .setAutoCancel(true)
             .build()
         context.getSystemService(NotificationManager::class.java).notify(1, notification)
+        return true
+    }
+
+    /** On the 1st, with the evening owl: last month in one line. Tapping it opens the Ledger. */
+    fun showRecap(context: Context): Boolean {
+        if (!canNotify(context)) return false
+        val data = ExpenseStore(File(context.filesDir, "expenses.json")).load()
+        val recap = MonthRecap.of(data, MonthRecap.monthFor(LocalDate.now())) ?: return false
+        val words = AppSettings.get(context).words
+        val text = recap.text { if (words.nicknames) it.nickname else it.label }
+        val open = PendingIntent.getActivity(
+            context,
+            2,
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = Notification.Builder(context, ReminderScheduler.CHANNEL)
+            .setSmallIcon(R.drawable.ic_stat_quill)
+            .setColor(0xFF7B1E1E.toInt())
+            .setContentTitle(words.recapTitle(MonthRecap.monthName(recap.month)))
+            .setContentText(text)
+            .setStyle(Notification.BigTextStyle().bigText(text))
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .build()
+        context.getSystemService(NotificationManager::class.java).notify(2, notification)
         return true
     }
 }

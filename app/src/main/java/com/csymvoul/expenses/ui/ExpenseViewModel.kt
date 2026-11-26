@@ -62,6 +62,9 @@ class ExpenseViewModel(app: Application) : AndroidViewModel(app) {
         return r.error
     }
 
+    /** Hides the Ledger's recap card for [month] ("2026-10"). */
+    fun dismissRecap(month: String) = update { it.copy(recapDismissed = month) }
+
     fun removeFavoriteAt(index: Int) = update { it.copy(favorites = Favorites.removeAt(it.favorites, index)) }
 
     /** Sets a goal for [category] (null: the whole month) in [month] only, or from [month] onwards. */
