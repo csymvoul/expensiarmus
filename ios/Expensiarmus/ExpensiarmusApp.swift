@@ -14,7 +14,19 @@ struct ExpensiarmusApp: App {
                 .ignoresSafeArea()
                 // Parchment by day, castle by night, so there is no white flash while the page loads.
                 .background(colorScheme == .dark ? Color(red: 0.09, green: 0.07, blue: 0.055) : Color(red: 0.953, green: 0.902, blue: 0.784))
+                // The widget opens the Ledger (expensiarmus://localhost/index.html#/) or Quick add (#/edit).
+                .onOpenURL { url in
+                    if let route = Self.route(from: url) { appDelegate.shell.open(route: route) }
+                }
         }
+    }
+}
+
+extension ExpensiarmusApp {
+    /// "#/edit" from a widget link; nil for anything that isn't ours.
+    static func route(from url: URL) -> String? {
+        guard url.scheme == Shell.scheme, let fragment = url.fragment, fragment.hasPrefix("/") else { return nil }
+        return "#" + fragment
     }
 }
 

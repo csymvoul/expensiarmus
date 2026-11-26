@@ -9,6 +9,7 @@ import { saveTrip, deleteTrip, tripStatus, tripsToOffer, ongoingTrip, withoutTri
 import { load, save, KEY } from './store.js';
 import { upcomingReminders } from './reminder.js';
 import { wordsFor } from './words.js';
+import { widgetContent } from './widget.js';
 import { loadSettings, saveSettings, validTime } from './settings.js';
 
 const app = document.getElementById('app');
@@ -65,7 +66,13 @@ function updateSettings(change) {
   saveSettings(storage, settings);
   applySettings();
   scheduleOwls();
+  updateWidget();
   render();
+}
+
+/** Hands the iPhone app what its home-screen widget shows: this month, its wards and the trips to come. */
+function updateWidget() {
+  post({ type: 'widget', content: widgetContent(data, today().slice(0, 7), W, today()) });
 }
 
 /** Asks the iPhone app to (re)schedule the evening owls for the coming days, at the chosen time. */
@@ -87,6 +94,7 @@ function commit(next) {
   // The iPhone app keeps a copy outside the web view's storage, as a backup.
   post({ type: 'save', key: KEY, json: storage.getItem(KEY) });
   scheduleOwls();
+  updateWidget();
   alerts.forEach(showGoalAlert);
 }
 
@@ -577,7 +585,7 @@ async function readImport(input) {
   input.value = ''; // picking the same file again should work too
   if (!file) return;
   try {
-    ui.importing = importCsv(await file.text(), data.expenses, newId);
+    ui.importing = importCsv(await file.text(), data.expenses, newId, data.trips ?? []);
   } catch {
     toast('That file could not be read.');
     return;
@@ -1136,7 +1144,7 @@ function annalsScreen() {
 
 async function exportCsv() {
   const name = `expensiarmus-${today()}.csv`;
-  const text = '﻿' + toCsv(data.expenses);
+  const text = '﻿' + toCsv(data.expenses, data.trips ?? []);
   if (nativeBridge) {
     post({ type: 'share', filename: name, text });
     return;
@@ -1229,8 +1237,12 @@ const actions = {
   'import-cancel': () => { ui.importing = null; render(); },
   'import-confirm': () => {
     const added = ui.importing?.added ?? [];
+    const newTrips = ui.importing?.newTrips ?? [];
     ui.importing = null;
-    if (added.length) commit({ ...data, expenses: [...data.expenses, ...added] });
+    if (added.length) {
+      const trips = newTrips.reduce((list, t) => saveTrip(list, t).list ?? list, data.trips ?? []);
+      commit({ ...data, trips, expenses: [...data.expenses, ...added] });
+    }
     toast(W.imported(added.length));
     render();
   },
@@ -1410,8 +1422,10 @@ window.expensiarmusOpen = (hash) => {
 };
 window.addEventListener('owlstatus', () => { if (route().name === 'settings') render(); });
 // Keep the 30-day window of owls rolling whenever the app comes back to the foreground.
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') scheduleOwls(); });
+// The widget catches up too (a new month, or a trip's spending recorded elsewhere).
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { scheduleOwls(); updateWidget(); } });
 
 applySettings();
 render();
 scheduleOwls();
+updateWidget();

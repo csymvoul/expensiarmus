@@ -3,6 +3,7 @@ package com.csymvoul.expenses.domain
 import com.csymvoul.expenses.model.Category
 import com.csymvoul.expenses.model.Expense
 import com.csymvoul.expenses.model.FoodType
+import com.csymvoul.expenses.model.Trip
 import java.time.DateTimeException
 import java.time.LocalDate
 
@@ -15,6 +16,8 @@ data class ImportResult(
     val duplicates: Int,
     val problems: List<ImportProblem>,
     val rows: Int,
+    /** Trips named in the file but not on this phone, spanning the dates of their expenses. */
+    val newTrips: List<Trip> = emptyList(),
 )
 
 /**
@@ -26,7 +29,7 @@ data class ImportResult(
 object CsvImporter {
     private val required = listOf("date", "title", "category", "amount_eur")
 
-    fun import(text: String, existing: List<Expense>, newId: () -> String): ImportResult {
+    fun import(text: String, existing: List<Expense>, newId: () -> String, trips: List<Trip> = emptyList()): ImportResult {
         val clean = text.removePrefix("\uFEFF")
         val firstLine = clean.lineSequence().firstOrNull().orEmpty()
         val delimiter = if (';' in firstLine && ',' !in firstLine) ';' else ','
@@ -41,8 +44,11 @@ object CsvImporter {
         }
         val at = mapOf(
             "date" to col("date"), "title" to col("title"), "category" to col("category"),
-            "food" to col("food_type"), "amount" to col("amount_eur"), "percent" to col("my_share_percent"),
+            "food" to col("food_type"), "amount" to col("amount_eur"), "percent" to col("my_share_percent"), "trip" to col("trip"),
         )
+        // Trips by name: existing ones are matched (case and accents ignored); unknown names become new trips.
+        val tripsByName = trips.associate { squash(ExpenseQueries.normalize(it.name)) to it.id }
+        val created = linkedMapOf<String, Trip>()
 
         val left = existing.groupingBy(::sameness).eachCount().toMutableMap()
         val added = mutableListOf<Expense>()
@@ -67,17 +73,28 @@ object CsvImporter {
             val percent = if (percentText.isEmpty()) 100 else percentText.toIntOrNull()
             if (percent == null || percent !in 1..100) return@forEachIndexed problem("\"$percentText\" is not a share between 1 and 100.")
 
-            val expense = Expense(newId(), date, title, cents, category, percent, food)
+            var expense = Expense(newId(), date, title, cents, category, percent, food)
             val key = sameness(expense)
             val already = left[key] ?: 0
             if (already > 0) {
                 left[key] = already - 1
                 duplicates++
-            } else {
-                added += expense
+                return@forEachIndexed
             }
+            val tripName = get("trip")
+            if (tripName.isNotEmpty()) {
+                val k = squash(ExpenseQueries.normalize(tripName))
+                val id = tripsByName[k] ?: run {
+                    val t = created[k]?.let { it.copy(start = minOf(it.start, date), end = maxOf(it.end, date)) }
+                        ?: Trip(newId(), tripName, date, date)
+                    created[k] = t
+                    t.id
+                }
+                expense = expense.copy(tripId = id)
+            }
+            added += expense
         }
-        return ImportResult(added, duplicates, problems, count)
+        return ImportResult(added, duplicates, problems, count, created.values.toList())
     }
 
     /** What the confirmation shows: counts, then up to [maxProblems] unreadable rows ("Line 4: …"). */
@@ -88,6 +105,9 @@ object CsvImporter {
             add(if (r.problems.size == 1) "1 row could not be read:" else "${r.problems.size} rows could not be read:")
             r.problems.take(maxProblems).forEach { add("Line ${it.line}: ${it.reason}") }
             if (r.problems.size > maxProblems) add("…and ${r.problems.size - maxProblems} more.")
+        }
+        if (r.newTrips.isNotEmpty()) {
+            add((if (r.newTrips.size == 1) "Also adds 1 trip" else "Also adds ${r.newTrips.size} trips") + ": " + r.newTrips.joinToString(", ") { it.name } + ".")
         }
     }
 

@@ -82,6 +82,13 @@ object Trips {
     /** The trip on today, if any (the one that started last when they overlap). */
     fun ongoing(trips: List<Trip>, today: LocalDate) = toOffer(trips, today).lastOrNull { it.start <= today }
 
+    /** "in 3 days", "day 3 of 9", "9 days": where a trip stands, as the apps and the widget say it. */
+    fun statusText(s: TripStatus): String = when (s.state) {
+        TripStatus.State.UPCOMING -> if (s.inDays == 1) "tomorrow" else "in ${s.inDays} days"
+        TripStatus.State.ONGOING -> "day ${s.day} of ${s.days}"
+        TripStatus.State.DONE -> if (s.days == 1) "1 day" else "${s.days} days"
+    }
+
     fun withoutTrips(expenses: List<Expense>) = expenses.filter { it.tripId == null }
 
     fun summary(data: AppData, id: String, today: LocalDate): TripSummary? {

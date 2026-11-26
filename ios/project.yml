@@ -6,8 +6,8 @@ options:
     iOS: "16.0"
 settings:
   base:
-    MARKETING_VERSION: "1.17.0"
-    CURRENT_PROJECT_VERSION: "33"
+    MARKETING_VERSION: "1.18.0"
+    CURRENT_PROJECT_VERSION: "34"
     SWIFT_VERSION: "5.0"
 targets:
   Expensiarmus:
@@ -15,6 +15,7 @@ targets:
     platform: iOS
     sources:
       - path: Expensiarmus
+      - path: Shared
       # The web app, bundled as a folder so its files keep their paths.
       - path: ../web
         type: folder
@@ -32,10 +33,44 @@ targets:
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
         ITSAppUsesNonExemptEncryption: false
+        # Lets the home-screen widget open the app at a screen.
+        CFBundleURLTypes:
+          - CFBundleURLName: com.csymvoul.expensiarmus
+            CFBundleURLSchemes: [expensiarmus]
+    entitlements:
+      path: Expensiarmus/Expensiarmus.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.csymvoul.expensiarmus]
+    dependencies:
+      - target: ExpensiarmusWidget
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.csymvoul.expensiarmus
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+  ExpensiarmusWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ExpensiarmusWidget
+      - path: Shared
+    info:
+      path: ExpensiarmusWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Expensiarmus
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: ExpensiarmusWidget/ExpensiarmusWidget.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.csymvoul.expensiarmus]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.csymvoul.expensiarmus.widget
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
   ExpensiarmusTests:

@@ -74,11 +74,7 @@ private val longDate = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
 fun tripDates(t: Trip): String = if (t.start == t.end) t.start.format(longDate) else "${t.start.format(shortDate)} – ${t.end.format(longDate)}"
 
 /** "in 3 days", "day 3 of 9", "9 days". */
-fun tripStatusText(s: TripStatus): String = when (s.state) {
-    TripStatus.State.UPCOMING -> if (s.inDays == 1) "tomorrow" else "in ${s.inDays} days"
-    TripStatus.State.ONGOING -> "day ${s.day} of ${s.days}"
-    TripStatus.State.DONE -> if (s.days == 1) "1 day" else "${s.days} days"
-}
+fun tripStatusText(s: TripStatus): String = com.csymvoul.expenses.domain.Trips.statusText(s)
 
 /** Trip chips for recording: tap one to tie the expense to it, tap it again to untie. */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)

@@ -20,6 +20,8 @@ class ReminderReceiver : BroadcastReceiver() {
             if (java.time.LocalDate.now().dayOfMonth == 1) OwlNotifier.showRecap(context)
         }
         ReminderScheduler.schedule(context)
+        // Once a day the widget's trip line moves on a day.
+        runCatching { com.csymvoul.expenses.widget.LedgerWidget.refresh(context) }
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {

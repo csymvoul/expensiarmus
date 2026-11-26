@@ -56,6 +56,18 @@
         android:textColor="@color/widget_soft"
         android:textSize="12sp" />
 
+    <TextView
+        android:id="@+id/widget_trip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="@color/widget_heading"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
     <LinearLayout android:id="@+id/widget_ward1" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
         <TextView android:id="@+id/widget_ward1_text" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="1" android:textColor="@color/widget_ink" android:textSize="12sp" />
         <ProgressBar android:id="@+id/widget_ward1_bar" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="8dp" android:layout_marginBottom="4dp" android:max="100" android:progressDrawable="@drawable/widget_bar" />

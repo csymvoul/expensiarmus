@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.21.0 (Android), web app 1.21.0 and iPhone app 1.18.0 – unreleased (2026-11-26)
+
+### Added
+- **Trips in Geminio and Apparate.** The CSV gains a last column, `trip`, with the trip's name (empty for everyday expenses). Apparate reads it back: a name matching a trip (case and Greek accents ignored) ties the row to it, and an unknown name becomes a new trip whose dates span its rows (no budget). The preview says so: "Also adds 1 trip: Rome." Older CSVs without the column import as before.
+- **The trip on the Android widget.** Under the total, while a trip is on: "✦ Rome · day 3 of 9 · €60.00 of €500.00". The widget also refreshes with the evening alarm, so the day count moves on.
+- **An iPhone widget** (the iPhone app only; github.io can't have one). The Ledger on the home screen in the same parchment or castle colours as on Android: the month's total, the trip you are on and up to three ward bars; the small size shows the total, the trip and the first ward, the medium one everything plus a ➕ that opens Quick add. Tapping elsewhere opens the Ledger. The web app works out what it shows (`web/js/widget.js`, same rules as Android's) after every save, settings change and return to the app; the Swift shell saves it in an App Group the widget reads. The widget works out the trip's day itself and refreshes at midnight; in a new month, until the app is opened, it asks you to open the app instead of showing last month as this one.
+
+### Changed
+- `ios/build-ipa.sh` signs the app and the widget ad hoc with their entitlements (the App Group) before zipping, so AltStore can see them.
+
+### Tests
+- Android 208 (2 new: trips in the CSV round trip, the widget's trip line), web 102 (3 new: CSV trips, the widget content, and that the app hands it over), iPhone 6 new widget tests (the message, the trip's day, the stale month, the phone's time zone, the App Group from the provisioning profile, the widget links). All passing on Android and web. The iPhone tests compile; with no iPhone simulator installed here, 5 of them (everything but the links) were run on the Mac against the same source and pass.
+
+### Known issues
+- The iPhone widget is built but not yet seen on a phone: it has not run on a device or simulator. It also needs AltStore to grant the App Group and an extra App ID (see DEPLOYMENT.md).
+
 ## 1.20.0 (Android), web app 1.20.0 and iPhone app 1.17.0 – unreleased (2026-11-26)
 
 ### Added

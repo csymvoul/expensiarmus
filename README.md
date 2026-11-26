@@ -20,9 +20,9 @@ A personal, wizard-themed app for tracking monthly spending in euros: a native A
 - **Evening reminder.** A notification each evening (21:30 by default, any time in Settings) reminds you to record the day's expenses and shows what you've recorded so far. Tap it to go straight to "Record expense". It can be turned off or moved in Settings, and a banner warns if notifications are switched off for the app.
 - **Tabs:** Ledger, Calendar, Annals, Protego (goals) and Settings are always one tap away.
 - **Settings:** reminder on/off and time, wizard words or plain words, number format (€1,234.56 or 1.234,56 €), theme, and CSV export (Geminio).
-- **Android widget:** this month's total, goal bars and a ➕ for Quick add on the home screen.
-- **CSV export** of all expenses for backup or analysis.
-- **Import (Apparate):** bring expenses in from a CSV, either a Geminio backup or a spreadsheet with the same columns (comma or semicolon separated, dates as 2026-11-22 or 22/11/2026). You see what will be added first; rows already in the ledger are skipped and rows that can't be read are listed with the reason.
+- **Home-screen widget (Android and the iPhone app):** this month's total, the trip you are on ("✦ Rome · day 3 of 9 · €60.00 of €500.00"), up to three goal bars and a ➕ for Quick add. On iPhone it comes in a small size (total, trip and the first ward) and a medium one (everything, with the ➕).
+- **CSV export** of all expenses for backup or analysis, with each expense's trip by name.
+- **Import (Apparate):** bring expenses in from a CSV, either a Geminio backup or a spreadsheet with the same columns (comma or semicolon separated, dates as 2026-11-22 or 22/11/2026). You see what will be added first; rows already in the ledger are skipped and rows that can't be read are listed with the reason. A `trip` column ties rows to the trip of that name, and a name the app doesn't know becomes a new trip spanning those rows' dates.
 - **Updates (Android):** once a day the app checks GitHub for a newer version and sends a notification. Settings → Updates downloads it and opens Android's installer, where you tap Update; your data is kept.
 - **Wizard look:** parchment, burgundy and gold by day; a candle-lit castle theme in dark mode. Cards are framed in gold with corner sparkles, headings use the Cinzel font, and each category, food type and tab has a painted gold-on-burgundy emblem; each category also has a wizarding nickname (Shopping is *Diagon Alley*). The wording is full of spells: Accio to search, Protego for goals, Evanesco to delete.
 
@@ -32,7 +32,7 @@ The same app also runs as a web app at **https://csymvoul.github.io/expensiarmus
 
 ## iPhone: the app (personal use)
 
-`ios/` holds a small native iPhone app that bundles the same web app and adds what a web page can't do: a real **21:30 notification** (same wording as on Android, scheduled for the next 30 evenings and refreshed whenever the data changes or the app opens), CSV export through the iPhone share sheet, and a backup copy of the data in the app's Documents folder (visible in the Files app). It is meant to be installed on one's own iPhone with a free Apple ID through AltStore; see [DEPLOYMENT.md](DEPLOYMENT.md).
+`ios/` holds a small native iPhone app that bundles the same web app and adds what a web page can't do: a real **21:30 notification** (same wording as on Android, scheduled for the next 30 evenings and refreshed whenever the data changes or the app opens), CSV export through the iPhone share sheet, a **home-screen widget** (the web app hands it the month's summary, which the app keeps in an App Group the widget reads), and a backup copy of the data in the app's Documents folder (visible in the Files app). It is meant to be installed on one's own iPhone with a free Apple ID through AltStore; see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Logo
 

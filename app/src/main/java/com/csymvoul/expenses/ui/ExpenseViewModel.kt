@@ -110,17 +110,20 @@ class ExpenseViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun previewImport(resolver: ContentResolver, uri: Uri): ImportResult? = withContext(Dispatchers.IO) {
         runCatching {
             val text = resolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) } ?: error("cannot open $uri")
-            CsvImporter.import(text, _state.value.expenses) { UUID.randomUUID().toString() }
+            CsvImporter.import(text, _state.value.expenses, { UUID.randomUUID().toString() }, _state.value.trips)
         }.getOrNull()
     }
 
-    /** Apparate, step 2: adds the expenses the user confirmed. */
-    fun addAll(expenses: List<Expense>) = update { it.copy(expenses = it.expenses + expenses) }
+    /** Apparate, step 2: adds the expenses the user confirmed, and any trips the file named that weren't here. */
+    fun addImport(r: ImportResult) = update { d ->
+        val trips = r.newTrips.fold(d.trips) { list, t -> Trips.save(list, t).list ?: list }
+        d.copy(trips = trips, expenses = d.expenses + r.added)
+    }
 
     /** Writes all expenses as CSV (UTF-8 with BOM so Excel shows Greek text correctly). */
     suspend fun exportCsv(resolver: ContentResolver, uri: Uri): Boolean = withContext(Dispatchers.IO) {
         runCatching {
-            val bytes = ("\uFEFF" + CsvExporter.toCsv(_state.value.expenses)).toByteArray(Charsets.UTF_8)
+            val bytes = ("\uFEFF" + CsvExporter.toCsv(_state.value.expenses, _state.value.trips)).toByteArray(Charsets.UTF_8)
             resolver.openOutputStream(uri)?.use { it.write(bytes) } ?: error("cannot open $uri")
         }.isSuccess
     }

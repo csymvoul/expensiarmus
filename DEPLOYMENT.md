@@ -125,7 +125,14 @@ A free Apple ID signature lasts 7 days. AltStore renews it in the background whe
 - iPhone: **Shortcuts → Automation → New → Charger → Is Connected → Run Immediately**, action **AltStore: Refresh All**. Every night on charge at home it renews the app.
 - Mac: keep AltServer running and let the Mac stay awake on power (**System Settings → Battery/Energy → Prevent automatic sleeping when the display is off**), at least overnight.
 
-If the app ever expires, it just won't open until AltStore refreshes it (open AltStore → My Apps → Refresh All with the Mac nearby). Your data is kept.
+### The widget
+
+The app carries a home-screen widget (a WidgetKit extension, `com.csymvoul.expensiarmus.widget`) that shares data with the app through the App Group `group.com.csymvoul.expensiarmus`. `build-ipa.sh` signs both ad hoc with their entitlements so AltStore sees the App Group and asks for it when it signs them with your Apple ID; if AltStore renames the group, the app and the widget read the new name from their own provisioning profile.
+
+- The widget needs its own App ID, which counts toward the free account's limit (10 App IDs a week). If AltStore asks whether to keep the app's extensions, choose **Keep**; without them the app works as before, just without the widget.
+- Open the app once after installing (it fills the widget), then long-press the home screen → **+** → Expensiarmus → The Ledger (small or medium).
+
+ it just won't open until AltStore refreshes it (open AltStore → My Apps → Refresh All with the Mac nearby). Your data is kept.
 
 ### Updating
 

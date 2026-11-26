@@ -173,7 +173,7 @@ fun ExpensesApp(openRecord: Boolean = false, openUpdates: Boolean = false, vm: E
         ImportDialog(
             result = preview,
             onConfirm = {
-                vm.addAll(preview.added)
+                vm.addImport(preview)
                 Toast.makeText(context, words.imported(preview.added.size), Toast.LENGTH_SHORT).show()
                 importPreview = null
             },

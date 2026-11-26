@@ -15,7 +15,7 @@ import com.csymvoul.expenses.data.ExpenseStore
 import java.io.File
 import java.time.YearMonth
 
-/** Home-screen widget: this month's total, up to three goal bars, and ➕ for Quick add. */
+/** Home-screen widget: this month's total, the trip on today, up to three goal bars, and ➕ for Quick add. */
 class LedgerWidget : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         manager.updateAppWidget(ids, build(context))
@@ -43,6 +43,8 @@ class LedgerWidget : AppWidgetProvider() {
             views.setTextViewText(R.id.widget_heading, content.heading)
             views.setTextViewText(R.id.widget_total, content.total)
             views.setTextViewText(R.id.widget_label, content.label)
+            views.setViewVisibility(R.id.widget_trip, if (content.trip == null) View.GONE else View.VISIBLE)
+            views.setTextViewText(R.id.widget_trip, content.trip ?: "")
             WARDS.forEachIndexed { i, (row, text, bar) ->
                 val ward = content.wards.getOrNull(i)
                 views.setViewVisibility(row, if (ward == null) View.GONE else View.VISIBLE)

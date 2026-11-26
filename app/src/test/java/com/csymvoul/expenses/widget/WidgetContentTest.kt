@@ -47,4 +47,16 @@ class WidgetContentTest {
         assertEquals("No goals for this month yet.", w.emptyNote)
         assertEquals(emptyList<WardLine>(), w.wards)
     }
+
+    @Test fun `the widget shows the trip on today, and nothing when none is on`() {
+        val rome = com.csymvoul.expenses.model.Trip("rome", "Rome", java.time.LocalDate.parse("2026-11-20"), java.time.LocalDate.parse("2026-11-28"), 50_000)
+        val data = com.csymvoul.expenses.model.AppData(
+            expenses = listOf(com.csymvoul.expenses.model.Expense("a", java.time.LocalDate.parse("2026-11-21"), "Trattoria", 6_000, com.csymvoul.expenses.model.Category.ENTERTAINMENT, tripId = "rome")),
+            trips = listOf(rome),
+        )
+        val on = WidgetContent.of(data, java.time.YearMonth.of(2026, 11), com.csymvoul.expenses.domain.Words.WIZARD, java.time.LocalDate.parse("2026-11-22"))
+        org.junit.Assert.assertEquals("✦ Rome · day 3 of 9 · €60.00 of €500.00", on.trip)
+        val off = WidgetContent.of(data, java.time.YearMonth.of(2026, 12), com.csymvoul.expenses.domain.Words.WIZARD, java.time.LocalDate.parse("2026-12-02"))
+        org.junit.Assert.assertNull(off.trip)
+    }
 }

@@ -17,8 +17,8 @@ class CsvExporterTest {
         )
         assertEquals(
             CsvExporter.HEADER + "\n" +
-                "2026-11-01,Rent,Home,,600.00,100,600.00\n" +
-                "2026-11-05,\"Pizza, beers\",Entertainment,Delivery,24.00,50,12.00\n",
+                "2026-11-01,Rent,Home,,600.00,100,600.00,\n" +
+                "2026-11-05,\"Pizza, beers\",Entertainment,Delivery,24.00,50,12.00,\n",
             csv,
         )
     }
@@ -34,6 +34,6 @@ class CsvExporterTest {
 
     @Test fun `keeps greek text`() {
         val csv = CsvExporter.toCsv(listOf(Expense("1", LocalDate.of(2026, 1, 2), "Δώρο", 1_000, Category.OTHER)))
-        assertEquals("2026-01-02,Δώρο,Other,,10.00,100,10.00", csv.lines()[1])
+        assertEquals("2026-01-02,Δώρο,Other,,10.00,100,10.00,", csv.lines()[1])
     }
 }

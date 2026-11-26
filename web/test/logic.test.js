@@ -186,7 +186,7 @@ test('CSV has the same columns as the Android export', () => {
     makeExpense({ id: '2', date: '2026-11-05', title: 'Pizza, beers', amountCents: 2400, category: 'ENTERTAINMENT', myPercent: 50, foodType: 'DELIVERY' }),
     makeExpense({ id: '1', date: '2026-11-01', title: 'Rent', amountCents: 60000, category: 'RENT' }),
   ]);
-  assert.equal(csv, `${HEADER}\n2026-11-01,Rent,Home,,600.00,100,600.00\n2026-11-05,"Pizza, beers",Entertainment,Delivery,24.00,50,12.00\n`);
+  assert.equal(csv, `${HEADER}\n2026-11-01,Rent,Home,,600.00,100,600.00,\n2026-11-05,"Pizza, beers",Entertainment,Delivery,24.00,50,12.00,\n`);
   assert.equal(escape('say "hi"'), '"say ""hi"""');
 });
 
@@ -812,7 +812,7 @@ test('Settings has the Apparate card: a CSV picker, a confirmation, and nothing 
   // Reading the file only opens the confirmation; the expenses are committed on "Add".
   const read = app.slice(app.indexOf('async function readImport'), app.indexOf('function deleteModal'));
   assert.doesNotMatch(read, /commit\(/);
-  assert.match(app, /'import-confirm': \(\) => \{[\s\S]*?commit\(\{ \.\.\.data, expenses: \[\.\.\.data\.expenses, \.\.\.added\] \}\)/);
+  assert.match(app, /'import-confirm': \(\) => \{[\s\S]*?commit\(\{ \.\.\.data, trips, expenses: \[\.\.\.data\.expenses, \.\.\.added\] \}\)/);
   assert.equal(wordsFor(true).importButton, 'Apparate · import CSV');
   assert.equal(wordsFor(true).imported(12), 'Apparate! 12 expenses appeared in the ledger.');
   assert.equal(wordsFor(false).imported(1), '1 expense imported.');
@@ -1236,4 +1236,72 @@ test('the expense page shows the painted icons, not emoji, for category, food an
   assert.match(view, /row\('Category', c\.label, W\.nicknames \? c\.nickname : '', c\.icon\)/);
   assert.match(view, /row\('Food', f\.label, W\.nicknames \? f\.nickname : '', f\.icon\)/);
   assert.match(view, /EMBLEMS\.trip\)/);
+});
+
+test('Geminio exports each expense\'s trip, and Apparate brings trips back (making unknown ones)', () => {
+  const rome2 = { id: 'rome', name: 'Rome, Italy', start: '2026-11-20', end: '2026-11-28', budgetCents: 50000 };
+  const dinner = { ...e('2026-11-21', 6000, 'ENTERTAINMENT', 50, 'DINE_OUT', 'Trattoria'), tripId: 'rome' };
+  const home = e('2026-11-05', 2000, 'OTHER', 100, null, 'Gift');
+  const csv = toCsv([dinner, home], [rome2]);
+  assert.equal(csv.split('\n')[0], HEADER);
+  assert.ok(HEADER.endsWith(',trip'));
+  assert.ok(csv.includes('Trattoria,Entertainment,Dine out,60.00,50,30.00,"Rome, Italy"'));
+  assert.ok(csv.includes('Gift,Other,,20.00,100,20.00,\n'));
+  // Into a phone that has the trip: matched by name.
+  let n = 0; const ids = () => `n${n++}`;
+  const same = importCsv(csv, [], ids, [rome2]);
+  assert.deepEqual(same.added.map((x) => x.tripId ?? null), [null, 'rome']);
+  assert.deepEqual(same.newTrips, []);
+  // Into a phone without it: the trip is made, spanning its expenses' dates.
+  const extra = csv.replace('2026-11-05,Gift,Other,,20.00,100,20.00,', '2026-11-05,Gift,Other,,20.00,100,20.00,Rome, Italy'.replace('Rome, Italy', '"rome, italy"'));
+  const fresh = importCsv(extra, [], ids, []);
+  assert.equal(fresh.newTrips.length, 1);
+  assert.deepEqual([fresh.newTrips[0].name, fresh.newTrips[0].start, fresh.newTrips[0].end, fresh.newTrips[0].budgetCents], ['rome, italy', '2026-11-05', '2026-11-21', null]);
+  assert.ok(fresh.added.every((x) => x.tripId === fresh.newTrips[0].id));
+  assert.equal(importSummary(fresh).at(-1), 'Also adds 1 trip: rome, italy.');
+  // Older backups without a trip column still import.
+  assert.equal(importCsv('date,title,category,amount_eur\n2026-11-02,Old,Other,5\n', [], ids).added[0].tripId, undefined);
+});
+
+test('the iPhone widget gets this month, its wards (whole month first) and the trips not over yet', async () => {
+  const { widgetContent } = await import('../js/widget.js');
+  const { wordsFor } = await import('../js/words.js');
+  const { setGoal } = await import('../js/goals.js');
+  const data = {
+    ...emptyData(),
+    expenses: [
+      makeExpense({ id: 'a', date: '2026-11-21', title: 'Trattoria', amountCents: 6000, category: 'ENTERTAINMENT', tripId: 'rome' }),
+      makeExpense({ id: 'b', date: '2026-11-02', title: 'Rent', amountCents: 50000, category: 'RENT' }),
+    ],
+    goals: [[null, 100000], ['RENT', 40000], ['BILLS', 10000]].reduce((g, [cat, cents]) => setGoal(g, cat, '2026-11', cents, true), emptyData().goals),
+    trips: [
+      { id: 'rome', name: 'Rome', start: '2026-11-20', end: '2026-11-28', budgetCents: 50000 },
+      { id: 'old', name: 'Old', start: '2026-01-01', end: '2026-01-03', budgetCents: null },
+      { id: 'xmas', name: 'Xmas', start: '2026-12-23', end: '2026-12-27', budgetCents: null },
+    ],
+  };
+  const w = widgetContent(data, '2026-11', wordsFor(true), '2026-11-22');
+  assert.equal(w.heading, 'Expensiarmus · November');
+  assert.equal(w.total, '€560.00');
+  assert.equal(w.label, 'Gold spent this month');
+  assert.deepEqual(w.wards.map((x) => [x.text, x.percent, x.over]), [
+    ['✦ Whole month · €560.00 of €1,000.00', 56, false],
+    ['🏰 Home · €500.00 of €400.00', 100, true],
+    ['⚡ Bills · €0.00 of €100.00', 0, false],
+  ]);
+  assert.equal(w.empty, null);
+  assert.deepEqual(w.trips, [
+    { name: 'Rome', start: '2026-11-20', end: '2026-11-28', spent: '€60.00', budget: '€500.00' },
+    { name: 'Xmas', start: '2026-12-23', end: '2026-12-27', spent: '€0.00', budget: null },
+  ]);
+  assert.equal(widgetContent({ ...emptyData() }, '2026-11', wordsFor(false), '2026-11-22').empty, 'No goals for this month yet.');
+});
+
+test('the app hands the widget its content after every save, settings change and return to the foreground', () => {
+  const src = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+  assert.match(src, /post\(\{ type: 'widget', content: widgetContent\(data, today\(\)\.slice\(0, 7\), W, today\(\)\) \}\)/);
+  assert.match(src, /function commit\(next\) \{[\s\S]*?updateWidget\(\);[\s\S]*?\n\}/);
+  assert.match(src, /function updateSettings\(change\) \{[\s\S]*?updateWidget\(\);[\s\S]*?\n\}/);
+  assert.match(src, /visibilitychange[^\n]*updateWidget\(\)/);
+  assert.match(readFileSync(new URL('../sw.js', import.meta.url), 'utf8'), /'js\/widget\.js'/);
 });

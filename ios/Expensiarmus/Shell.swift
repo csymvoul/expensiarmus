@@ -1,8 +1,10 @@
 import UIKit
 import WebKit
+import WidgetKit
 
 /// Receives messages from the web app (`window.webkit.messageHandlers.expensiarmus`) and does
-/// what a web page can't: schedule notifications, open the share sheet, keep a backup file.
+/// what a web page can't: schedule notifications, open the share sheet, keep a backup file,
+/// fill the home-screen widget.
 final class Shell: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     static let scheme = "expensiarmus"
     static let startURL = URL(string: "\(scheme)://localhost/index.html")!
@@ -74,6 +76,11 @@ final class Shell: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             default: .unspecified
             }
             webView?.window?.overrideUserInterfaceStyle = style
+        case "widget":
+            // What the home-screen widget shows; it reads the file from the App Group.
+            if let snapshot = WidgetSnapshot(message: body["content"]), snapshot.save() {
+                WidgetCenter.shared.reloadAllTimelines()
+            }
         case "share":
             if let name = body["filename"] as? String, let text = body["text"] as? String { share(text: text, filename: name) }
         default:

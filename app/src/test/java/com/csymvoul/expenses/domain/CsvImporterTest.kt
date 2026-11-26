@@ -8,6 +8,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
+import com.csymvoul.expenses.model.Trip
 
 class CsvImporterTest {
     private var n = 0
@@ -125,5 +126,27 @@ class CsvImporterTest {
         val r = CsvImporter.import(csv, emptyList(), ids)
         assertEquals(emptyList<ImportProblem>(), r.problems)
         assertEquals(listOf(Category.FUEL, Category.FUEL), r.added.map { it.category })
+    }
+
+    @Test fun `Geminio exports each expense's trip, and Apparate brings trips back, making unknown ones`() {
+        val rome = Trip("rome", "Rome, Italy", LocalDate.parse("2026-11-20"), LocalDate.parse("2026-11-28"), 50_000)
+        val dinner = Expense("d", LocalDate.parse("2026-11-21"), "Trattoria", 6_000, Category.ENTERTAINMENT, 50, FoodType.DINE_OUT, "rome")
+        val gift = Expense("g", LocalDate.parse("2026-11-05"), "Gift", 2_000, Category.OTHER)
+        val csv = CsvExporter.toCsv(listOf(dinner, gift), listOf(rome))
+        assertTrue(CsvExporter.HEADER.endsWith(",trip"))
+        assertTrue(csv.contains("Trattoria,Entertainment,Dine out,60.00,50,30.00,\"Rome, Italy\""))
+        assertTrue(csv.contains("Gift,Other,,20.00,100,20.00,\n"))
+        val same = CsvImporter.import(csv, emptyList(), ids, listOf(rome))
+        assertEquals(listOf(null, "rome"), same.added.map { it.tripId })
+        assertEquals(emptyList<Trip>(), same.newTrips)
+        val extra = csv.replace("2026-11-05,Gift,Other,,20.00,100,20.00,", "2026-11-05,Gift,Other,,20.00,100,20.00,\"rome, italy\"")
+        val fresh = CsvImporter.import(extra, emptyList(), ids, emptyList())
+        assertEquals(1, fresh.newTrips.size)
+        val t = fresh.newTrips.single()
+        assertEquals(listOf("rome, italy", "2026-11-05", "2026-11-21"), listOf(t.name, t.start.toString(), t.end.toString()))
+        assertNull(t.budgetCents)
+        assertTrue(fresh.added.all { it.tripId == t.id })
+        assertEquals("Also adds 1 trip: rome, italy.", CsvImporter.summary(fresh).last())
+        assertNull(CsvImporter.import("date,title,category,amount_eur\n2026-11-02,Old,Other,5\n", emptyList(), ids).added.single().tripId)
     }
 }

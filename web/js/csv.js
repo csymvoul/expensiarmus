@@ -1,15 +1,16 @@
 import { CATEGORIES, FOOD_TYPES, category, foodType, myShareCents, makeExpense } from './model.js';
 import { plain, parseToCents } from './money.js';
 
-export const HEADER = 'date,title,category,food_type,amount_eur,my_share_percent,my_share_eur';
+export const HEADER = 'date,title,category,food_type,amount_eur,my_share_percent,my_share_eur,trip';
 
 export const escape = (v) => (/[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
 
-/** Oldest first, one line per expense. Same columns as the Android export. */
-export function toCsv(expenses) {
+/** Oldest first, one line per expense, ending with the trip's name (if any). Same columns as the Android export. */
+export function toCsv(expenses, trips = []) {
+  const tripName = new Map(trips.map((t) => [t.id, t.name]));
   const rows = [...expenses].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)).map((e) =>
     [e.date, escape(e.title), escape(category(e.category).label), e.foodType ? foodType(e.foodType).label : '',
-      plain(e.amountCents), String(e.myPercent), plain(myShareCents(e))].join(','));
+      plain(e.amountCents), String(e.myPercent), plain(myShareCents(e)), escape(tripName.get(e.tripId) ?? '')].join(','));
   return [HEADER, ...rows].join('\n') + '\n';
 }
 
@@ -65,12 +66,12 @@ const sameness = (e) => [e.date, e.title.trim().toLowerCase(), e.amountCents, e.
  * Rows match existing expenses one for one, so re-importing a backup adds nothing and two identical
  * coffees stay two coffees.
  */
-export function importCsv(text, existing, newId) {
+export function importCsv(text, existing, newId, trips = []) {
   const clean = String(text).replace(/^﻿/, '');
   const firstLine = clean.split(/\r?\n/, 1)[0] ?? '';
   const delimiter = firstLine.includes(';') && !firstLine.includes(',') ? ';' : ',';
   const rows = parseCsv(clean, delimiter);
-  const result = { added: [], duplicates: 0, problems: [], rows: 0 };
+  const result = { added: [], duplicates: 0, problems: [], rows: 0, newTrips: [] };
   if (!rows.length) {
     result.problems.push({ line: 1, reason: 'The file is empty.' });
     return result;
@@ -82,7 +83,12 @@ export function importCsv(text, existing, newId) {
     result.problems.push({ line: 1, reason: `Not an Expensiarmus CSV: no ${missing.join(', ')} column.` });
     return result;
   }
-  const at = { date: col('date'), title: col('title'), category: col('category'), food: col('food_type'), amount: col('amount_eur'), percent: col('my_share_percent') };
+  const at = { date: col('date'), title: col('title'), category: col('category'), food: col('food_type'), amount: col('amount_eur'), percent: col('my_share_percent'), trip: col('trip') };
+  // Trips by name: existing ones are matched (case and accents ignored); unknown names become new trips
+  // spanning the dates of their expenses.
+  const tripKey = (v) => squash(String(v).normalize('NFD').replace(/\p{Mn}+/gu, ''));
+  const tripsByName = new Map((trips ?? []).map((t) => [tripKey(t.name), t.id]));
+  const created = new Map();
   const left = new Map();
   for (const e of existing) left.set(sameness(e), (left.get(sameness(e)) ?? 0) + 1);
   rows.slice(1).forEach((cells, i) => {
@@ -111,9 +117,24 @@ export function importCsv(text, existing, newId) {
     if ((left.get(key) ?? 0) > 0) {
       left.set(key, left.get(key) - 1);
       result.duplicates += 1;
-    } else result.added.push(e);
+      return undefined;
+    }
+    const tripName = get('trip');
+    if (tripName) {
+      let id = tripsByName.get(tripKey(tripName));
+      if (!id) {
+        const t = created.get(tripKey(tripName)) ?? { id: newId(), name: tripName, start: date, end: date, budgetCents: null };
+        if (date < t.start) t.start = date;
+        if (date > t.end) t.end = date;
+        created.set(tripKey(tripName), t);
+        id = t.id;
+      }
+      e.tripId = id;
+    }
+    result.added.push(e);
     return undefined;
   });
+  result.newTrips = [...created.values()];
   return result;
 }
 
@@ -126,5 +147,7 @@ export function importSummary(r, maxProblems = 5) {
     for (const p of r.problems.slice(0, maxProblems)) lines.push(`Line ${p.line}: ${p.reason}`);
     if (r.problems.length > maxProblems) lines.push(`…and ${r.problems.length - maxProblems} more.`);
   }
+  const nt = r.newTrips ?? [];
+  if (nt.length) lines.push(`${nt.length === 1 ? 'Also adds 1 trip' : `Also adds ${nt.length} trips`}: ${nt.map((t) => t.name).join(', ')}.`);
   return lines;
 }
