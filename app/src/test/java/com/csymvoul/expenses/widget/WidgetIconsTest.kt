@@ -16,7 +16,10 @@ class WidgetIconsTest {
         assertTrue(layout.contains("@drawable/emblem_logo_pouch"))
         assertTrue(layout.contains("@drawable/emblem_trip"))
         assertTrue(Regex("""android:id="@\+id/widget_add"\s+[^>]*android:src="@drawable/emblem_quill"""").containsMatchIn(layout))
-        listOf("drawable-nodpi", "drawable-night-nodpi").forEach { assertTrue(it, File("src/main/res/$it/emblem_quill.png").exists()) }
+        // Bronze on parchment by day, gold at night.
+        assertTrue(File("src/main/res/drawable/emblem_quill.xml").readText().contains("@drawable/emblem_quill_bronze"))
+        assertTrue(File("src/main/res/drawable-night/emblem_quill.xml").readText().contains("@drawable/emblem_quill_gold"))
+        listOf("bronze", "gold").forEach { assertTrue(it, File("src/main/res/drawable-nodpi/emblem_quill_$it.png").exists()) }
     }
 
     @Test fun `every ward row has an emblem`() {

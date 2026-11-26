@@ -224,6 +224,9 @@ fun starGlyph(on: Boolean, night: Boolean): Int = when {
     else -> R.drawable.emblem_star_off_light
 }
 
+/** Record expense's quill on the button: gold on the burgundy button by day, bronze on the gold one at night. */
+fun fabGlyph(night: Boolean): Int = if (night) R.drawable.emblem_quill_bronze else R.drawable.emblem_quill_gold
+
 /** The record ✓ at the top of Quick add: gold on the dark theme, bronze on parchment. */
 fun checkGlyph(night: Boolean): Int = if (night) R.drawable.emblem_check_dark else R.drawable.emblem_check_light
 

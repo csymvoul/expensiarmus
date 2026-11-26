@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget's Quick-add quill on parchment: bronze by day (gold at night, drawable-night). -->
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android" android:src="@drawable/emblem_quill_bronze" />

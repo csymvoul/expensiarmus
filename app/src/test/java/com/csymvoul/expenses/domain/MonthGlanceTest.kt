@@ -64,8 +64,12 @@ class MonthGlanceTest {
         assertEquals(28, ExpenseQueries.monthGlance(emptyList(), YearMonth.of(2026, 3), LocalDate.of(2026, 3, 31)).upToDay)
     }
 
-    @Test fun `Record expense and Add expense carry the same pen`() {
-        assertEquals("✒️", Words.WIZARD.fab.substringBefore(' '))
-        assertEquals("✒️ Add expense", Words.PLAIN.fab)
+    @Test fun `Record expense and Add expense carry no emoji (the button draws the quill glyph)`() {
+        assertEquals("Record expense", Words.WIZARD.fab)
+        assertEquals("Add expense", Words.PLAIN.fab)
+        val screen = java.io.File("src/main/java/com/csymvoul/expenses/ui/screens/MonthScreen.kt").readText()
+        org.junit.Assert.assertTrue(screen.contains("WizardFab(text = w.fab, onClick = onAdd) { FabGlyph() }"))
+        assertEquals(com.csymvoul.expenses.R.drawable.emblem_quill_gold, com.csymvoul.expenses.ui.theme.fabGlyph(night = false))
+        assertEquals(com.csymvoul.expenses.R.drawable.emblem_quill_bronze, com.csymvoul.expenses.ui.theme.fabGlyph(night = true))
     }
 }

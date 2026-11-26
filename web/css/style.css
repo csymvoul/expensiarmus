@@ -32,6 +32,7 @@
   --today-glyph: url('../icons/emblems/today_light.png');
   --star-on: url('../icons/emblems/star_on_light.png');
   --check-glyph: url('../icons/emblems/check_light.png');
+  --fab-glyph: url('../icons/emblems/quill_dark.png');
   --star-off: url('../icons/emblems/star_off_light.png');
   /* Evanesco and other removing buttons: red by day; at night gold like every other button. */
   --danger-bg: var(--error);
@@ -65,6 +66,7 @@
     --today-glyph: url('../icons/emblems/today_dark.png');
     --star-on: url('../icons/emblems/star_on_dark.png');
     --check-glyph: url('../icons/emblems/check_dark.png');
+    --fab-glyph: url('../icons/emblems/quill_light.png');
     --star-off: url('../icons/emblems/star_off_dark.png');
     --danger-bg: var(--primary);
     --on-danger: var(--on-primary);
@@ -97,6 +99,7 @@
   --today-glyph: url('../icons/emblems/today_dark.png');
   --star-on: url('../icons/emblems/star_on_dark.png');
   --check-glyph: url('../icons/emblems/check_dark.png');
+  --fab-glyph: url('../icons/emblems/quill_light.png');
   --star-off: url('../icons/emblems/star_off_dark.png');
   --danger-bg: var(--primary);
   --on-danger: var(--on-primary);
@@ -354,6 +357,9 @@ main.form { display: flex; flex-direction: column; gap: 16px; }
 .fab .frame { --cut: 14px; }
 .fab .frame-inner { --cut: 13px; padding: 15px 24px; }
 .fab .frame-inner::before { --cut: 10px; }
+/* Record expense's quill, drawn without a badge: gold on the burgundy button by day, bronze on the gold one at night. */
+.fab .frame-inner.with-emblem { padding-top: 10px; padding-bottom: 10px; gap: 8px; }
+.fab-glyph { flex: none; display: block; width: 30px; height: 30px; background: var(--fab-glyph) center / contain no-repeat; }
 
 /* Forms */
 .field { display: flex; flex-direction: column; gap: 6px; }

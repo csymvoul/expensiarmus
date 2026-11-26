@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget's Quick-add quill at night: gold. -->
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android" android:src="@drawable/emblem_quill_gold" />

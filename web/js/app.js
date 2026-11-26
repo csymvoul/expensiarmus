@@ -428,7 +428,7 @@ function monthScreen(calendar) {
     ${monthSwitch()}
     ${body}
   </main>
-  <button class="fab" data-action="quick"><span class="frame"><span class="frame-inner">${esc(W.fab)}</span></span></button>
+  <button class="fab" data-action="quick"><span class="frame"><span class="frame-inner with-emblem"><span class="fab-glyph" aria-hidden="true"></span>${esc(W.fab)}</span></span></button>
   ${tabBar(calendar ? 'calendar' : 'month')}
   ${ui.quick ? quickSheet() : ''}`;
 }

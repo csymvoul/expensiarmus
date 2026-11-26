@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.22.0 (Android), web app 1.22.0 and iPhone app 1.19.0 – unreleased (2026-11-26)
+
+### Changed
+- **Record expense carries the quill glyph** (all three apps), drawn without a badge like the widgets' Quick add: gold on the burgundy button by day, bronze on the gold button at night. It replaces the ✒️ emoji on the web and iPhone apps and Android's generic pencil icon. On Android the widget's quill now points at the same two images instead of keeping copies. The button's words no longer carry an emoji ("Record expense", "Add expense").
+
+### Tests
+- Android 211, web 102 (the two "same pen" tests now check the plain words, the glyph on the button and its day and night versions; on the web also that the service worker caches both). All passing. Checked in a browser: the Ledger's button by day and at night.
+
 ## 1.21.1 (Android), web app 1.21.1 and iPhone app 1.18.1 – unreleased (2026-11-26)
 
 ### Changed

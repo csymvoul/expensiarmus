@@ -716,10 +716,19 @@ test('an empty month, or one with nothing the month before, has no comparison', 
   assert.equal(monthGlance([], '2026-03', '2026-03-31').upToDay, 28);
 });
 
-test('Record expense and Add expense carry the same pen', () => {
-  assert.equal(wordsFor(true).fab.split(' ')[0], '✒️');
-  assert.equal(wordsFor(false).fab.split(' ')[0], '✒️');
-  assert.equal(wordsFor(false).fab, '✒️ Add expense');
+test('Record expense and Add expense carry the quill glyph, not an emoji', () => {
+  assert.equal(wordsFor(true).fab, 'Record expense');
+  assert.equal(wordsFor(false).fab, 'Add expense');
+  const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+  assert.match(app, /<button class="fab"[^>]*><span class="frame"><span class="frame-inner with-emblem"><span class="fab-glyph" aria-hidden="true"><\/span>\$\{esc\(W\.fab\)\}/);
+  const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
+  // Gold quill on the burgundy button by day; bronze on the gold button at night (both dark-theme blocks).
+  assert.equal((css.match(/--fab-glyph: url\('\.\.\/icons\/emblems\/quill_dark\.png'\)/g) ?? []).length, 1);
+  assert.equal((css.match(/--fab-glyph: url\('\.\.\/icons\/emblems\/quill_light\.png'\)/g) ?? []).length, 2);
+  assert.match(css, /\.fab-glyph \{[^}]*border-radius|\.fab-glyph \{[^}]*var\(--fab-glyph\)/);
+  assert.doesNotMatch(css.match(/\.fab-glyph \{[^}]*\}/)[0], /border-radius|border:/);
+  const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
+  assert.match(sw, /'icons\/emblems\/quill_light\.png', 'icons\/emblems\/quill_dark\.png'/);
 });
 
 // --- Apparate: import (mirrors CsvImporterTest on Android) ---

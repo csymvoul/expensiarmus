@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Create
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,6 +60,7 @@ import com.csymvoul.expenses.ui.components.CalendarGrid
 import com.csymvoul.expenses.ui.components.EmblemBadge
 import com.csymvoul.expenses.ui.components.TodayGlyph
 import com.csymvoul.expenses.ui.components.SearchGlyph
+import com.csymvoul.expenses.ui.components.FabGlyph
 import com.csymvoul.expenses.ui.components.WizardFab
 import com.csymvoul.expenses.ui.components.WizardTopBar
 import com.csymvoul.expenses.ui.components.DonutChart
@@ -152,9 +152,7 @@ fun MonthScreen(
             )
         },
         floatingActionButton = {
-            WizardFab(text = w.fab.substringAfter(' '), onClick = onAdd) {
-                Icon(Icons.Default.Create, contentDescription = null)
-            }
+            WizardFab(text = w.fab, onClick = onAdd) { FabGlyph() }
         },
     ) { padding ->
         LazyColumn(

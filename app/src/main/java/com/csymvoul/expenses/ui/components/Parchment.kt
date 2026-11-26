@@ -55,6 +55,7 @@ import com.csymvoul.expenses.ui.theme.searchGlyph
 import com.csymvoul.expenses.ui.theme.todayGlyph
 import com.csymvoul.expenses.ui.theme.starGlyph
 import com.csymvoul.expenses.ui.theme.checkGlyph
+import com.csymvoul.expenses.ui.theme.fabGlyph
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -66,6 +67,12 @@ fun isNight() = MaterialTheme.colorScheme.background.luminance() < 0.5f
 @Composable
 fun TodayGlyph(contentDescription: String?, size: Dp = 30.dp) {
     Image(painterResource(todayGlyph(isNight())), contentDescription = contentDescription, modifier = Modifier.size(size))
+}
+
+/** Record expense's quill, with no badge (see [fabGlyph]). */
+@Composable
+fun FabGlyph(size: Dp = 28.dp) {
+    Image(painterResource(fabGlyph(isNight())), contentDescription = null, modifier = Modifier.size(size))
 }
 
 /** The record ✓ on its own, with no badge: bronze by day, gold at night. */
